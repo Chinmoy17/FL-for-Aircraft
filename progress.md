@@ -102,8 +102,8 @@ Confirmed with the user; aligned with the explanation-doc analysis. We focus on
 | P1 | Data pipeline (load, label, normalize, window, partition) + tests | ✅ done |
 | P2 | Multi-task CNN + losses + metrics + centralized smoke run | ✅ done |
 | P3 | Centralized baseline (FD001, 50 epochs) | ✅ done |
-| P4 | Local-only baseline (4 clients, FD001) | ⏳ next |
-| P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | not started |
+| P4 | Local-only baseline (4 clients, FD001) | ✅ done |
+| P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | ⏳ next |
 | P6 | Non-IID baseline (FD001 + FD003) | not started |
 | P7 | `run_all.py` reproducibility pass | not started |
 | RQ2 | Imbalance-aware aggregation | not started |
@@ -611,6 +611,63 @@ LR values.
 
 ---
 
+## 6¾. Phase 4 — Local-only baseline (4 clients, FD001)
+
+### Goal
+
+Produce the **lower-bound** the FedAvg run (P5) must beat. Each of the 4
+simulated clients trains its own model on *only its own engines'* data — no
+weights or statistics ever leave a client.
+
+### Decisions (locked)
+
+| Decision | Rationale |
+| --- | --- |
+| **Reuse `train_centralized` verbatim per client** | One source of truth for the training recipe. Differences between P3 and P4 come purely from data partitioning. |
+| **Same hyperparameters as P3** (50 epochs, lr=1e-3, cosine, λ=0.5) | Fair comparison: only variable is the data each client sees. |
+| **Per-client `Normalizer` fit on that client's data** | Realistic FL: a real airline standardises with stats it already owns. No statistic ever leaves a client. |
+| **Common FD001 test set for every client's eval** | CMAPSS publishes one 100-engine test set with ground-truth RUL — it is *not* partitioned by client. A 25-engine per-client test set would be too small for stable AUPRC/F1 measurements. Using the common test set keeps the comparison clean against P3. Documented explicitly in `results.md`. |
+| **Same seed for every client's model init** | Performance differences come from data, not random init. |
+| **Per-client `pos_weight` recomputed from local imbalance** | Realistic — each airline tunes its own imbalance correction. With the stratified partition the values are nearly identical (4.69–4.74). |
+| **Aggregate by mean ± std (also min / max)** | mean is the headline FedAvg-comparison number; spread reveals client variance for the report. |
+
+### What worked
+
+- **All 81 tests pass in ~45 s** (9 new local-only tests on top of P3's 72).
+- **4 clients × 50 epochs trained in 82.1 s total** (~20 s/client). The entire
+  federation cost is the same order as a single centralized run.
+- **Per-client RMSE = 14.76 / 14.96 / 15.50 / 14.84** — mean 15.02 ± 0.29.
+- **+1.00 RMSE gap vs P3 centralized** (15.02 vs 14.02). Modest by design —
+  the stratified partition was deliberately balanced.
+- **client_3 weakest** (RMSE 15.50). Its engines have the lowest mean lifetime
+  (205.5 vs 206–207 elsewhere) — a tiny but consistent disadvantage.
+- **Best epoch shifts later** (15–28 vs P3's 5). With ¼ the data, each client
+  needs ~4× more epochs to find its minimum.
+
+### Notable design choice: aggregation seed
+
+`train_local_only_clients` re-seeds (`seed_everything(seed)`) *before each
+client's model construction* so all four clients start from the *same* initial
+weights. This means any per-client performance difference is attributable to
+the data, not random init. This matches how FedAvg works (all clients start a
+round with the same global weights).
+
+### Files added in P4
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/train/local_only.py` | `train_local_only_clients` + `ClientRun` + `LocalOnlyResults` (per-client + aggregate helpers). |
+| `scripts/run_local_only.py` | CLI: 4 plots (per-client metrics, loss curves, centralized-vs-local) + 2 CSVs (best / final) + `metrics.json`. |
+| `tests/test_local_only.py` | 9 tests: per-client coverage, disjoint partitioning, window-count totals, aggregation, validation. |
+| `results/04_local_only/per_client_best_fd001.csv` | One row per client (best-epoch metrics + hyperparameters + timing). |
+| `results/04_local_only/per_client_final_fd001.csv` | Same shape, final-epoch numbers. |
+| `results/04_local_only/per_client_metrics_fd001.png` | 2×2 grouped bar chart per metric. |
+| `results/04_local_only/loss_curves_fd001.png` | One line per client, train loss across 50 epochs. |
+| `results/04_local_only/centralized_vs_local_fd001.png` | The headline image: P3 centralized vs per-client P4 vs P4 mean (with error bar). |
+| `results/04_local_only/metrics.json` | Structured for the frontend; includes aggregate + per-client + P3-comparison summary. |
+
+---
+
 ## 7. Architecture overview
 
 ```
@@ -863,20 +920,23 @@ FL-for-Aircraft/
 
 ## 11. Next steps
 
-### Immediate (Phase 4 — local-only baseline)
+### Immediate (Phase 5 — FedAvg baseline)
 
-1. Add `scripts/run_local_only.py` that reuses `partition_by_lifetime` from P1
-   and `train_centralized` from P3 — train one model per client on **only that
-   client's data**, with the same 50-epoch / cosine recipe.
-2. Aggregate per-client test metrics (mean, min, max, std) so the report can
-   say "the average client lands at RMSE X".
-3. Plot a side-by-side bar chart vs the P3 centralized number to visualise the
-   penalty for isolation.
-4. Wall-clock budget: 4 clients × 85 s ≈ 6 min on CPU.
+1. Build `src/fl_aircraft/fl/server.py` with a stateless `FedAvgServer` that
+   does weighted-mean aggregation by client sample count (the canonical
+   FedAvg recipe from McMahan et al., 2017).
+2. Build `src/fl_aircraft/fl/client.py` wrapping a torch model + local
+   training step (reuses `train_one_epoch`).
+3. Build `src/fl_aircraft/fl/simulation.py` that runs the server / client
+   protocol in-process — no network, no IPC, deterministic.
+4. `scripts/run_fedavg.py`: 50 communication rounds × 2 local epochs × 4
+   clients (= 400 local-epoch equivalents). Wall-clock estimate: ~6–8 min
+   on CPU.
+5. **3-way comparison figure**: P3 centralized vs P4 local-only mean vs P5
+   FedAvg — the headline image of the entire baseline.
 
-### After P4
+### After P5
 
-- **P5** FedAvg loop + 3-way comparison plot.
 - **P6** Non-IID partition (FD001 + FD003) and re-run all three.
 - **P7** `scripts/run_all.py` + reproducibility pass.
 - **RQ2 → RQ5 → RQ3** on dedicated feature branches.

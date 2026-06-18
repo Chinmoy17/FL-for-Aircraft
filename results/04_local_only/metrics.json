@@ -1,0 +1,108 @@
+{
+  "phase_id": "04_local_only",
+  "phase_name": "Phase 4 \u2014 Local-only baseline (no sharing)",
+  "interpretation": "Lower-bound baseline on FD001: 4 clients trained in isolation, no weight sharing, same 50-epoch recipe as the P3 centralized run. Average per-client best RMSE = 15.02 \u00b1 0.29  (range 14.76\u201315.50). Penalty for isolation vs centralized (P3 RMSE=14.02): +0.99 RMSE. The FedAvg run (P5) must close this gap to justify the federation.",
+  "artifacts": {
+    "per_client_best_csv": "results/04_local_only/per_client_best_fd001.csv",
+    "per_client_final_csv": "results/04_local_only/per_client_final_fd001.csv",
+    "per_client_metrics_png": "results/04_local_only/per_client_metrics_fd001.png",
+    "loss_curves_png": "results/04_local_only/loss_curves_fd001.png",
+    "centralized_vs_local_png": "results/04_local_only/centralized_vs_local_fd001.png"
+  },
+  "subset": "FD001",
+  "config": {
+    "n_clients": 4,
+    "epochs": 50,
+    "batch_size": 256,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "lambda_fault": 0.5,
+    "use_cosine_schedule": true,
+    "seed": 42,
+    "n_features": 17,
+    "window_size": 30,
+    "rul_cap": 125,
+    "fault_threshold": 30
+  },
+  "timing": {
+    "train_seconds_total": 82.083,
+    "train_seconds_per_client_mean": 20.521
+  },
+  "summary": {
+    "best_rmse_mean": 15.0166,
+    "best_rmse_std": 0.2882,
+    "best_rmse_min": 14.7644,
+    "best_rmse_max": 15.5008,
+    "best_nasa_mean": 408.7568,
+    "best_auprc_mean": 0.9731,
+    "best_auprc_min": 0.9643,
+    "best_f1_mean": 0.9232,
+    "final_rmse_mean": 15.9512,
+    "final_auprc_mean": 0.966,
+    "p3_centralized_rmse": 14.0231,
+    "p3_centralized_auprc": 0.9868,
+    "rmse_gap_vs_centralized": 0.9935
+  },
+  "train": {},
+  "test": {},
+  "per_subset": {},
+  "per_client": {
+    "client_1": {
+      "n_engines": 25,
+      "n_train_windows": 4434,
+      "pos_weight": 4.721,
+      "best_epoch": 20,
+      "rmse": 14.7644,
+      "mae": 10.5796,
+      "nasa_score": 402.0088,
+      "auprc": 0.9725,
+      "f1": 0.9412,
+      "precision": 0.9231,
+      "recall": 0.96,
+      "train_seconds": 19.858
+    },
+    "client_2": {
+      "n_engines": 25,
+      "n_train_windows": 4438,
+      "pos_weight": 4.726,
+      "best_epoch": 28,
+      "rmse": 14.9614,
+      "mae": 11.3424,
+      "nasa_score": 355.5317,
+      "auprc": 0.9834,
+      "f1": 0.96,
+      "precision": 0.96,
+      "recall": 0.96,
+      "train_seconds": 19.577
+    },
+    "client_3": {
+      "n_engines": 25,
+      "n_train_windows": 4413,
+      "pos_weight": 4.694,
+      "best_epoch": 18,
+      "rmse": 15.5008,
+      "mae": 11.4946,
+      "nasa_score": 528.9602,
+      "auprc": 0.9643,
+      "f1": 0.8936,
+      "precision": 0.9545,
+      "recall": 0.84,
+      "train_seconds": 19.834
+    },
+    "client_4": {
+      "n_engines": 25,
+      "n_train_windows": 4446,
+      "pos_weight": 4.737,
+      "best_epoch": 15,
+      "rmse": 14.84,
+      "mae": 11.1878,
+      "nasa_score": 348.5265,
+      "auprc": 0.972,
+      "f1": 0.898,
+      "precision": 0.9167,
+      "recall": 0.88,
+      "train_seconds": 20.079
+    }
+  },
+  "generated_at": "2026-06-18T09:22:29.662008+00:00"
+}
