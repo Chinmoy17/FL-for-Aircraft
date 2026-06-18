@@ -2,9 +2,10 @@
 
 > **Project:** PhD-application research assignment — *"When Engines Cannot Talk to
 > Each Other: Federated Learning for Aircraft Health Monitoring"*
-> **Scope of this report:** the complete Task-1 baseline (Phases P0 – P6).
-> **Status:** all 6 phases complete · 125 / 125 automated tests passing · 7
-> `metrics.json` files committed for the React frontend.
+> **Scope of this report:** the complete Task-1 baseline (Phases P0 – P6) plus
+> the RQ2 imbalance-aware-aggregation experiment.
+> **Status:** all 6 baseline phases + RQ2 complete · 148 / 148 automated tests
+> passing · 8 `metrics.json` files committed for the React frontend.
 
 This report is the **catch-up document**. For the day-to-day engineering log
 (what was attempted, what failed, what was decided), see
@@ -33,6 +34,12 @@ future React dashboard will consume live under
 5. That Non-IID failure is the **textbook FedAvg failure mode** the literature
    has predicted for nearly a decade, and it directly motivates the RQ work
    (imbalance-aware aggregation, Non-IID validation bias correction).
+6. **RQ2 update**: three imbalance-aware aggregation schemes (fault-count,
+   validation-F1, inverse-loss) were tested. **None closes more than 2.8 %**
+   of the Non-IID RMSE gap — a publishable negative finding that isolates
+   **client drift during local epochs** (not aggregation weights) as the
+   root cause, pointing the next experiment at FedProx-style local
+   regularisation.
 
 | Headline metric (FD001 single-subset) | Centralized | FedAvg (P5) | Local-only |
 | --- | --- | --- | --- |
@@ -489,48 +496,71 @@ comes next.
 
 ## 8. What this means for the RQs
 
-The brief lists 7 research questions. Our baseline narrows down which ones are
-worth attacking, and what the evidence-base for each one already looks like.
+The brief lists 7 research questions. Our baseline narrowed down which ones
+are worth attacking; the RQ2 experiment then **refined our hypothesis** about
+where the real Non-IID problem lives.
 
-### RQ2 — Imbalance-aware aggregation (recommended next)
+### RQ2 — Imbalance-aware aggregation — **DONE** — negative finding
 
-The P6 finding is the perfect substrate. We have a **4-RMSE gap** that vanilla
-FedAvg cannot close on Non-IID. The `FedAvgServer` in
-[`src/fl_aircraft/fl/server.py`](src/fl_aircraft/fl/server.py) was deliberately
-designed with a pluggable `aggregator=` kwarg — we can swap in:
+Ran all three alternative aggregation rules (fault-count, validation-F1
+softmax, inverse-loss) on the P6 substrate. Headline outcome:
 
-- **Per-client fault-positive-count weighting** (the simplest target signal)
-- **Per-client validation-F1 weighting** (each client validates the global
-  model on a held-out shard of its own engines)
-- **Inverse-loss weighting** (clients with higher local loss get *more*
-  influence, on the theory that they have the harder data the global model
-  most needs to absorb)
+| Scheme | RMSE | F1 | Gap closed |
+| --- | --- | --- | --- |
+| Vanilla FedAvg (control) | 17.95 | 0.871 | −0.7 % |
+| Scheme A (fault count) | 18.24 | 0.857 | −7.7 % |
+| **Scheme B (validation F1)** | **17.80** | **0.899** | **+2.8 %** (best) |
+| Scheme C (inverse loss) | 18.37 | 0.843 | −10.8 % |
 
-Hypothesis: any of these should pull the global model toward the harder fault
-mode (Fan, which only clients 3 + 4 have) and close some meaningful fraction
-of the 4-RMSE gap. **Any improvement > 0.5 RMSE is publishable.**
+The weight-evolution figure for Scheme B reveals the mechanism: every
+weighting signal we tried produces near-uniform weights (0.23–0.27) because
+our 4 clients each do similarly-well on their own held-out validation
+slices. **Reweighting cannot fix the gap because there's no signal worth
+reweighting on.** The real root cause is **client drift during the 2 local
+epochs** — each FD001/FD003 client drifts toward its own optimum, and no
+convex combination of opposing biases can recover the centralized solution.
 
-### RQ5 — Non-IID validation bias
+This matches the FL literature (FedProx, FedNova, SCAFFOLD all attack the
+*local* step, not the aggregation step). RQ2's negative result
+**rules out the simpler interventions** and points the next experiment at
+the right layer.
+
+Full RQ2 results: [`results/rq2_imbalance_aware/`](results/rq2_imbalance_aware/),
+[`results.md`](results.md#rq2--imbalance-aware-aggregation).
+
+### RQ5 — Non-IID validation bias correction
 
 Direct extension of RQ2. Each client validates *other clients' models* on its
 own data and downweights peers that under-perform. The P6 per-subset
-breakdown is the dataset we'd test this against.
+breakdown is the dataset we'd test this against. **Risk**: given RQ2's
+finding that within-client val-F1 scores are already similar, cross-client
+val-F1 scores may also be similar enough to render the mechanism ineffective.
+Worth attempting but downgraded in priority.
 
 ### RQ3 — SHAP attribution + maintenance ontology
 
-The "afternoon with SHAP" stretch goal — loads any of our trained checkpoints
-(P3's `best_model_fd001.pt` or P6's `best_fedavg_fd001+fd003.pt`) and
-produces sensor-level attribution for a few test engines. Self-contained,
-doesn't require any further training.
+The "afternoon with SHAP" stretch goal — loads any of our trained
+checkpoints (P3's `best_model_fd001.pt`, P5/P6's `best_global_model_*.pt`,
+RQ2's Scheme B checkpoint) and produces sensor-level attribution for a few
+test engines. Self-contained, doesn't require any further training, and now
+the **highest-priority remaining RQ** given the constraints RQ2 surfaced.
 
-### Why **not** RQ1, RQ6, RQ7 (for now)
+### Task 3 — Future direction: FedProx
+
+RQ2's mechanistic explanation points to a clean next experiment outside the
+list: add a proximal term $\mu/2 \cdot \|W_\text{local} - W_\text{global}\|^2$
+to each client's local loss. ~50 LOC change to `FederatedClient.local_train`,
+zero changes to the aggregation layer. **This is the experiment the
+literature predicts will actually close the Non-IID gap.**
+
+### Why **not** RQ1, RQ6, RQ7 (still)
 
 - **RQ1 (heterogeneous sensor sets)** would require redesigning the encoder
   with feature-wise dropout / projection layers. Higher-effort, higher-risk.
 - **RQ6 (membership inference)** is largely unexplored for regression, would
   require building attack code from scratch.
 - **RQ7 (poisoning + defence)** is doable but the attack scenarios on CMAPSS
-  are somewhat synthetic. RQ2 attacks the actual P6 gap directly.
+  are somewhat synthetic.
 
 ---
 
