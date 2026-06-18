@@ -103,8 +103,8 @@ Confirmed with the user; aligned with the explanation-doc analysis. We focus on
 | P2 | Multi-task CNN + losses + metrics + centralized smoke run | ✅ done |
 | P3 | Centralized baseline (FD001, 50 epochs) | ✅ done |
 | P4 | Local-only baseline (4 clients, FD001) | ✅ done |
-| P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | ⏳ next |
-| P6 | Non-IID baseline (FD001 + FD003) | not started |
+| P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | ✅ done |
+| P6 | Non-IID baseline (FD001 + FD003) | ⏳ next |
 | P7 | `run_all.py` reproducibility pass | not started |
 | RQ2 | Imbalance-aware aggregation | not started |
 | RQ5 | Non-IID validation bias correction | not started |
@@ -668,6 +668,108 @@ round with the same global weights).
 
 ---
 
+## 6⅞. Phase 5 — FedAvg baseline (4 clients, FD001) + 3-way comparison
+
+### Goal
+
+Deliver Task 1 of the project brief: a working federated learning baseline
+that trains a joint RUL + fault-detection model across 4 simulated airline
+clients without ever sharing raw sensor data, and compare it head-to-head
+against the centralized upper bound (P3) and the local-only lower bound (P4).
+
+### Architecture
+
+Three small modules under `src/fl_aircraft/fl/`:
+
+| Module | Responsibility |
+| --- | --- |
+| `server.py` | `FedAvgServer` (stateful holder of the global state-dict) + `fedavg_aggregate()` (pure function: sample-count-weighted mean of state-dicts, with float64 accumulation for numerical stability) + `ClientUpdate` dataclass. |
+| `client.py` | `FederatedClient` (model + DataLoader + loss + n_samples). Methods: `set_global_state`, `local_train(local_epochs, lr)`, `package_update`. |
+| `simulation.py` | `run_fedavg()` orchestrator: builds clients, runs `n_rounds` of broadcast → local train → aggregate → evaluate, returns a `FederatedHistory` with per-round + per-client trajectories. |
+
+**~430 lines of code total** for the three modules.
+
+### Decisions (locked, all defensible in the report)
+
+| Decision | Rationale |
+| --- | --- |
+| **Custom in-process simulation, not Flower** | Zero IPC overhead on CPU; full protocol introspection (per-round state-dicts, per-client losses, post-aggregation global metrics) which is mandatory for RQ2/RQ5/RQ7; ~430 LOC vs an external dependency. |
+| **Sample-count-weighted FedAvg** | Canonical baseline (McMahan 2017). RQ2 will swap in alternative weights without touching the simulation loop. |
+| **50 rounds × 2 local epochs** | Same total compute budget as P3/P4 (400 local-epoch equivalents); 2 local epochs is the standard FedAvg recipe — fewer keeps client drift small, more increases drift. |
+| **Optimizer reset each round** | Carrying Adam moments across rounds is ill-defined: the moments accumulated against round-N weights become misaligned the moment round-(N+1) starts with the aggregated mean. Resetting per round is the safer default. |
+| **All clients start round 1 with identical weights** | True FedAvg semantic. The simulation re-seeds before model construction so client-1's randomly-initialized model is bit-exactly used as the server's `initial_state`. |
+| **Test loader uses centralized normalizer** | Apples-to-apples evaluation against P3/P4. Per-client normalizers are only used inside `train_loader`s, mirroring real airline behaviour. |
+| **Cosine LR schedule across rounds** | Same recipe as P3/P4. The LR is captured *before* the cosine step in the round record (lesson from P3). |
+| **Best round selected by NASA score** | Same convention as P3 (asymmetric exponential is the official PHM-08 metric). |
+| **Aggregation in float64, cast back to float32** | Hardening against catastrophic cancellation for many-client futures (e.g. RQ work with 10+ clients). |
+| **Detach + clone tensors at every server / client boundary** | Tested explicitly (`test_aggregated_tensor_is_independent_of_inputs`, `test_package_update_returns_independent_tensors`, `test_run_fedavg_best_state_is_deep_copy`). Prevents accidental aliasing that would have broken FedAvg for non-trivial client counts. |
+
+### What worked
+
+- **All 103 tests pass in ~76 s** (22 new FL tests on top of P4's 81). Coverage:
+  - Pure-function aggregation: weighted mean correctness, dtype preservation,
+    empty / zero-total / key-mismatch / shape-mismatch rejection, output
+    independence from inputs.
+  - Server: state independence from initial dict, aggregate updates global
+    state, deep-copy guarantee on `clone_global_state`.
+  - Client: finite-loss smoke, zero-local-epochs rejection, set/package
+    round-trip, deep-copy guarantee on `package_update`.
+  - Simulation: 2-round smoke, best-round = lowest-NASA, deep-copy guarantee
+    on `best_state_dict`, input validation, seed reproducibility.
+- **50-round run completed in 157.5 s** on CPU (3.15 s/round). The 4 local
+  epochs per round at the per-client data size of ~4,400 windows is the
+  dominant cost — server aggregation is ~10 ms.
+- **Best round 11 / 50** reached:
+  - RUL: RMSE = **14.16**, MAE = 10.14, NASA = **350**
+  - Fault: AUPRC = **0.965**, F1 = **0.962**, P = 0.926, R = 1.000
+- **FedAvg closed 85.9% of the local-only → centralized RMSE gap** while
+  never letting raw data leave a client. The headline result of the entire
+  baseline.
+- **Final round (50) numbers** (RMSE 15.09, NASA 416) show mild overfitting
+  similar to P3's late-epoch behaviour; the cosine schedule eventually
+  settles back near the best round.
+
+### Challenges
+
+None material. The most subtle thing was getting the server's deep-copy
+semantics right: an early draft I considered would have stored the client's
+state-dict by reference, which would have been silently broken under FedAvg
+(the next round's local training would mutate the server's stored "global"
+state). Three deep-copy-guarantee tests catch that family of bugs.
+
+### Round-by-round trajectory highlights
+
+| Round | Loss | RMSE | NASA | AUPRC | F1 | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 688 | 73.0 | 121,114 | 0.874 | 0.400 | Cold start, all 4 clients have identical init. |
+| 5 | 274 | 28.1 | 1,618 | 0.870 | 0.773 | RUL collapsing fast. |
+| 8 | 92 | 15.4 | 565 | 0.944 | 0.880 | Inside literature range for the first time. |
+| **11** | 77 | **14.2** | **350** | 0.965 | **0.962** | **Best round.** |
+| 20 | 63 | 14.7 | 404 | 0.980 | 0.962 | Mild drift starts. |
+| 30 | 52 | 15.0 | 419 | 0.973 | 0.941 | Plateau. |
+| 50 | 49 | 15.1 | 416 | 0.973 | 0.941 | Final, post-cosine. |
+
+### Files added in P5
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/fl/server.py` | `FedAvgServer` + `fedavg_aggregate` + `ClientUpdate` (~110 LOC). |
+| `src/fl_aircraft/fl/client.py` | `FederatedClient` with `set_global_state` / `local_train` / `package_update` (~70 LOC). |
+| `src/fl_aircraft/fl/simulation.py` | `run_fedavg` + `RoundRecord` + `FederatedHistory` + `build_federated_clients` + cosine LR helper (~250 LOC). |
+| `src/fl_aircraft/fl/__init__.py` | Public API re-exports (was a P0 stub). |
+| `tests/test_fl.py` | 22 tests across aggregation / server / client / full simulation. |
+| `scripts/run_fedavg.py` | CLI: 50 rounds × 2 local epochs × 4 clients; 4 plots; 2 CSVs; metrics.json; gitignored best checkpoint. |
+| `results/05_fedavg/per_round_fd001.csv` | Full 50-round history (12 columns + round seconds). |
+| `results/05_fedavg/per_client_loss_fd001.csv` | Client-by-round local-loss matrix. |
+| `results/05_fedavg/loss_curves_fd001.png` | Per-client training loss + mean-of-clients across rounds (log scale). |
+| `results/05_fedavg/global_metrics_fd001.png` | 4-panel: RUL error, NASA, fault discrim, fault operating point. |
+| `results/05_fedavg/pred_vs_true_fd001.png` | Final-round pred-vs-true RUL scatter. |
+| `results/05_fedavg/three_way_comparison_fd001.png` | **The headline image:** P3 vs P4 mean vs P5 across RMSE / NASA / AUPRC / F1. |
+| `results/05_fedavg/metrics.json` | Structured for the frontend; includes per-round trajectory, per-client loss series, the `rmse_gap_closed_pct = 85.9` headline number. |
+| `results/05_fedavg/best_global_model_fd001.pt` | Best-round checkpoint (untracked: `.gitignore`). |
+
+---
+
 ## 7. Architecture overview
 
 ```
@@ -920,24 +1022,25 @@ FL-for-Aircraft/
 
 ## 11. Next steps
 
-### Immediate (Phase 5 — FedAvg baseline)
+### Immediate (Phase 6 — Non-IID baseline on FD001 + FD003)
 
-1. Build `src/fl_aircraft/fl/server.py` with a stateless `FedAvgServer` that
-   does weighted-mean aggregation by client sample count (the canonical
-   FedAvg recipe from McMahan et al., 2017).
-2. Build `src/fl_aircraft/fl/client.py` wrapping a torch model + local
-   training step (reuses `train_one_epoch`).
-3. Build `src/fl_aircraft/fl/simulation.py` that runs the server / client
-   protocol in-process — no network, no IPC, deterministic.
-4. `scripts/run_fedavg.py`: 50 communication rounds × 2 local epochs × 4
-   clients (= 400 local-epoch equivalents). Wall-clock estimate: ~6–8 min
-   on CPU.
-5. **3-way comparison figure**: P3 centralized vs P4 local-only mean vs P5
-   FedAvg — the headline image of the entire baseline.
+1. Add `partition_by_subset` to `src/fl_aircraft/data/partition.py` that splits
+   2 clients on FD001 (HPC fault only) and 2 clients on FD003 (HPC + Fan
+   faults). This is the **structurally Non-IID** partition where local-only
+   should fall apart.
+2. Re-run all three baselines on this partition (centralized P3-style,
+   local-only P4-style, FedAvg P5-style) under `results/06_non_iid/`. The 3-
+   way comparison plot here is what motivates the rest of the project.
+3. Expected outcome:
+   - Centralized stays around RMSE ~16–18 (heterogeneous data is harder).
+   - Local-only clients trained on FD001 will fail badly when evaluated on
+     FD003-mix engines and vice versa — mean RMSE could be 25–30+.
+   - FedAvg should sit between, closing most of the gap.
+4. Wall-clock budget: ~5–7 min (similar to P5, perhaps slightly more because
+   the combined dataset is 80% larger).
 
-### After P5
+### After P6
 
-- **P6** Non-IID partition (FD001 + FD003) and re-run all three.
 - **P7** `scripts/run_all.py` + reproducibility pass.
 - **RQ2 → RQ5 → RQ3** on dedicated feature branches.
 
