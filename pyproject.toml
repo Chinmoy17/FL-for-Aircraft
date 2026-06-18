@@ -33,10 +33,18 @@ dependencies = [
     "tqdm>=4.66.0",
 ]
 
-# PEP 735 dependency groups — installed by `uv sync` by default, skipped with `--no-dev`.
+# PEP 735 dependency groups — installed by `uv sync` by default (dev only),
+# additional groups must be requested explicitly with `--group <name>`.
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
+]
+# EDA / notebook stack — kept out of the default install so production / Docker
+# images stay lean. Enable locally with:  uv sync --group eda
+eda = [
+    "jupyter>=1.1.0",
+    "ipykernel>=6.29.0",
+    "nbformat>=5.10.0",
 ]
 
 # Force torch (and any CUDA-by-default friends added later) from the CPU-only wheel

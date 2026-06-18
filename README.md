@@ -21,7 +21,8 @@ missing).
 
 ```powershell
 # 1. Create and populate the virtual environment from the lockfile
-uv sync
+uv sync                       # runtime + dev (lean install, used by Docker / CI)
+uv sync --group eda           # add Jupyter for the EDA notebook
 
 # 2. Activate it
 .\.venv\Scripts\Activate.ps1
@@ -32,6 +33,21 @@ pytest
 
 `uv sync` always installs the **exact** versions captured in `uv.lock`, so the
 environment is fully reproducible across machines and in Docker.
+
+## Exploratory data analysis
+
+Phase 0 EDA lives in [`notebooks/01_eda_cmapss.ipynb`](notebooks/01_eda_cmapss.ipynb).
+It is committed **with embedded outputs and figures** so GitHub renders it directly
+without requiring a Python install. Figures are also saved as standalone PNGs under
+[`results/eda/`](results/eda/) for inclusion in the report.
+
+The notebook is built programmatically from [`notebooks/_build_eda.py`](notebooks/_build_eda.py)
+— regenerate with:
+
+```powershell
+python notebooks/_build_eda.py
+python -m nbconvert --to notebook --execute --inplace notebooks/01_eda_cmapss.ipynb
+```
 
 ## Project layout
 
