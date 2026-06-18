@@ -7,8 +7,9 @@ how the fault positive rate diverges across clients once you partition.
 
 Outputs (committed to the repo so reviewers can inspect them):
 
-    results/data/p1_client_summary.csv
-    results/data/p1_client_fault_imbalance.png
+    results/01_data/metrics.json                              structured for the frontend
+    results/01_data/client_summary_<subset>.csv               flat per-client table
+    results/01_data/client_fault_imbalance_<subset>.png       per-client positive-rate bars
 
 Run from the repo root inside the .venv::
 
@@ -42,7 +43,14 @@ from fl_aircraft.data import (  # noqa: E402  (post-sys.path insert)
     partition_by_lifetime,
     slice_for_client,
 )
-from fl_aircraft.utils import seed_everything  # noqa: E402
+from fl_aircraft.utils import (  # noqa: E402
+    PhaseMetrics,
+    dump_phase_metrics,
+    seed_everything,
+)
+
+PHASE_ID = "01_data"
+PHASE_NAME = "Phase 1 — Data pipeline sanity check"
 
 
 def parse_args() -> argparse.Namespace:
@@ -54,10 +62,11 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--out-dir",
         type=Path,
-        default=REPO_ROOT / "results" / "data",
-        help="Where to write the CSV + figure.",
+        default=REPO_ROOT / "results" / "01_data",
+        help="Where to write the CSV, figure, and metrics.json.",
     )
     return p.parse_args()
+
 
 
 def main() -> None:
@@ -126,7 +135,7 @@ def main() -> None:
     print(f"test fault rate  : {test_arrays.fault_positive_rate():.4f}")
 
     # 5. Save the summary CSV.
-    csv_path = args.out_dir / f"p1_client_summary_{cfg.subset.lower()}.csv"
+    csv_path = args.out_dir / f"client_summary_{cfg.subset.lower()}.csv"
     summary.to_csv(csv_path)
     print(f"\nWrote {csv_path}")
 
@@ -153,9 +162,68 @@ def main() -> None:
     ax.legend()
     ax.set_ylim(0, max(summary["fault_pos_rate"]) * 100 * 1.3)
     fig.tight_layout()
-    fig_path = args.out_dir / f"p1_client_fault_imbalance_{cfg.subset.lower()}.png"
+    fig_path = args.out_dir / f"client_fault_imbalance_{cfg.subset.lower()}.png"
     fig.savefig(fig_path, dpi=120, bbox_inches="tight")
     print(f"Wrote {fig_path}")
+
+    # 7. Structured metrics.json for the React frontend.
+    fault_rates = summary["fault_pos_rate"].to_numpy()
+    interpretation = (
+        f"Stratified-by-lifetime partitioning of {cfg.subset} across "
+        f"{args.n_clients} clients yields a deliberately balanced split: "
+        f"per-client fault positive rate {100 * fault_rates.min():.2f}–"
+        f"{100 * fault_rates.max():.2f}% (spread "
+        f"{100 * (fault_rates.max() - fault_rates.min()):.2f} pp). "
+        f"This isolates 'does FedAvg converge?' from 'does FedAvg handle Non-IID?'. "
+        f"Meaningful Non-IID arrives in P6 (FD001+FD003 mix) and the RQ2 experiment."
+    )
+    payload = PhaseMetrics(
+        phase_id=PHASE_ID,
+        phase_name=PHASE_NAME,
+        interpretation=interpretation,
+        subset=cfg.subset,
+        config={
+            "n_clients": args.n_clients,
+            "window_size": args.window_size,
+            "stride": cfg.stride,
+            "rul_cap": cfg.rul_cap,
+            "fault_threshold": cfg.fault_threshold,
+            "seed": args.seed,
+            "n_features": cfg.n_features,
+        },
+        summary={
+            "total_train_engines": int(train_df["unit_id"].nunique()),
+            "total_train_rows": int(len(train_df)),
+            "total_central_windows": int(central_arrays.n_samples),
+            "total_test_windows": int(test_arrays.n_samples),
+            "global_fault_pos_rate": round(float(train_df["fault"].mean()), 4),
+            "test_fault_pos_rate": round(float(test_arrays.fault_positive_rate()), 4),
+            "per_client_fault_rate_min": round(float(fault_rates.min()), 4),
+            "per_client_fault_rate_max": round(float(fault_rates.max()), 4),
+            "per_client_fault_rate_spread_pp": round(
+                float(fault_rates.max() - fault_rates.min()) * 100, 4
+            ),
+        },
+        per_client={
+            cid: {
+                "n_engines": int(summary.loc[cid, "n_engines"]),
+                "n_rows": int(summary.loc[cid, "n_rows"]),
+                "n_windows": int(summary.loc[cid, "n_windows"]),
+                "mean_lifetime": float(summary.loc[cid, "mean_lifetime"]),
+                "min_lifetime": int(summary.loc[cid, "min_lifetime"]),
+                "max_lifetime": int(summary.loc[cid, "max_lifetime"]),
+                "fault_pos_rate": round(float(summary.loc[cid, "fault_pos_rate"]), 4),
+                "fault_pos_count": int(summary.loc[cid, "fault_pos_count"]),
+            }
+            for cid in summary.index
+        },
+        artifacts={
+            "client_summary_csv": f"results/{PHASE_ID}/client_summary_{cfg.subset.lower()}.csv",
+            "client_fault_imbalance_png": f"results/{PHASE_ID}/client_fault_imbalance_{cfg.subset.lower()}.png",
+        },
+    )
+    json_path = dump_phase_metrics(payload, args.out_dir)
+    print(f"Wrote {json_path}")
 
 
 if __name__ == "__main__":

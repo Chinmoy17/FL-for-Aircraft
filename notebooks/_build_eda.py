@@ -66,7 +66,8 @@ if REPO_ROOT.name == "notebooks":
     REPO_ROOT = REPO_ROOT.parent
 
 DATA_DIR = REPO_ROOT / "Dataset" / "CMAPSS_NASA"
-FIG_DIR = REPO_ROOT / "results" / "eda"
+PHASE_ID = "00_eda"
+FIG_DIR = REPO_ROOT / "results" / PHASE_ID
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 COLUMNS = (
@@ -428,12 +429,107 @@ Numbers below are read directly from this notebook's outputs.
 | Raw RUL is dominated by an uninformative flat tail above ~150 cycles; capping at 125 yields the canonical hockey-stick distribution. | Apply piecewise-linear cap at 125. |
 | Fault positive rate (RUL ≤ 30) is **15.03% / 14.99% / 12.54% / 12.60%** for FD001/FD002/FD003/FD004 — moderately imbalanced (≈1:6) and remarkably uniform globally. | Use `pos_weight` / focal loss to address the 1:6 ratio. The uniformity hides what matters: once we partition into 4 simulated airlines, per-client rates will diverge — that divergence is the **RQ2 hook**. |
 | Sample sensor trajectories show clear monotonic drift in the final ~50–80 cycles. | Confirms the model has signal to learn — green-lights Phase 2. |
+"""
+    ),
+    md(
+        """## 11. Export structured metrics for the React frontend
 
-This EDA closes Phase 0. Phase 1 (data pipeline + client partitioning) is now fully
-specified by the choices above.
+Every phase in this project writes a `results/<NN_phase>/metrics.json` file. The
+React frontend (under `frontend/`, built later) consumes the aggregated
+`results/summary.json` produced by `scripts/build_results_summary.py`. The cell
+below collects all the EDA's empirical numbers — schema-matched to
+`fl_aircraft.utils.PhaseMetrics` — and writes them out.
+"""
+    ),
+    code(
+        """import sys
+
+REPO_SRC = REPO_ROOT / "src"
+if str(REPO_SRC) not in sys.path:
+    sys.path.insert(0, str(REPO_SRC))
+
+from fl_aircraft.utils import PhaseMetrics, dump_phase_metrics  # noqa: E402
+
+# Re-derive the numbers we want to expose to the frontend from the notebook state.
+per_subset_payload: dict[str, dict] = {}
+for s in SUBSETS:
+    tr = train_dfs[s]
+    te = test_dfs[s]
+    rul_df = rul_dfs[s]
+    lifetimes = tr.groupby("unit_id")["cycle"].max()
+    labeled = train_with_rul[s]
+    fault_rate = float((labeled["RUL_raw"] <= FAULT_THRESHOLD).mean())
+    per_subset_payload[s] = {
+        "train_engines": int(tr["unit_id"].nunique()),
+        "test_engines": int(te["unit_id"].nunique()),
+        "train_rows": int(len(tr)),
+        "test_rows": int(len(te)),
+        "min_engine_lifetime": int(lifetimes.min()),
+        "mean_engine_lifetime": round(float(lifetimes.mean()), 1),
+        "max_engine_lifetime": int(lifetimes.max()),
+        "ground_truth_test_rul_count": int(len(rul_df)),
+        "n_unique_op_setting_rows": int(len(tr[OP_COLS].drop_duplicates())),
+        "n_assumed_op_regimes": 6 if s in ("FD002", "FD004") else 1,
+        "n_literature_constant_sensors": len(LITERATURE_CONSTANTS[s]),
+        "literature_constant_sensors": sorted(LITERATURE_CONSTANTS[s]),
+        "n_empirical_constant_sensors_global_std": len(empirical_constants[s]),
+        "empirical_constant_sensors_global_std": sorted(empirical_constants[s]),
+        "n_informative_sensors": 21 - len(LITERATURE_CONSTANTS[s]),
+        "fault_positive_rate_global": round(fault_rate, 4),
+    }
+
+interpretation = (
+    "C-MAPSS is structurally clean: 4 subsets, 709 training engines, "
+    "~160k rows, zero NaNs. FD001/FD003 are single-regime; FD002/FD004 mix 6 "
+    "regimes. The literature 'drop 7 constant sensors' rule for FD001/FD003 "
+    "matches 6 of 7 globally (sensor 6 is near-constant). The same rule for "
+    "FD002/FD004 cannot be globally validated because regime variation dominates "
+    "the global std — per-regime validation is deferred to Phase 2+. Engine "
+    "lifetimes span 128–543 cycles; the 30-cycle sliding window is comfortably "
+    "safe. Global fault positive rate (RUL ≤ 30) is uniform at 12.5–15.0% "
+    "across subsets; per-client heterogeneity is engineered in P1 / P6 / RQ2."
+)
+
+metrics_payload = PhaseMetrics(
+    phase_id=PHASE_ID,
+    phase_name="Phase 0 — Exploratory data analysis",
+    interpretation=interpretation,
+    subset=None,
+    config={
+        "subsets": SUBSETS,
+        "rul_cap": RUL_CAP,
+        "fault_threshold": FAULT_THRESHOLD,
+    },
+    summary={
+        "total_train_engines": int(sum(tr["unit_id"].nunique() for tr in train_dfs.values())),
+        "total_train_rows": int(sum(len(tr) for tr in train_dfs.values())),
+        "total_test_engines": int(sum(te["unit_id"].nunique() for te in test_dfs.values())),
+        "total_test_rows": int(sum(len(te) for te in test_dfs.values())),
+        "any_nans_in_data": int(sum(
+            tr.isna().sum().sum() + te.isna().sum().sum()
+            for tr, te in zip(train_dfs.values(), test_dfs.values())
+        )),
+        "min_engine_lifetime_global": int(
+            min(tr.groupby("unit_id")["cycle"].max().min() for tr in train_dfs.values())
+        ),
+    },
+    per_subset=per_subset_payload,
+    artifacts={
+        "engine_lifetimes_png": f"results/{PHASE_ID}/01_engine_lifetimes.png",
+        "sensor_correlation_png": f"results/{PHASE_ID}/02_sensor_correlation.png",
+        "operational_regimes_png": f"results/{PHASE_ID}/03_operational_regimes.png",
+        "sensor_trajectories_png": f"results/{PHASE_ID}/04_sensor_trajectories.png",
+        "rul_distribution_png": f"results/{PHASE_ID}/05_rul_distribution.png",
+        "fault_imbalance_png": f"results/{PHASE_ID}/06_fault_imbalance.png",
+        "notebook": "notebooks/01_eda_cmapss.ipynb",
+    },
+)
+out_path = dump_phase_metrics(metrics_payload, FIG_DIR)
+print(f"Wrote {out_path}")
 """
     ),
 ]
+
 
 
 def main() -> None:

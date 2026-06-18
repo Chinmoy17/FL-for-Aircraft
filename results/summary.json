@@ -1,0 +1,298 @@
+{
+  "project": "Federated Learning for Aircraft Engine PHM",
+  "generated_at": "2026-06-18T08:40:21.035218+00:00",
+  "git_commit": "2391800",
+  "phases": {
+    "00_eda": {
+      "phase_id": "00_eda",
+      "phase_name": "Phase 0 \u2014 Exploratory data analysis",
+      "interpretation": "C-MAPSS is structurally clean: 4 subsets, 709 training engines, ~160k rows, zero NaNs. FD001/FD003 are single-regime; FD002/FD004 mix 6 regimes. The literature 'drop 7 constant sensors' rule for FD001/FD003 matches 6 of 7 globally (sensor 6 is near-constant). The same rule for FD002/FD004 cannot be globally validated because regime variation dominates the global std \u2014 per-regime validation is deferred to Phase 2+. Engine lifetimes span 128\u2013543 cycles; the 30-cycle sliding window is comfortably safe. Global fault positive rate (RUL \u2264 30) is uniform at 12.5\u201315.0% across subsets; per-client heterogeneity is engineered in P1 / P6 / RQ2.",
+      "artifacts": {
+        "engine_lifetimes_png": "results/00_eda/01_engine_lifetimes.png",
+        "sensor_correlation_png": "results/00_eda/02_sensor_correlation.png",
+        "operational_regimes_png": "results/00_eda/03_operational_regimes.png",
+        "sensor_trajectories_png": "results/00_eda/04_sensor_trajectories.png",
+        "rul_distribution_png": "results/00_eda/05_rul_distribution.png",
+        "fault_imbalance_png": "results/00_eda/06_fault_imbalance.png",
+        "notebook": "notebooks/01_eda_cmapss.ipynb"
+      },
+      "subset": null,
+      "config": {
+        "subsets": [
+          "FD001",
+          "FD002",
+          "FD003",
+          "FD004"
+        ],
+        "rul_cap": 125,
+        "fault_threshold": 30
+      },
+      "timing": {},
+      "summary": {
+        "total_train_engines": 709,
+        "total_train_rows": 160359,
+        "total_test_engines": 707,
+        "total_test_rows": 104897,
+        "any_nans_in_data": 0,
+        "min_engine_lifetime_global": 128
+      },
+      "train": {},
+      "test": {},
+      "per_subset": {
+        "FD001": {
+          "train_engines": 100,
+          "test_engines": 100,
+          "train_rows": 20631,
+          "test_rows": 13096,
+          "min_engine_lifetime": 128,
+          "mean_engine_lifetime": 206.3,
+          "max_engine_lifetime": 362,
+          "ground_truth_test_rul_count": 100,
+          "n_unique_op_setting_rows": 1423,
+          "n_assumed_op_regimes": 1,
+          "n_literature_constant_sensors": 7,
+          "literature_constant_sensors": [
+            1,
+            5,
+            6,
+            10,
+            16,
+            18,
+            19
+          ],
+          "n_empirical_constant_sensors_global_std": 6,
+          "empirical_constant_sensors_global_std": [
+            1,
+            5,
+            10,
+            16,
+            18,
+            19
+          ],
+          "n_informative_sensors": 14,
+          "fault_positive_rate_global": 0.1503
+        },
+        "FD002": {
+          "train_engines": 260,
+          "test_engines": 259,
+          "train_rows": 53759,
+          "test_rows": 33991,
+          "min_engine_lifetime": 128,
+          "mean_engine_lifetime": 206.8,
+          "max_engine_lifetime": 378,
+          "ground_truth_test_rul_count": 259,
+          "n_unique_op_setting_rows": 9824,
+          "n_assumed_op_regimes": 6,
+          "n_literature_constant_sensors": 5,
+          "literature_constant_sensors": [
+            10,
+            13,
+            16,
+            18,
+            19
+          ],
+          "n_empirical_constant_sensors_global_std": 0,
+          "empirical_constant_sensors_global_std": [],
+          "n_informative_sensors": 16,
+          "fault_positive_rate_global": 0.1499
+        },
+        "FD003": {
+          "train_engines": 100,
+          "test_engines": 100,
+          "train_rows": 24720,
+          "test_rows": 16596,
+          "min_engine_lifetime": 145,
+          "mean_engine_lifetime": 247.2,
+          "max_engine_lifetime": 525,
+          "ground_truth_test_rul_count": 100,
+          "n_unique_op_setting_rows": 1479,
+          "n_assumed_op_regimes": 1,
+          "n_literature_constant_sensors": 7,
+          "literature_constant_sensors": [
+            1,
+            5,
+            6,
+            10,
+            16,
+            18,
+            19
+          ],
+          "n_empirical_constant_sensors_global_std": 5,
+          "empirical_constant_sensors_global_std": [
+            1,
+            5,
+            16,
+            18,
+            19
+          ],
+          "n_informative_sensors": 14,
+          "fault_positive_rate_global": 0.1254
+        },
+        "FD004": {
+          "train_engines": 249,
+          "test_engines": 248,
+          "train_rows": 61249,
+          "test_rows": 41214,
+          "min_engine_lifetime": 128,
+          "mean_engine_lifetime": 246.0,
+          "max_engine_lifetime": 543,
+          "ground_truth_test_rul_count": 248,
+          "n_unique_op_setting_rows": 10232,
+          "n_assumed_op_regimes": 6,
+          "n_literature_constant_sensors": 5,
+          "literature_constant_sensors": [
+            10,
+            13,
+            16,
+            18,
+            19
+          ],
+          "n_empirical_constant_sensors_global_std": 0,
+          "empirical_constant_sensors_global_std": [],
+          "n_informative_sensors": 16,
+          "fault_positive_rate_global": 0.126
+        }
+      },
+      "per_client": {},
+      "generated_at": "2026-06-18T08:36:20.735526+00:00"
+    },
+    "01_data": {
+      "phase_id": "01_data",
+      "phase_name": "Phase 1 \u2014 Data pipeline sanity check",
+      "interpretation": "Stratified-by-lifetime partitioning of FD001 across 4 clients yields a deliberately balanced split: per-client fault positive rate 17.43\u201317.56% (spread 0.13 pp). This isolates 'does FedAvg converge?' from 'does FedAvg handle Non-IID?'. Meaningful Non-IID arrives in P6 (FD001+FD003 mix) and the RQ2 experiment.",
+      "artifacts": {
+        "client_summary_csv": "results/01_data/client_summary_fd001.csv",
+        "client_fault_imbalance_png": "results/01_data/client_fault_imbalance_fd001.png"
+      },
+      "subset": "FD001",
+      "config": {
+        "n_clients": 4,
+        "window_size": 30,
+        "stride": 1,
+        "rul_cap": 125,
+        "fault_threshold": 30,
+        "seed": 42,
+        "n_features": 17
+      },
+      "timing": {},
+      "summary": {
+        "total_train_engines": 100,
+        "total_train_rows": 20631,
+        "total_central_windows": 17731,
+        "total_test_windows": 100,
+        "global_fault_pos_rate": 0.1503,
+        "test_fault_pos_rate": 0.25,
+        "per_client_fault_rate_min": 0.1743,
+        "per_client_fault_rate_max": 0.1756,
+        "per_client_fault_rate_spread_pp": 0.13
+      },
+      "train": {},
+      "test": {},
+      "per_subset": {},
+      "per_client": {
+        "client_1": {
+          "n_engines": 25,
+          "n_rows": 5159,
+          "n_windows": 4434,
+          "mean_lifetime": 206.4,
+          "min_lifetime": 137,
+          "max_lifetime": 336,
+          "fault_pos_rate": 0.1748,
+          "fault_pos_count": 775
+        },
+        "client_2": {
+          "n_engines": 25,
+          "n_rows": 5163,
+          "n_windows": 4438,
+          "mean_lifetime": 206.5,
+          "min_lifetime": 137,
+          "max_lifetime": 341,
+          "fault_pos_rate": 0.1746,
+          "fault_pos_count": 775
+        },
+        "client_3": {
+          "n_engines": 25,
+          "n_rows": 5138,
+          "n_windows": 4413,
+          "mean_lifetime": 205.5,
+          "min_lifetime": 135,
+          "max_lifetime": 313,
+          "fault_pos_rate": 0.1756,
+          "fault_pos_count": 775
+        },
+        "client_4": {
+          "n_engines": 25,
+          "n_rows": 5171,
+          "n_windows": 4446,
+          "mean_lifetime": 206.8,
+          "min_lifetime": 128,
+          "max_lifetime": 362,
+          "fault_pos_rate": 0.1743,
+          "fault_pos_count": 775
+        }
+      },
+      "generated_at": "2026-06-18T08:35:17.843623+00:00"
+    },
+    "02_smoke": {
+      "phase_id": "02_smoke",
+      "phase_name": "Phase 2 \u2014 Centralized smoke run",
+      "interpretation": "End-to-end smoke run on FD001: 1 epoch, 1.4s wall-clock. Loss decreased monotonically (766 \u2192 530). Test AUPRC=0.845 after 1 epoch confirms the encoder is learning real degradation signal; the high RMSE/NASA values are the expected untrained-baseline behaviour and will close in the P3 50-epoch centralized run.",
+      "artifacts": {
+        "loss_curve_png": "results/02_smoke/loss_curve_fd001.png",
+        "metrics_csv": "results/02_smoke/metrics_fd001.csv"
+      },
+      "subset": "FD001",
+      "config": {
+        "epochs": 1,
+        "batch_size": 256,
+        "lr": 0.001,
+        "lambda_fault": 0.5,
+        "pos_weight": 4.72,
+        "seed": 42,
+        "n_features": 17,
+        "window_size": 30,
+        "stride": 1,
+        "rul_cap": 125,
+        "fault_threshold": 30,
+        "n_train_windows": 17731,
+        "n_test_windows": 100
+      },
+      "timing": {
+        "train_seconds": 1.426,
+        "train_seconds_per_epoch": 1.426
+      },
+      "summary": {
+        "model_name": "MultiTaskCNN",
+        "model_n_parameters": 30018,
+        "first_batch_loss": 765.801,
+        "last_batch_loss": 530.074
+      },
+      "train": {
+        "epochs": [
+          {
+            "epoch": 1,
+            "loss_total": 640.7691
+          }
+        ]
+      },
+      "test": {
+        "rul": {
+          "rmse": 62.7235,
+          "mae": 52.6688,
+          "nasa_score": 45300.3685
+        },
+        "fault": {
+          "auprc": 0.8452,
+          "f1": 0.4,
+          "precision": 0.25,
+          "recall": 1.0,
+          "threshold": 0.5,
+          "positive_rate": 0.25
+        }
+      },
+      "per_subset": {},
+      "per_client": {},
+      "generated_at": "2026-06-18T08:34:41.306400+00:00"
+    }
+  }
+}
