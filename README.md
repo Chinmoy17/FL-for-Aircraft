@@ -49,6 +49,24 @@ python notebooks/_build_eda.py
 python -m nbconvert --to notebook --execute --inplace notebooks/01_eda_cmapss.ipynb
 ```
 
+## Data pipeline sanity check
+
+Phase 1 pipeline (loader → labels → per-client normalizer → sliding windows →
+client partition) can be exercised end-to-end with:
+
+```powershell
+python scripts/check_data_pipeline.py            # default: FD001, 4 clients
+python scripts/check_data_pipeline.py --subset FD003 --n-clients 4
+```
+
+Outputs land in [`results/data/`](results/data/):
+
+- `p1_client_summary_<subset>.csv` — per-client engine count, # windows, RUL stats, fault positive rate
+- `p1_client_fault_imbalance_<subset>.png` — bar chart of per-client positive rates vs. global
+
+Tests covering every preprocessing invariant live in [`tests/test_data.py`](tests/test_data.py)
+(28 tests, ~7 s on CPU).
+
 ## Project layout
 
 ```
