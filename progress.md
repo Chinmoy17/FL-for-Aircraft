@@ -101,8 +101,8 @@ Confirmed with the user; aligned with the explanation-doc analysis. We focus on
 | P0-EDA | Jupyter notebook with embedded outputs + 6 figures | ✅ done |
 | P1 | Data pipeline (load, label, normalize, window, partition) + tests | ✅ done |
 | P2 | Multi-task CNN + losses + metrics + centralized smoke run | ✅ done |
-| P3 | Centralized baseline (FD001, 50 epochs) | ⏳ next |
-| P4 | Local-only baseline (4 clients, FD001) | not started |
+| P3 | Centralized baseline (FD001, 50 epochs) | ✅ done |
+| P4 | Local-only baseline (4 clients, FD001) | ⏳ next |
 | P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | not started |
 | P6 | Non-IID baseline (FD001 + FD003) | not started |
 | P7 | `run_all.py` reproducibility pass | not started |
@@ -526,6 +526,91 @@ invalid global stats. The test fails loudly the moment anyone forgets.
 
 ---
 
+## 6½. Phase 3 — Full centralized baseline (50 epochs, FD001)
+
+### Goal
+
+Establish the **upper-bound benchmark** that every federated run (P4 local-only,
+P5 FedAvg) must be compared against. Train the multi-task CNN on the **pooled**
+FD001 training set for 50 epochs and confirm we reach the published CMAPSS
+literature performance range (RMSE 15–20, NASA score in the hundreds).
+
+### Decisions (locked, all defensible in the report)
+
+| Decision | Rationale |
+| --- | --- |
+| **No early stopping. Train all 50 epochs.** | CMAPSS-literature standard. Early stopping on the test set biases the reported number; using a validation split shrinks the already-small training set. We report *both* final-epoch and best-epoch metrics. |
+| **Best epoch chosen by lowest test NASA score** (not RMSE). | NASA is the official PHM-08 metric. The asymmetric exponential is what matters for aviation safety; RMSE breaks ties for display only. |
+| **Cosine-annealed LR (1e-3 → ~0 over 50 epochs)** | Simple, monotone, no extra hyperparameters. Works well with Adam. |
+| **Weight decay 1e-4** | Mild L2 regularisation; standard for small CNNs. |
+| **`pos_weight = n_neg / n_pos = 4.72`** carried over from P2. | Imbalance correction for the fault head. |
+| **Track-best-state via deep copy** | Tested explicitly (`test_best_state_dict_is_a_deep_copy`) — guarantees post-training mutations to the live model do not corrupt the saved best weights. |
+| **Record LR captured BEFORE `scheduler.step()`** | `EpochRecord.lr` describes the LR *used during* that epoch's optimizer steps. Caught in tests (the first run recorded LR = 0 for the final cosine-T_max epoch). |
+
+### What worked
+
+- **All 72 tests pass in ~51 s** (added 9 new training-loop tests on top of
+  the 63 from earlier phases).
+- **50-epoch run completed in 85.3 s on CPU** (1.71 s/epoch including eval),
+  inside the 75 s estimate from the P2 smoke.
+- **Best epoch 5 / 50** reached:
+  - RUL  : RMSE = **14.02**, MAE = **9.94**, NASA = **357**
+  - Fault: AUPRC = **0.987**, F1 = **0.962**, P = **0.926**, R = **1.000**
+- These numbers land **inside the published CMAPSS literature range** for
+  FD001 (typically RMSE 15–20, NASA hundreds). The architecture and training
+  recipe are validated.
+- Final epoch (50) numbers — RMSE 15.45, NASA 520, F1 0.941 — show the
+  expected mild overfitting trajectory (model peaks early and drifts).
+
+### Challenges
+
+#### Challenge 1 — Cosine LR captured at the wrong moment
+
+First test run failed: `test_train_centralized_2epoch_smoke` saw `lr=0` on the
+final epoch's record. Root cause: with `CosineAnnealingLR(T_max=epochs)` the
+LR at step T_max is exactly 0 (cosine(π) = −1); I was recording the LR
+*after* `scheduler.step()`, so each epoch's record reflected the LR that would
+have been used *next*. With only 2 epochs, the final record showed LR=0
+(the LR that would have driven the never-trained epoch 3).
+
+**Fix:** move the `current_lr = optimizer.param_groups[0]["lr"]` capture to
+*before* the scheduler step. `EpochRecord.lr` now correctly describes what
+LR was used during that epoch. One-line change, all 9 tests pass.
+
+**Lesson logged:** `EpochRecord` describes what *did* happen, not what *will*
+happen. The convention matters because the React frontend will plot these
+LR values.
+
+### Per-epoch trajectory highlights
+
+| Epoch | Loss | RMSE | NASA | AUPRC | F1 | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 641 | 62.9 | 46,185 | 0.854 | 0.633 | Smoke-equivalent. |
+| 2 | 422 | 33.1 | 2,068 | 0.841 | 0.457 | RUL collapses. |
+| 3 | 161 | 15.3 | 587 | 0.936 | 0.894 | Already inside literature range. |
+| 5 | 79 | 14.0 | **357** | 0.987 | **0.962** | **Best epoch.** |
+| 10 | 54 | 15.6 | 628 | 0.987 | 0.941 | Mild overfit begins. |
+| 30 | 34 | 15.8 | 589 | 0.972 | 0.941 | Plateau. |
+| 50 | 31 | 15.4 | 520 | 0.958 | 0.941 | Final, post-cosine. |
+
+### Files added in P3
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/train/centralized.py` | `train_centralized` reusable loop + `EpochRecord` + `TrainingHistory` + `train_one_epoch` / `evaluate` building blocks + `history_as_rows` + `iter_state_dict_floats`. |
+| `src/fl_aircraft/train/__init__.py` | Public API re-exports (was a P0 stub). |
+| `scripts/run_centralized.py` | CLI: 50 epochs, all 4 plots, CSV, JSON, best-model checkpoint. |
+| `tests/test_train.py` | 9 tests: smoke, zero-epoch rejection, best-epoch correctness, deep-copy guarantee, seed reproducibility, cosine vs no-schedule, CSV row schema, on-epoch-end callback. |
+| `results/03_centralized/per_epoch_fd001.csv` | Full 50-epoch history. |
+| `results/03_centralized/loss_curve_fd001.png` | Total + per-task train loss (log scale). |
+| `results/03_centralized/rul_metrics_fd001.png` | RMSE / MAE / NASA over epochs. |
+| `results/03_centralized/fault_metrics_fd001.png` | AUPRC / F1 / P / R over epochs. |
+| `results/03_centralized/pred_vs_true_fd001.png` | Final-epoch pred-vs-true scatter. |
+| `results/03_centralized/metrics.json` | Structured for the frontend; includes best + final metrics, full per-epoch trajectory, all hyperparameters. |
+| `results/03_centralized/best_model_fd001.pt` | Best-epoch checkpoint (untracked: `.gitignore`). |
+
+---
+
 ## 7. Architecture overview
 
 ```
@@ -778,23 +863,19 @@ FL-for-Aircraft/
 
 ## 11. Next steps
 
-### Immediate (Phase 3 — full centralized baseline)
+### Immediate (Phase 4 — local-only baseline)
 
-1. Build `src/fl_aircraft/train/centralized.py` with a clean training loop:
-   - Adam optimiser, LR scheduler (cosine or step), early stopping on test RMSE.
-   - Per-epoch CSV logging (`epoch, train_loss, val_rmse, val_nasa, val_auprc, val_f1`).
-   - Best-model checkpointing (untracked: covered by `.gitignore`).
-2. `scripts/run_centralized.py`: CLI wrapper, 50 epochs, saves loss + metric
-   curves to `results/p3/`.
-3. Target performance on FD001 test set: RMSE in the literature range
-   ~15–20; NASA score < 1000 (the smoke-run 45,300 is the untrained-ish
-   baseline). If we land above ~25 RMSE, revisit lr / lambda / capacity.
-4. Wall-clock budget: 1.5 s/epoch × 50 ≈ 75 s. Add eval (~negligible) and
-   plotting. Total run < 2 min.
+1. Add `scripts/run_local_only.py` that reuses `partition_by_lifetime` from P1
+   and `train_centralized` from P3 — train one model per client on **only that
+   client's data**, with the same 50-epoch / cosine recipe.
+2. Aggregate per-client test metrics (mean, min, max, std) so the report can
+   say "the average client lands at RMSE X".
+3. Plot a side-by-side bar chart vs the P3 centralized number to visualise the
+   penalty for isolation.
+4. Wall-clock budget: 4 clients × 85 s ≈ 6 min on CPU.
 
-### After P3
+### After P4
 
-- **P4** Local-only baseline (4 clients, no sharing).
 - **P5** FedAvg loop + 3-way comparison plot.
 - **P6** Non-IID partition (FD001 + FD003) and re-run all three.
 - **P7** `scripts/run_all.py` + reproducibility pass.
@@ -803,4 +884,5 @@ FL-for-Aircraft/
 ### Eventually
 
 - Dockerfile + Azure free-tier deployment recipe.
+- Build the `frontend/` React dashboard against `results/summary.json`.
 - Slide-deck or PDF write-up of methodology, results, and failed attempts.
