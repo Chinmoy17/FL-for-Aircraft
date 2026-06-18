@@ -1,21 +1,30 @@
 """In-process FedAvg simulation loop.
 
 This is the orchestrator that ties :class:`FedAvgServer`, every
-:class:`FederatedClient`, and the test-set evaluation together for ``n_rounds``
-communication rounds.
+:class:`FederatedClient`, and the test-set evaluation together for
+``n_rounds`` communication rounds.
+
+Two public entry points:
+
+- :func:`run_fedavg_from_bundle` — takes a pre-built
+  :class:`TrainTestBundle` and a list of :class:`ClientShard` (Phase 6+).
+- :func:`run_fedavg` — convenience wrapper that builds the bundle from a
+  single-subset :class:`CMAPSSConfig` and applies the
+  stratified-by-lifetime partition (Phase 5 default).
 
 Why in-process rather than Flower / IPC?
 
 - **Zero network overhead** on CPU; the whole training set fits in RAM.
 - **Full protocol introspection** — we expose the per-round state dicts, the
-  per-client local losses, and the post-aggregation global metrics. RQ2 (custom
-  aggregation weights), RQ5 (per-client validation scores), and RQ7
+  per-client local losses, and the post-aggregation global metrics. RQ2
+  (custom aggregation weights), RQ5 (per-client validation scores), and RQ7
   (poisoning detection) all need this access.
 - **Deterministic, debuggable, ~300 lines of code** total across server,
   client, simulation.
 """
 from __future__ import annotations
 
+import math
 import time
 from dataclasses import dataclass, field
 
@@ -26,21 +35,16 @@ from torch.utils.data import DataLoader
 from ..data import (
     CMAPSSConfig,
     CMAPSSWindowDataset,
+    ClientShard,
     Normalizer,
-    load_and_label_train,
-    load_raw,
-    load_test_rul,
+    TrainTestBundle,
+    bundle_from_config,
     make_test_windows,
     make_training_windows,
     partition_by_lifetime,
     slice_for_client,
 )
-from ..eval import (
-    ClassificationMetrics,
-    RegressionMetrics,
-    compute_classification_metrics,
-    compute_regression_metrics,
-)
+from ..eval import ClassificationMetrics, RegressionMetrics
 from ..models import MultiTaskCNN, MultiTaskCNNConfig, MultiTaskLoss
 from ..train.centralized import evaluate
 from ..utils import seed_everything
@@ -110,62 +114,61 @@ def _cosine_lr(round_idx_1based: int, n_rounds: int, lr_max: float) -> float:
     """Cosine annealing applied to the per-round LR (no warm-up)."""
     # round_idx_1based runs 1..n_rounds; treat round 1 as t=0 so first LR == lr_max.
     t = (round_idx_1based - 1) / max(n_rounds - 1, 1)
-    import math
     return float(lr_max * 0.5 * (1.0 + math.cos(math.pi * t)))
 
 
-def build_federated_clients(
-    config: CMAPSSConfig,
-    n_clients: int,
+# ---------------------------------------------------------------------------
+# Client / loader construction
+# ---------------------------------------------------------------------------
+def build_federated_clients_from_bundle(
+    bundle: TrainTestBundle,
+    shards: list[ClientShard],
     batch_size: int,
     lambda_fault: float,
     seed: int,
 ) -> tuple[list[FederatedClient], DataLoader]:
-    """Prepare ``n_clients`` :class:`FederatedClient`s and a shared test DataLoader.
+    """Prepare one :class:`FederatedClient` per shard plus a shared test DataLoader.
 
-    The test loader uses **the centralized normalizer** (fit on the pooled
-    training set) so the global model is evaluated against a single, consistent
-    set of test inputs across rounds. This matches the P3/P4 evaluation
-    protocol and makes the 3-way comparison apples-to-apples.
+    The test loader uses a normalizer fit on the **pooled training set in the
+    bundle** so the global model is evaluated against a single, consistent set
+    of test inputs across rounds — the same protocol P3/P4/P5 use.
 
-    The per-client training loaders use **each client's own normalizer** fit on
-    its own slice — the realistic FL behaviour.
+    The per-client training loaders use **each client's own normalizer** fit
+    on its own slice — the realistic FL behaviour.
     """
+    if not shards:
+        raise ValueError("shards must be non-empty.")
     seed_everything(seed)
-    train_df = load_and_label_train(config)
-    shards = partition_by_lifetime(train_df, n_clients=n_clients, seed=seed)
 
     # Centralized normalizer used only for the test loader.
-    central_norm = Normalizer.fit(train_df, config.feature_cols)
-    test_raw_df = load_raw(config.subset, "test", config.data_dir)
-    test_rul = load_test_rul(config.subset, config.data_dir)
+    central_norm = Normalizer.fit(bundle.train_df, bundle.feature_cols)
     test_arrays = make_test_windows(
-        central_norm.transform(test_raw_df),
-        test_rul,
-        config.feature_cols,
-        config.window_size,
-        config.rul_cap,
-        config.fault_threshold,
+        central_norm.transform(bundle.test_raw_df),
+        bundle.test_rul,
+        bundle.feature_cols,
+        bundle.window_size,
+        bundle.rul_cap,
+        bundle.fault_threshold,
     )
     test_loader = DataLoader(
-        CMAPSSWindowDataset(test_arrays), batch_size=batch_size, shuffle=False, num_workers=0
+        CMAPSSWindowDataset(test_arrays), batch_size=batch_size, shuffle=False, num_workers=0,
     )
 
     clients: list[FederatedClient] = []
     for shard in shards:
-        client_df = slice_for_client(train_df, shard)
-        client_norm = Normalizer.fit(client_df, config.feature_cols)
+        client_df = slice_for_client(bundle.train_df, shard)
+        client_norm = Normalizer.fit(client_df, bundle.feature_cols)
         arrays = make_training_windows(
             client_norm.transform(client_df),
-            config.feature_cols, config.window_size, config.stride,
+            bundle.feature_cols, bundle.window_size, bundle.stride,
         )
         loader = DataLoader(
-            CMAPSSWindowDataset(arrays), batch_size=batch_size, shuffle=True, num_workers=0
+            CMAPSSWindowDataset(arrays), batch_size=batch_size, shuffle=True, num_workers=0,
         )
         # Re-seed before model construction so every client starts identical.
         seed_everything(seed)
         model = MultiTaskCNN(
-            MultiTaskCNNConfig(n_features=config.n_features, window_size=config.window_size)
+            MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
         )
         n_pos = int(arrays.y_fault.sum())
         n_neg = int(arrays.y_fault.shape[0] - n_pos)
@@ -183,10 +186,26 @@ def build_federated_clients(
     return clients, test_loader
 
 
-def run_fedavg(
+def build_federated_clients(
     config: CMAPSSConfig,
+    n_clients: int,
+    batch_size: int,
+    lambda_fault: float,
+    seed: int,
+) -> tuple[list[FederatedClient], DataLoader]:
+    """Phase-5 wrapper: build bundle from ``config`` + lifetime-stratified partition."""
+    bundle = bundle_from_config(config)
+    shards = partition_by_lifetime(bundle.train_df, n_clients=n_clients, seed=seed)
+    return build_federated_clients_from_bundle(bundle, shards, batch_size, lambda_fault, seed)
+
+
+# ---------------------------------------------------------------------------
+# Bundle-based FedAvg
+# ---------------------------------------------------------------------------
+def run_fedavg_from_bundle(
+    bundle: TrainTestBundle,
+    shards: list[ClientShard],
     *,
-    n_clients: int = 4,
     n_rounds: int = 50,
     local_epochs: int = 2,
     batch_size: int = 256,
@@ -197,16 +216,16 @@ def run_fedavg(
     seed: int = 42,
     log_every: int = 1,
 ) -> FederatedHistory:
-    """Run a full FedAvg simulation. Returns the complete per-round history."""
+    """Run a full FedAvg simulation against ``bundle``'s data and ``shards``."""
     if n_rounds < 1:
         raise ValueError(f"n_rounds must be >= 1, got {n_rounds}.")
     if local_epochs < 1:
         raise ValueError(f"local_epochs must be >= 1, got {local_epochs}.")
-    if n_clients < 1:
-        raise ValueError(f"n_clients must be >= 1, got {n_clients}.")
+    if not shards:
+        raise ValueError("shards must be non-empty.")
 
-    clients, test_loader = build_federated_clients(
-        config, n_clients, batch_size, lambda_fault, seed
+    clients, test_loader = build_federated_clients_from_bundle(
+        bundle, shards, batch_size, lambda_fault, seed,
     )
     # The server starts with the same initial weights every client has — the
     # canonical FedAvg cold start (round 0 global model = identical init).
@@ -215,10 +234,10 @@ def run_fedavg(
     }
     server = FedAvgServer(initial_state)
 
-    # An "evaluation model" is convenient so we don't reload weights into a
-    # client's model just to call evaluate(). Shares the same architecture.
+    # An "evaluation model" lets us read the post-aggregation global state
+    # without disturbing any client model.
     eval_model = MultiTaskCNN(
-        MultiTaskCNNConfig(n_features=config.n_features, window_size=config.window_size)
+        MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
     )
 
     history: list[RoundRecord] = []
@@ -336,4 +355,35 @@ def run_fedavg(
         client_ids=[c.client_id for c in clients],
         per_round_client_losses=per_round_client_losses,
         final_predictions=final_predictions,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Config-based wrapper (Phase 5 default)
+# ---------------------------------------------------------------------------
+def run_fedavg(
+    config: CMAPSSConfig,
+    *,
+    n_clients: int = 4,
+    n_rounds: int = 50,
+    local_epochs: int = 2,
+    batch_size: int = 256,
+    lr: float = 1e-3,
+    weight_decay: float = 1e-4,
+    lambda_fault: float = 0.5,
+    use_cosine_schedule: bool = True,
+    seed: int = 42,
+    log_every: int = 1,
+) -> FederatedHistory:
+    """Phase-5 wrapper: build bundle + lifetime-stratified partition from ``config``, then run."""
+    if n_clients < 1:
+        raise ValueError(f"n_clients must be >= 1, got {n_clients}.")
+    bundle = bundle_from_config(config)
+    shards = partition_by_lifetime(bundle.train_df, n_clients=n_clients, seed=seed)
+    return run_fedavg_from_bundle(
+        bundle, shards,
+        n_rounds=n_rounds, local_epochs=local_epochs,
+        batch_size=batch_size, lr=lr, weight_decay=weight_decay,
+        lambda_fault=lambda_fault, use_cosine_schedule=use_cosine_schedule,
+        seed=seed, log_every=log_every,
     )
