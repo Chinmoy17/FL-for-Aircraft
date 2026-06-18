@@ -1,0 +1,121 @@
+Part 1: What is RUL and PHM?
+Remaining Useful Life (RUL) is simply: how many operational cycles/hours does this machine have left before it fails? It's a regression target — a number, not a class label.
+The RUL label for any engine at any moment is: RUL = total_failure_cycle − current_cycle. So if an engine fails at cycle 200, at cycle 50 its RUL = 150. At cycle 199 its RUL = 1. At cycle 200 its RUL = 0 (failure). In the CMAPSS training set, you get full run-to-failure trajectories, so you can compute this directly. In the test set, trajectories are truncated before failure — you have to predict the RUL from the last known state.
+One important preprocessing decision is the piecewise linear (or "clipped RUL") assumption: early in an engine's life, sensors don't show much degradation signal. So most papers cap the RUL at 125 or 130 cycles during training — the label is flat at 125 until degradation actually becomes visible, then linearly decreasing. This helps the model focus on the informative part of the curve.
+Prognostics and Health Management (PHM) is the broader field that RUL lives inside. PHM covers:
+
+Diagnostics: what is wrong right now? (fault detection, fault classification)
+Prognostics: how long until something goes wrong? (RUL estimation)
+Health Management: given the prognosis, what action should you take? (scheduling maintenance)
+
+The project you've been given requires both RUL regression and early fault detection, which means your model needs to output two things: a scalar (RUL) and a binary/probability (fault risk). These are usually handled either as a multi-task model (shared encoder, dual heads) or as separate models.
+
+Part 2: The CMAPSS Dataset — What the Data Actually Tells You
+CMAPSS has four sub-datasets (FD001–FD004) generated from the Commercial Modular Aero-Propulsion System Simulation tool. Each engine has 21 sensor channels (temperatures, pressures, speeds, flow rates), 3 operational settings (flight altitude, Mach number, throttle resolver angle), an engine ID, and a cycle counter. arxiv
+Here's the complexity matrix:
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.25s;
+    animation-timing-function: cubic-bezier(0.19, 1, 0.22, 1);
+  }
+VvisualizeVvisualize show_widgetThe 26-column schema for each sub-dataset is: [unit_id, cycle, os1, os2, os3, s1, s2, ..., s21]. Your target variable (RUL) is not present — you construct it from the data.
+Critical pre-processing insight on sensor selection. Not all 21 sensors are informative:
+For FD001 and FD003, sensors 1, 5, 6, 10, 16, 18, and 19 are excluded because they remain constant with zero variation. For FD002 and FD004, sensors 10, 13, 16, 18, and 19 are dropped because they have erratic, range-bound measurements with no obvious increasing or decreasing trends. arxiv
+This leaves you with roughly 14 informative sensors, depending on which subset you use. This is a well-established community standard — you don't need to rediscover it.
+For multi-condition subsets like FD002 and FD004, the three operational settings are clustered into six regimes using K-means, and regime-specific normalization is applied within each cluster. For single-condition subsets (FD001 and FD003), global z-score standardization suffices. arxiv
+What the data "story" is: Each row is one cycle of one engine. An engine starts healthy (sensors are at baseline values), then gradually degrades (sensors drift — some upward, some downward), then eventually fails. The task is to read the sensor trajectory up to some point and estimate how many cycles are left. The degradation signal is subtle early and obvious late — and the multi-condition datasets scramble the signal with operating regime shifts, making it much harder.
+
+Part 3: The Federated Learning Setup
+Before diving into RQs, here's the FL baseline structure from the paper most relevant to your project (reference [10], Landau et al., 2026):
+Six airlines are used as FL clients, each holding one engine's measurements recorded until failure. The N-CMAPSS dataset contains 28 different sensors; following standard practice, a subset of 13 sensors is selected as input based on correlation analysis. arXiv
+When comparing the proposed FL framework with the case where each airline independently develops their own prognostic model, the results show that FL leads to more accurate RUL prognostics for five out of the six airlines. arXiv
+For your CMAPSS setup, you'll partition the 100 engines in FD001 across 3–6 simulated "airline clients," each getting a subset of engines. Each client trains locally, sends weights to a server, the server aggregates (usually FedAvg — weighted average of weights by data size), and sends the global model back. Repeat for N rounds.
+
+Part 4: Understanding Each Research Question
+RQ1 — Heterogeneous sensor inputs (your PCA intuition)
+The problem: Airline A has sensors [s2, s4, s7, s11, s12, s14, s17, s20, s21] (9 sensors). Airline B has [s3, s4, s8, s9, s11, s13, s14, s20] (8 sensors, different mix). Standard FedAvg requires all clients to have identical input dimensions. If you force everyone to the intersection, you might drop half your sensors and lose critical signal. If you exclude certain clients, you lose their data entirely.
+Your instinct about PCA/clustering: You're on the right track conceptually. The idea is to find a shared latent space where different sensor sets can be mapped regardless of which specific sensors a client has — so that the server is aggregating representations that "mean" the same things even if they came from different raw inputs. PCA is one way to do this, but it's a linear projection and loses discriminative structure. Here's how the literature has approached this:
+One framework (FedFAP) has each client transmit a binary feature availability vector to the server indicating which sensor modalities are consistently present. The server computes the intersection of features available across all clients, designating them as "shared features." Each client maintains two encoders: a shared representation network operating on these shared features, and a local representation network processing client-specific features. Only the shared network's gradients are aggregated across clients. arxiv
+So in practice: there's a "common sensor core" that all clients share and federate on, and a "private addon" that each client keeps local. Your correlation/clustering idea maps onto the private addon side — you could learn which of your private sensors are correlated with the shared ones and use that as a bridge.
+Another approach does explicit local-global feature alignment by using global semantic knowledge (class centroids or feature anchors) to regularize how local representations are formed, reducing the impact of heterogeneous data distributions. arxiv
+The key distinction: alignment approaches don't require identical input features — they align the representation space (the vector after the encoder) rather than the raw inputs. This is more powerful than PCA because it's learned, end-to-end, jointly with the model.
+
+RQ2 — Class imbalance across clients
+The problem: Some airlines have almost no failure events in their data (new fleet, excellent maintenance). When these clients' model updates are aggregated, the server does a weighted average — typically weighted by number of samples. A client with 200 healthy samples and 5 failure samples gets similar weight to a client with 100 healthy and 80 failure samples, even though the first client contributes almost nothing to the model's ability to detect failures.
+This is a two-level imbalance: within each client (healthy >> failure), and across clients (some clients have far fewer failures than others).
+What the literature has tried:
+One approach determines each client's aggregation weight not just by sample count but by the "imbalance degree" — measured as the model's gain when trained on balanced vs. imbalanced local data. This gives greater weight to clients whose local imbalance is most hurting the global model, rather than penalizing them further by underweighting their updates. PubMed Central
+A framework for aviation specifically integrates aviation-specific risk assessment metrics into the aggregation process — prioritizing minority-class instances (rare failures) based on how safety-critical those fault modes are, rather than purely statistical balancing. MDPI
+The key conceptual point: if you use standard FedAvg with sample-count weighting, clients with few failures get double-penalized — they have little data AND their data is dominated by non-failure cases. Smarter aggregation weights or client-side oversampling/focal loss are the levers.
+
+RQ3 — Root cause and interpretability
+The problem: An engineer gets a prediction: "Engine 42 has 15 cycles left." Their immediate question is why. Which sensor is driving this? What does that sensor correspond to physically in the engine? Is it the HPT (high pressure turbine) degrading, or the fan, or something else?
+This is not really a FL-specific problem — it's a general explainability problem that becomes more interesting in the FL context because you need to do it without centralizing data.
+The pipeline the question is pointing at:
+
+Train your RUL model normally.
+Apply SHAP (SHapley Additive exPlanations) or LIME to get sensor-level attribution — "sensor T30 (temperature at HPC outlet) contributed 0.4 to this prediction, s9 contributed 0.2..."
+Map those sensors to an aviation maintenance ontology — a structured knowledge base that says "high T30 with concurrent rise in P30 points to HPC fouling or compressor degradation."
+
+SHAP analysis has been applied to CMAPSS turbofan data specifically to identify which sensors most contribute to RUL predictions, with different sensor importance profiles emerging for different fault modes. PubMed Central
+The novel research angle the project is asking about: does coupling this attribution to a structured ontology change the actionability for ground engineers? Pure SHAP gives you numbers; an ontology maps those numbers to maintenance actions. This is more of a system design / human-AI interaction question than a pure ML question.
+
+RQ4 — Concept drift
+The problem: "Concept drift" in ML means the relationship between inputs and the target variable changes over time. In engine health monitoring, a "fault mode shift" means the type of degradation changes — maybe client A's engines were experiencing HPT fouling for the first 50 FL rounds, then switch to a fan bearing issue. The sensor-to-RUL mapping is now different.
+The project asks specifically: if you inject a fault mode shift on one client mid-training, how fast does that client's AUPRC (Area Under Precision-Recall Curve — a better metric than AUC-ROC for imbalanced fault detection) degrade? And can a lightweight drift detector on the local classifier head recover within 10 rounds?
+The paper the project references (RQ4, reference [9] in the PDF) is FedCCFA from NeurIPS 2024:
+FedCCFA addresses distributed concept drift by clustering local classifiers at the class level, then generating clustered feature anchors based on those results. This allows the framework to adaptively align clients' feature spaces even as the conditional distribution P(Y|X) changes across clients. Beijing Institute of Technology
+The paper focuses specifically on "real drift" where the conditional distribution changes — not just covariate shift. The key finding is that the local classifier head plays a critical role in drift adaptation, which is why monitoring the classifier head is an effective lightweight trigger. arXiv
+In your context: the classifier head is the part of your network that maps encoder features → fault probability. If concept drift hits, this head's predictions will degrade first, before the encoder does. A simple drift detector (monitoring the loss on recent local batches, or watching for distribution shifts in the head's output logits) can flag the need to locally re-adapt before sending potentially corrupted updates to the server.
+
+RQ5 — Non-IID validation bias
+The problem: The Landau et al. paper (reference [10]) proposes a "decentralized validation" system where each client scores other clients' models on its own data — and a low score means the contributing client gets downweighted in aggregation. This sounds smart, but it introduces a fundamental bias.
+An Arctic short-haul engine operates at low temperatures, low altitudes, short cycles. A tropical long-haul engine operates at high temperatures, humid air, much longer cycles. These two engines' sensor-to-RUL relationships look genuinely different even when both models are perfectly valid. If you have the Arctic client score the tropical model, it'll score poorly — not because the tropical model is bad, but because it learned a different data distribution.
+This is the Non-IID problem in FL, which is well-studied:
+In the Landau framework, airlines A through F each have engines with different fault modes (HPT efficiency degradation alone, vs. combined HPT + LPT degradation), and these different fault modes create genuinely different data distributions across clients. arXiv
+The research question is asking you to quantify how much this distributional mismatch distorts the aggregation weights, and whether correcting for it (e.g., by normalizing scores by distribution distance before using them as aggregation weights) changes per-operator RUL accuracy.
+
+RQ6 — Membership inference attacks
+The problem: You're sharing model weights, not raw data. But those weights encode information about the training data. An attacker who intercepts the weight updates (or sits at the server) might be able to determine: "Was this specific engine's data used to train this client's model?"
+For an airline, knowing this could reveal which specific aircraft is approaching maintenance (the "failure-adjacent" data is the most sensitive). Even confirming the existence of a specific degradation pattern is commercially sensitive.
+Although FL prevents access to raw training data, it is still vulnerable to membership inference attacks through gradient/weight exchanges. Update-based attacks directly leverage exchanged information to develop an attack model that distinguishes between members (data that was trained on) and non-members. These attacks treat model gradients as attack feature vectors or compare gradients between rounds to infer membership status. ACM Computing Surveys
+Differential privacy is a key defense — introducing carefully calibrated noise into model gradients to guarantee that the presence or absence of individual data points remains indiscernible, though this leads to performance degradation that requires careful balancing. ACM Computing Surveys
+The specific angle for RUL/PHM: this is largely unexplored territory. Most MIA research is on classification tasks. Very little research is devoted to studying attacks on ML functions other than classification — regression, generation, and clustering are largely unaddressed. This is actually a potential contribution: characterizing how much MIA leakage occurs in a regression (RUL prediction) federated setting, where the attack has to work differently since there are no class probabilities to exploit. PubMed Central
+
+RQ7 — Model poisoning
+The problem: A malicious airline deliberately corrupts their weight updates to push the global model toward predicting healthier-than-real RUL for a specific competitor's engine type. Effectively: "I want the global model to think Airline X's HPT-degrading engines are fine, so they delay maintenance and have more incidents."
+In non-adversarial FL scenarios, the server aggregates received local model updates by straightforwardly averaging them. Recent research has revealed that this averaging-based aggregation is susceptible to poisoning attacks where a single malicious client can manipulate the final aggregated outcome without constraints. arXiv
+Targeted attacks aim to mislead the model into misclassifying specific inputs while leaving other classes unaffected — making the attack stealthy. Attackers optimize the compromised local model for both the training loss and an adversarial objective, enhancing its ability to evade detection. arXiv
+The defenses — Krum (select the update most similar to its neighbors), coordinate-wise median, trimmed mean — all work by detecting outlier updates. The research angle for your project: demonstrating a targeted attack in the RUL regression context (which is different from classification-based attacks in the literature) and then testing whether standard Byzantine-robust aggregation rules can catch it.
+
+Part 5: Your Execution Roadmap
+Here's the honest picture: you're on CPU, building solo, with a coding agent. Attacking all 7 RQs is impossible. Here's how I'd think about the priority and sequencing:
+Phase 0 — Foundations (non-negotiable, regardless of which RQ you pick)
+This must happen first, everything else builds on it:
+
+Download CMAPSS (it's free from NASA). Start with FD001 only — single operating condition, single fault mode, 100 engines.
+Drop the 7 constant sensors. You'll have 14 informative sensors.
+Compute RUL labels. Apply the 125-cycle piecewise cap.
+Normalize (z-score for FD001).
+Build a sliding window dataset (window size typically 30 cycles). Each window is your input, the RUL at the last cycle of that window is your target.
+Train a simple LSTM or 1D-CNN baseline as a single centralized model. Get a number (RMSE). This is your sanity check — before any FL, you know what a centralized model achieves.
+Then implement the FL baseline: partition the 100 engines into 4–6 groups (your fake airlines), implement FedAvg, train for N rounds, evaluate.
+
+Only after this works end-to-end do you touch any RQ.
+Selecting RQs: a practical scoring
+RQConceptual difficultyImplementation difficulty on CPUResearch noveltyRecommendationRQ1HighMediumHighGood if you have spare timeRQ2MediumLow-MediumMediumStrong pick — clear metricsRQ3Low-MediumLowMediumFastest to implementRQ4HighMediumHighAmbitious but doableRQ5MediumLowMediumMeasurable, clean experimentRQ6HighMedium-HighVery highRisky — niche literatureRQ7MediumLow-MediumMediumClean attack/defense demo
+My honest recommendation for your situation: Do the baseline + RQ2 + RQ5 as a coherent story, and bolt RQ3 (SHAP attribution) as a lightweight "interpretability bonus." Here's why:
+RQ2 and RQ5 are about the aggregation mechanism — they don't require you to redesign the model architecture, just modify how the server combines updates and how validation scores are computed. This is much more tractable on CPU than redesigning encoders for heterogeneous inputs (RQ1) or implementing cryptographic attacks (RQ6).
+The sequencing would be:
+Phase 0: Baseline (FD001, centralized LSTM, then FL-FedAvg)
+Phase 1: RQ5 — measure how distributional mismatch distorts aggregation weights
+         (you already have the FL setup; just log the validation scores and compare)
+Phase 2: RQ2 — implement at least one weighted aggregation strategy
+         (modify the server's FedAvg to weight by F1 on failure class)
+Phase 3: RQ3 — run SHAP on your trained model, map to sensor descriptions
+         (one afternoon of work with the shap library)
+Task 3: Reflect on gaps you've observed and propose directions
+RQ1 would be a natural "Phase 4" if time permits — and it's where your intuition about PCA and clustering is relevant. The bridge idea (correlate private sensors to the shared core, use those correlations to project private features into the shared space) is worth exploring conceptually even if you don't implement it fully.
+One thing worth flagging: the project explicitly says failed attempts are valuable and partial results are fine. You're not being graded on finishing all seven — you're being graded on the quality of your thinking, your code, and your honest reporting of what you found. A clean baseline + one well-analyzed RQ is more impressive than seven half-baked ones.You are out of free messages until 5:20 PMUpgrade
+Sonnet 4.6 HighClaude is AI and can make mistakes. Please double-check

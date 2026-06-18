@@ -1,0 +1,61 @@
+[project]
+name = "fl-aircraft-phm"
+version = "0.1.0"
+description = "Federated Learning for Aircraft Engine Prognostics and Health Management on the NASA C-MAPSS dataset."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+authors = [
+    { name = "Chinmoy Mitra" },
+]
+keywords = [
+    "federated-learning",
+    "prognostics",
+    "remaining-useful-life",
+    "aircraft",
+    "cmapss",
+    "phm",
+]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Runtime dependencies. Versions are floored, not pinned exactly — uv.lock pins them.
+dependencies = [
+    "torch>=2.5.0",
+    "numpy>=2.0.0",
+    "pandas>=2.2.0",
+    "scikit-learn>=1.5.0",
+    "pyyaml>=6.0.1",
+    "matplotlib>=3.9.0",
+    "tqdm>=4.66.0",
+]
+
+# PEP 735 dependency groups — installed by `uv sync` by default, skipped with `--no-dev`.
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+# Force torch (and any CUDA-by-default friends added later) from the CPU-only wheel
+# index. Keeps the install lean and Docker-friendly for the planned Azure free-tier deploy.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fl_aircraft"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
