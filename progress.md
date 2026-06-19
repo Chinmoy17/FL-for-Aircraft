@@ -106,9 +106,9 @@ Confirmed with the user; aligned with the explanation-doc analysis. We focus on
 | P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | ✅ done |
 | P6 | Non-IID baseline (FD001 + FD003) | ✅ done — vanilla FedAvg fails, motivates RQ work |
 | P7 | `run_all.py` reproducibility pass | not started |
-| RQ2 | Imbalance-aware aggregation | ⏳ next (high-priority, hits the P6 gap directly) |
-| RQ5 | Non-IID validation bias correction | not started |
-| RQ3 | SHAP attribution + maintenance ontology | not started |
+| RQ2 | Imbalance-aware aggregation | ✅ done — negative finding: reweighting cannot fix Non-IID; points to FedProx-style local-drift fixes |
+| RQ5 | Non-IID validation bias correction | not started (may face same signal-uniformity problem RQ2 hit) |
+| RQ3 | SHAP attribution + maintenance ontology | not started (⏳ strong next candidate) |
 
 ---
 
@@ -893,6 +893,134 @@ is supposed to provide — even when its mean RMSE does not improve, its
 
 ---
 
+## 6²⁄50. RQ2 — Imbalance-aware aggregation
+
+### Goal
+
+Close (some of) the 4-RMSE gap that P6 exposed between vanilla FedAvg (17.95)
+and centralized (13.77) on the Non-IID FD001+FD003 setup. Hypothesis:
+FedAvg's sample-count weighting is the wrong yardstick when different
+clients carry different failure-mode signal; weighting by something more
+informative (fault counts / validation F1 / inverse loss) should pull the
+global model toward the harder fault patterns.
+
+### Architecture (additive, zero risk to baselines)
+
+The `FedAvgServer` in P5 was deliberately built with a pluggable
+`aggregator=` kwarg. RQ2 added a new module without touching any existing FL
+code:
+
+| New file | Purpose |
+| --- | --- |
+| `src/fl_aircraft/fl/aggregators.py` | Three factory functions returning pure-function aggregators with the same signature as `fedavg_aggregate`: `make_fault_count_aggregator`, `make_validation_signal_aggregator`, `make_inverse_loss_aggregator`. Each baked-in closure handles its own signal source. |
+| `src/fl_aircraft/fl/imbalance_aware.py` | `run_fedavg_imbalance_aware()` simulation that mirrors `run_fedavg_from_bundle` but adds: (a) optional held-out validation slice per client, (b) per-round signal collection (fault counts / val F1 / training loss), (c) `ImbalanceAwareHistory` with per-round per-client aggregation weights. |
+| `src/fl_aircraft/fl/client.py` (extended) | Optional `val_loader` field + `validate()` method that returns (AUPRC, F1) on the held-out slice; optional `n_fault_positives` field for Scheme A. |
+| `tests/test_aggregators.py` | 23 tests: pure-function correctness, dtype preservation, weight floor / temperature edge cases, server pluggability, parametrised smoke test for all 4 schemes via `run_fedavg_imbalance_aware`. |
+| `scripts/run_rq2.py` | CLI: runs all 4 schemes back-to-back; writes 4 PNGs (headline, per-round, weight evolution, per-subset), per-scheme CSVs, and structured metrics.json. |
+
+The legacy `run_fedavg_from_bundle` and `run_fedavg` paths are untouched —
+P5 / P6 numbers remain bit-exact reproducible.
+
+### What worked
+
+- **All 148 tests pass in ~123 s** (23 new aggregator tests on top of 125
+  from P0–P6). Refactor preserved every existing behaviour.
+- **Full 4-scheme experiment completed in 1,257 s** (~21 min). Each scheme:
+  - vanilla FedAvg: 350 s (rerun control)
+  - Scheme A (fault count): 319 s
+  - Scheme B (val F1, +20% val slice): 259 s (shorter because each client
+    trains on 20% less data)
+  - Scheme C (inverse loss): 325 s
+- **All four schemes produced finite, sensible metrics.** No NaN, no
+  divergence, no implementation bugs surfaced.
+
+### The result: a publishable negative finding
+
+| Scheme | RMSE | NASA | AUPRC | F1 | Gap closed |
+| --- | --- | --- | --- | --- | --- |
+| Vanilla FedAvg (control) | 17.95 | 1,647 | 0.951 | 0.871 | −0.7 % |
+| **Scheme A — fault count** | 18.24 | 1,781 | 0.943 | 0.857 | **−7.7 %** |
+| **Scheme B — val F1** | **17.80** | 1,738 | 0.948 | **0.899** | **+2.8 %** (best) |
+| **Scheme C — inverse loss** | 18.37 | 1,819 | 0.936 | 0.843 | **−10.8 %** |
+
+**Scheme B was the only scheme that improved on vanilla FedAvg** — by 0.15
+RMSE and 0.028 F1. Schemes A and C *worsened* the result. The headline
+figure (`four_way_comparison_*.png`) shows all four FL bars clustered at
+essentially the same height; the visible story is that the centralized↔
+local-only gap dwarfs the spread *within* the FL methods.
+
+### Why all three schemes barely moved the needle: the smoking-gun figure
+
+![Weight evolution for Scheme B](results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png)
+
+The per-round aggregation weights for Scheme B's softmax-of-val-F1 stay
+within **0.23–0.27** for the entire 50-round run. The weighting mechanism
+works correctly (we verified it with unit tests using extreme synthetic
+signals), but **the input signal is too uniform** to drive meaningful
+reweighting:
+
+| Weighting signal | Observed inter-client spread |
+| --- | --- |
+| Sample count (vanilla) | 22–30 % (client_3 has more windows from longer FD003 engines) |
+| Fault count (Scheme A) | virtually identical → collapses to 25 % uniform |
+| Validation F1 (Scheme B) | 0.85–0.92 → softmax gives 23–27 % |
+| Training loss (Scheme C) | similar across clients → weights drift slowly toward client with lowest loss |
+
+### The mechanistic conclusion
+
+**The root cause of vanilla FedAvg's Non-IID failure is NOT the server's
+weighting choice. It is client drift during the 2 local epochs.** During
+those 2 local epochs, the FD001-trained clients drift toward an HPC-only
+optimum and the FD003-trained clients drift toward an HPC+Fan optimum. The
+two drift directions are opposing, and **no convex combination of the
+resulting weights can recover the centralized solution** — the weight
+space doesn't contain it.
+
+This is exactly what the FL literature has been pointing at for years
+(FedProx, FedNova, SCAFFOLD all add proximal / variance-reduction terms to
+the **local** training step, not the **aggregation** step). RQ2 rules out
+the simpler interventions and isolates the right next-step direction.
+
+### The one positive finding hidden in the negative result
+
+Look at the per-subset breakdown:
+
+| Test subset | Vanilla FedAvg | **Scheme B (val F1)** | Improvement |
+| --- | --- | --- | --- |
+| FD001 (HPC only) | 17.0 | 17.3 | −0.3 |
+| **FD003 (HPC + Fan)** | 18.9 | **18.2** | **+0.7** |
+
+Scheme B's mechanism is **directionally correct** — it pulled the global
+model toward the harder-to-fit FD003 subset by 0.7 RMSE, at a small cost
+on FD001. The combined RMSE improvement is small (+0.15) only because
+FD001's degradation offset most of FD003's improvement.
+
+This matters because it tells us: **if we can amplify the F1 signal
+difference** (e.g. with a smaller weight floor, lower softmax temperature,
+or a more discriminating signal like "F1 on the hardest 20% of each
+client's val slice"), Scheme B could plausibly close more of the gap.
+Future work, not in scope here.
+
+### Files added in RQ2
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/fl/aggregators.py` | 3 factory functions for the new aggregators (~290 LOC). |
+| `src/fl_aircraft/fl/imbalance_aware.py` | `run_fedavg_imbalance_aware` simulation + `ImbalanceAwareHistory` + held-out-val client builder (~360 LOC). |
+| `src/fl_aircraft/fl/client.py` (extended) | `val_loader` field + `validate()` method (~50 LOC added). |
+| `src/fl_aircraft/fl/__init__.py` (extended) | Re-export the new public API. |
+| `tests/test_aggregators.py` | 23 tests (148 total pass). |
+| `scripts/run_rq2.py` | CLI: 4 schemes back-to-back, 4 plots, 8 CSVs, metrics.json. |
+| `results/rq2_imbalance_aware/four_way_comparison_*.png` | The headline image. |
+| `results/rq2_imbalance_aware/per_round_rmse_*.png` | All 4 schemes' RMSE trajectory vs P6 references. |
+| `results/rq2_imbalance_aware/weight_evolution_*.png` | **The smoking-gun figure** — Scheme B's weights stay near-uniform. |
+| `results/rq2_imbalance_aware/per_subset_breakdown_*.png` | FD001 vs FD003 per scheme. |
+| `results/rq2_imbalance_aware/per_round_<scheme>_*.csv` | One per scheme. |
+| `results/rq2_imbalance_aware/per_client_weights_<scheme>_*.csv` | One per scheme. |
+| `results/rq2_imbalance_aware/metrics.json` | Structured payload including all 4 schemes' per-round trajectories, aggregation weights, per-subset breakdowns, and the `rmse_gap_closed_pct` summary. |
+
+---
+
 ## 7. Architecture overview
 
 ```
@@ -1145,28 +1273,38 @@ FL-for-Aircraft/
 
 ## 11. Next steps
 
-### Immediate (RQ2 — imbalance-aware aggregation, on the P6 substrate)
+### Done: RQ2 — outcome forced a course correction
 
-1. Implement an alternative aggregation rule in `src/fl_aircraft/fl/server.py`
-   that weights client updates by something other than raw sample count.
-   Start with **per-client fault-positive count** (the simplest signal that
-   targets the actual P6 failure mode) and **per-client validation F1
-   computed on a held-out shard of the client's own engines**.
-2. Plug the new aggregator into `FedAvgServer` via its `aggregator=` kwarg
-   — zero changes to `run_fedavg_from_bundle` required.
-3. Re-run P6's FedAvg sub-run with the new aggregator. Target: close some
-   meaningful fraction of the 4-RMSE gap (any improvement > 0.5 RMSE is
-   publishable).
-4. Write up under `results/rq2_*/` following the same metrics.json schema.
+RQ2's negative finding (no weighting scheme closes more than +2.8 % of the
+Non-IID gap) tells us that **reweighting is not the right intervention layer**.
+The natural next interventions are:
 
-### After RQ2
+- **FedProx** — add a proximal term $\mu/2 \cdot \|W_\text{local} - W_\text{global}\|^2$
+  to each client's local loss. Addresses client drift directly. ~50 LOC
+  change to `FederatedClient.local_train`.
+- **Smaller local-epoch count** (1 instead of 2) — reduces drift at the cost
+  of more communication rounds for the same total compute.
+- **A more discriminating signal for Scheme B** — e.g. "per-client F1 on the
+  hardest 20 % of val examples" instead of overall F1, which we already
+  know is near-uniform.
 
-- **RQ5** Non-IID validation bias: each client scores other clients' models
-  on its own validation slice; downweight under-performing peers. Builds
-  on the P5/P6 FedAvg loop with minimal changes.
-- **RQ3** SHAP attribution + maintenance ontology. Loads any trained
-  checkpoint and produces sensor-level attribution for a few test engines.
+None of these are in the brief's original RQ list, but the brief explicitly
+encourages **Task 3 — Future Directions** based on the gaps observed.
+
+### Immediate (RQ3 — SHAP attribution + maintenance ontology)
+
+RQ3 doesn't require fixing the Non-IID gap. It works on whatever trained
+checkpoint we have (P3 centralized, P5 IID FedAvg, P6 Non-IID FedAvg, or
+RQ2's best Scheme B model) and produces sensor-level attribution +
+ontology-grounded English explanations. Clean win, manageable scope.
+
+### After RQ3
+
+- **RQ5** Non-IID validation bias correction. **Warning**: given that all
+  val-F1 scores were near-uniform in RQ2, RQ5 may face the same signal-
+  uniformity problem. Worth attempting but not high-priority.
 - **P7** `scripts/run_all.py` + reproducibility pass.
+- **Task 3** — a short write-up of the FedProx direction RQ2 isolated.
 
 ### Eventually
 
