@@ -5,7 +5,9 @@ Public API::
     from fl_aircraft.fl import (
         FedAvgServer, ClientUpdate, fedavg_aggregate,
         FederatedClient,
-        run_fedavg, RoundRecord, FederatedHistory, build_federated_clients,
+        run_fedavg, run_fedavg_from_bundle,
+        RoundRecord, FederatedHistory,
+        build_federated_clients, build_federated_clients_from_bundle,
     )
 """
 from __future__ import annotations
@@ -16,7 +18,9 @@ from .simulation import (
     FederatedHistory,
     RoundRecord,
     build_federated_clients,
+    build_federated_clients_from_bundle,
     run_fedavg,
+    run_fedavg_from_bundle,
 )
 
 __all__ = [
@@ -26,6 +30,8 @@ __all__ = [
     "FederatedHistory",
     "RoundRecord",
     "build_federated_clients",
+    "build_federated_clients_from_bundle",
     "fedavg_aggregate",
     "run_fedavg",
+    "run_fedavg_from_bundle",
 ]

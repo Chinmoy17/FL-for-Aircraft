@@ -1,4 +1,4 @@
-"""Local-only baseline (Phase 4): one model per client, no sharing.
+"""Local-only baseline: one model per client, no sharing.
 
 Each simulated airline trains its own multi-task CNN on **only its own
 engines'** data. No weights ever leave a client. This run produces the
@@ -6,26 +6,33 @@ engines'** data. No weights ever leave a client. This run produces the
 worthwhile.
 
 Reuses :func:`fl_aircraft.train.centralized.train_centralized` verbatim as the
-per-client training routine \u2014 the only variable is the data each client sees.
+per-client training routine — the only variable is the data each client sees.
+
+Two public entry points:
+
+- :func:`train_local_only_from_bundle` — takes a pre-built
+  :class:`TrainTestBundle` and a list of :class:`ClientShard` (Phase 6+).
+- :func:`train_local_only_clients` — convenience wrapper that builds the
+  bundle from a single-subset :class:`CMAPSSConfig` and applies the
+  stratified-by-lifetime partition (Phase 4 default).
 
 Evaluation note
 ---------------
-Every client is evaluated on the **same full FD001 test set** rather than a
+Every client is evaluated on the **same common test set** rather than a
 per-client test split, for three reasons:
 
-1. C-MAPSS publishes a single 100-engine test set with ground-truth RUL; it is
-   not partitioned by client.
+1. C-MAPSS publishes a single test set with ground-truth RUL; it is not
+   partitioned by client.
 2. A 25-engine per-client test set would be too small for stable AUPRC/F1
    measurements.
 3. Aggregating per-client numbers on the same test set gives an apples-to-
-   apples comparison with the P3 centralized baseline.
-
-This decision is documented in ``results.md`` so reviewers see it.
+   apples comparison with the centralized baseline.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Iterable
+import time
+from dataclasses import dataclass
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -37,9 +44,8 @@ from ..data import (
     CMAPSSWindowDataset,
     ClientShard,
     Normalizer,
-    load_and_label_train,
-    load_raw,
-    load_test_rul,
+    TrainTestBundle,
+    bundle_from_config,
     make_test_windows,
     make_training_windows,
     partition_by_lifetime,
@@ -52,7 +58,7 @@ from .centralized import TrainingHistory, train_centralized
 
 
 # ---------------------------------------------------------------------------
-# Results container
+# Results containers
 # ---------------------------------------------------------------------------
 @dataclass
 class ClientRun:
@@ -83,11 +89,16 @@ class ClientRun:
 
 @dataclass
 class LocalOnlyResults:
-    """Aggregate output of :func:`train_local_only_clients`."""
+    """Aggregate output of the local-only training routines.
+
+    ``config`` is kept for backward compatibility (the Phase-4 wrapper sets it
+    to its :class:`CMAPSSConfig`) but is optional so the Phase-6 multi-subset
+    entry point can leave it unset.
+    """
 
     clients: list[ClientRun]
     total_seconds: float
-    config: CMAPSSConfig
+    config: Optional[CMAPSSConfig] = None
 
     def per_client_rows(self, which: str = "best") -> list[dict[str, float]]:
         """One row per client; ``which`` is ``"best"`` or ``"final"``."""
@@ -133,12 +144,12 @@ class LocalOnlyResults:
 
 
 # ---------------------------------------------------------------------------
-# Main entry point
+# Bundle-based entry point (Phase 6+)
 # ---------------------------------------------------------------------------
-def train_local_only_clients(
-    config: CMAPSSConfig,
+def train_local_only_from_bundle(
+    bundle: TrainTestBundle,
+    shards: list[ClientShard],
     *,
-    n_clients: int = 4,
     epochs: int = 50,
     batch_size: int = 256,
     lr: float = 1e-3,
@@ -148,55 +159,54 @@ def train_local_only_clients(
     seed: int = 42,
     log_every: int = 10,
     client_log: bool = True,
+    config: Optional[CMAPSSConfig] = None,
 ) -> LocalOnlyResults:
-    """Train one model per simulated client, in series. Returns aggregated results.
+    """Train one model per shard, in series, against ``bundle``'s common test set.
+
+    Each client fits its own :class:`Normalizer` on its own slice (no
+    statistics leak to other clients or the server). All clients are
+    evaluated on the **same** test set produced from ``bundle.test_raw_df``
+    so the per-client numbers are directly comparable.
 
     Args:
-        config: A :class:`CMAPSSConfig`.
-        n_clients: Number of simulated airline clients.
+        bundle: A :class:`TrainTestBundle` produced by :func:`bundle_from_config`
+            or :func:`load_multi_subset_bundle`.
+        shards: List of :class:`ClientShard`. Each shard's ``unit_ids`` must
+            exist in ``bundle.train_df``.
         epochs / batch_size / lr / weight_decay / lambda_fault /
-            use_cosine_schedule / seed: Hyperparameters \u2014 same as the P3
+            use_cosine_schedule / seed: Hyperparameters — same as the
             centralized run by default so the comparison is fair.
-        log_every: Per-client training loop log frequency.
+        log_every: Per-client training-loop log frequency.
         client_log: If True, print one-line per-client summary as each finishes.
+        config: Optional :class:`CMAPSSConfig` stored on the returned
+            :class:`LocalOnlyResults` for backward compatibility.
     """
-    if n_clients < 1:
-        raise ValueError(f"n_clients must be >= 1, got {n_clients}.")
+    if not shards:
+        raise ValueError("shards must be non-empty.")
     if epochs < 1:
         raise ValueError(f"epochs must be >= 1, got {epochs}.")
 
     seed_everything(seed)
 
-    # ------- Shared data preparation -------
-    train_df = load_and_label_train(config)
-    shards = partition_by_lifetime(train_df, n_clients=n_clients, seed=seed)
-
-    # The test set is the same for every client (rationale in the module docstring).
-    # The normalizer used to standardise the test set is each client's *own* fit \u2014
-    # in a real FL deployment, each airline runs inference with the stats it knows.
-    test_raw_df = load_raw(config.subset, "test", config.data_dir)
-    test_rul = load_test_rul(config.subset, config.data_dir)
-
-    import time
     total_start = time.perf_counter()
     client_runs: list[ClientRun] = []
 
     for shard in shards:
-        client_df = slice_for_client(train_df, shard)
-        client_norm = Normalizer.fit(client_df, config.feature_cols)
+        client_df = slice_for_client(bundle.train_df, shard)
+        client_norm = Normalizer.fit(client_df, bundle.feature_cols)
         client_arrays = make_training_windows(
             client_norm.transform(client_df),
-            config.feature_cols,
-            config.window_size,
-            config.stride,
+            bundle.feature_cols,
+            bundle.window_size,
+            bundle.stride,
         )
         client_test = make_test_windows(
-            client_norm.transform(test_raw_df),
-            test_rul,
-            config.feature_cols,
-            config.window_size,
-            config.rul_cap,
-            config.fault_threshold,
+            client_norm.transform(bundle.test_raw_df),
+            bundle.test_rul,
+            bundle.feature_cols,
+            bundle.window_size,
+            bundle.rul_cap,
+            bundle.fault_threshold,
         )
         train_loader = DataLoader(
             CMAPSSWindowDataset(client_arrays),
@@ -208,11 +218,13 @@ def train_local_only_clients(
         )
 
         # Re-seed before model construction so every client starts from the
-        # *same* initial weights \u2014 differences in performance come from data,
+        # *same* initial weights — differences in performance come from data,
         # not random init.
         seed_everything(seed)
         model = MultiTaskCNN(
-            MultiTaskCNNConfig(n_features=config.n_features, window_size=config.window_size)
+            MultiTaskCNNConfig(
+                n_features=bundle.n_features, window_size=bundle.window_size
+            )
         )
         n_pos = int(client_arrays.y_fault.sum())
         n_neg = int(client_arrays.y_fault.shape[0] - n_pos)
@@ -242,7 +254,7 @@ def train_local_only_clients(
         if client_log:
             print(
                 f"  best epoch {history.best_epoch}/{epochs} "
-                f"\u2192 RMSE={history.best_test_rul.rmse:.2f}  "
+                f"→ RMSE={history.best_test_rul.rmse:.2f}  "
                 f"NASA={history.best_test_rul.nasa_score:.0f}  "
                 f"AUPRC={history.best_test_fault.auprc:.3f}  "
                 f"F1={history.best_test_fault.f1:.3f}  "
@@ -252,5 +264,42 @@ def train_local_only_clients(
     return LocalOnlyResults(
         clients=client_runs,
         total_seconds=time.perf_counter() - total_start,
+        config=config,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Config-based wrapper (Phase 4 default)
+# ---------------------------------------------------------------------------
+def train_local_only_clients(
+    config: CMAPSSConfig,
+    *,
+    n_clients: int = 4,
+    epochs: int = 50,
+    batch_size: int = 256,
+    lr: float = 1e-3,
+    weight_decay: float = 1e-4,
+    lambda_fault: float = 0.5,
+    use_cosine_schedule: bool = True,
+    seed: int = 42,
+    log_every: int = 10,
+    client_log: bool = True,
+) -> LocalOnlyResults:
+    """Build a bundle + lifetime-stratified partition from ``config``, then train.
+
+    Thin wrapper around :func:`train_local_only_from_bundle` preserving the
+    Phase-4 entry point so existing tests / scripts continue to work.
+    """
+    if n_clients < 1:
+        raise ValueError(f"n_clients must be >= 1, got {n_clients}.")
+    if epochs < 1:
+        raise ValueError(f"epochs must be >= 1, got {epochs}.")
+    bundle = bundle_from_config(config)
+    shards = partition_by_lifetime(bundle.train_df, n_clients=n_clients, seed=seed)
+    return train_local_only_from_bundle(
+        bundle, shards,
+        epochs=epochs, batch_size=batch_size, lr=lr, weight_decay=weight_decay,
+        lambda_fault=lambda_fault, use_cosine_schedule=use_cosine_schedule,
+        seed=seed, log_every=log_every, client_log=client_log,
         config=config,
     )

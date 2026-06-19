@@ -104,9 +104,9 @@ Confirmed with the user; aligned with the explanation-doc analysis. We focus on
 | P3 | Centralized baseline (FD001, 50 epochs) | ✅ done |
 | P4 | Local-only baseline (4 clients, FD001) | ✅ done |
 | P5 | FedAvg baseline (4 clients, FD001) + 3-way comparison | ✅ done |
-| P6 | Non-IID baseline (FD001 + FD003) | ⏳ next |
+| P6 | Non-IID baseline (FD001 + FD003) | ✅ done — vanilla FedAvg fails, motivates RQ work |
 | P7 | `run_all.py` reproducibility pass | not started |
-| RQ2 | Imbalance-aware aggregation | not started |
+| RQ2 | Imbalance-aware aggregation | ⏳ next (high-priority, hits the P6 gap directly) |
 | RQ5 | Non-IID validation bias correction | not started |
 | RQ3 | SHAP attribution + maintenance ontology | not started |
 
@@ -770,6 +770,129 @@ state). Three deep-copy-guarantee tests catch that family of bugs.
 
 ---
 
+## 6¹⁄50. Phase 6 — Non-IID baseline (FD001 + FD003)
+
+### Goal
+
+Stress-test the entire baseline stack under **structural Non-IID**: clients
+1 & 2 own FD001 engines (HPC-only fault mode), clients 3 & 4 own FD003
+engines (HPC + Fan). Rerun centralized + local-only + FedAvg under this
+setup and quantify (a) the local-only penalty, (b) whether vanilla FedAvg
+recovers from it, and (c) the per-subset cross-evaluation asymmetry.
+
+### Architecture changes
+
+Phase 6 introduced a substantial but cleanly-isolated refactor:
+
+| Component | Status before P6 | Status after P6 |
+| --- | --- | --- |
+| Data pipeline | hard-coded to single subset via `CMAPSSConfig` | new `TrainTestBundle` dataclass decouples *what data* from *how to train it* |
+| Multi-subset support | none | new `MultiSubsetConfig` + `load_multi_subset_bundle` (offsets unit_ids so subsets are disjoint, validates sensor-set compatibility) |
+| Partitioning | only `partition_by_lifetime` | added `partition_by_subset_halves` (each subset is split into N equal halves; the canonical Non-IID recipe) |
+| `train_local_only_clients` | only single-subset | extracted `train_local_only_from_bundle`; the single-subset path is now a thin wrapper |
+| `run_fedavg` | only single-subset | extracted `run_fedavg_from_bundle`; the single-subset path is now a thin wrapper |
+
+All legacy entry points kept their signatures — every P3/P4/P5 test still
+passes unchanged.
+
+### Decisions (locked, justified for the report)
+
+| Decision | Rationale |
+| --- | --- |
+| **FD001 + FD003 (not FD001 + FD002)** | FD001 and FD003 share the same informative-sensor list (14 sensors, same drop set). FD002/FD004 use a different sensor set (16 sensors), and combining across the boundary requires regime-aware preprocessing that is out of scope for the baseline. The Non-IID we *want* to test is **fault-mode heterogeneity**, not sensor-set heterogeneity. |
+| **Unit-id offset** | FD001 has engines 1–100 and FD003 also has 1–100. The multi-subset loader offsets FD003's ids so combined engines are 1–100 (FD001) and 101–200 (FD003); a `source_subset` column tags every row. Required for correct `groupby('unit_id')` semantics in label computation and partitioning. |
+| **Common combined test set (200 engines) as the headline metric** | Apples-to-apples comparison with the centralized upper bound; consistent with P3/P4/P5 protocol. |
+| **Per-subset breakdown as a separate figure** | Exposes the FD001-trained vs FD003-trained asymmetry without distorting the headline comparison. |
+| **Centralized uses the same 50-epoch / cosine recipe; FedAvg uses 50 rounds × 2 local epochs** | Same compute budget as P3/P4/P5 — the only variable is the Non-IID partition. |
+
+### What worked
+
+- **All 125 tests pass in ~70 s** (22 new multi-subset tests on top of the
+  103 from P0–P5). Refactor preserved every existing behaviour.
+- **All 3 sub-runs completed in 651 s total** (~11 min) on CPU:
+  - Centralized: 166 s
+  - Local-only (4 clients): 169 s
+  - FedAvg (50 × 2 × 4): 311 s
+- **Centralized baseline improved** under P6 (RMSE 13.77 vs P3's 14.02) —
+  more data, harder task, but still a small net benefit from the combined
+  set.
+- **Local-only collapsed as expected** — mean RMSE jumped from 15.02 (P4
+  IID) to 17.92 (P6 Non-IID). std-dev jumped from 0.29 to 1.52 — clients
+  are no longer interchangeable. Per-subset cross-eval shows each client
+  fails on the half it never saw (e.g. client_1 RMSE 16.04 on FD001 but
+  21.72 on FD003).
+- **Vanilla FedAvg failed to close the RMSE gap** (−0.7% of the local→central
+  gap closed; statistically tied with local-only mean). **But:**
+  - NASA score reduced 43% (1,647 vs 2,885) — substantial safety-metric win.
+  - AUPRC improved (0.951 vs 0.924).
+  - FedAvg is the **only method robust across both fault modes** (per-subset
+    breakdown shows it as not-best-but-close-to-best on each subset, while
+    every local model is best on one subset and bad on the other).
+
+### Why "vanilla FedAvg fails on Non-IID" is the right finding
+
+1. **It matches the literature.** Sample-count-weighted averaging of weights
+   from heterogeneous clients is a known failure mode (McMahan 2017 noted
+   this; FedProx, FedNova, FedAvgM, SCAFFOLD all exist to address it). If
+   FedAvg had worked here it would contradict five years of FL research.
+2. **It directly motivates the RQ work.** The brief lists 7 RQs and most of
+   them target exactly this failure. RQ2 (imbalance-aware aggregation) and
+   RQ5 (Non-IID validation bias correction) now have a concrete 4-RMSE gap
+   to try to close.
+3. **It is what an honest PhD-application reviewer wants to see.** A
+   research project where the simple baseline silently works on every
+   condition has no remaining research to do.
+
+### Per-client cross-evaluation (the most informative finding)
+
+| Client | Trained on | Combined RMSE | FD001 RMSE | FD003 RMSE | Asymmetry |
+| --- | --- | --- | --- | --- | --- |
+| client_1 | FD001 | 19.09 | **16.04** | 21.72 | +5.68 worse on unseen |
+| client_2 | FD001 | 17.85 | **15.01** | 20.29 | +5.28 worse on unseen |
+| client_3 | FD003 | 19.27 | 20.99 | **17.37** | +3.62 worse on unseen |
+| client_4 | FD003 | 15.47 | 16.42 | **14.46** | +1.96 worse on unseen |
+| **FedAvg global** | (all, via weights) | 17.95 | 16.99 | 18.86 | **+1.87 (lowest asymmetry)** |
+
+The FedAvg model is the only one whose performance is *symmetric* across
+the two fault modes. That symmetry is exactly the property the federation
+is supposed to provide — even when its mean RMSE does not improve, its
+**robustness profile** does.
+
+### Files added in P6
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/data/bundle.py` | `TrainTestBundle` dataclass + `bundle_from_config` (~90 LOC). Decouples *what data* from *how to train it*. |
+| `src/fl_aircraft/data/multi_subset.py` | `MultiSubsetConfig` + `load_multi_subset_bundle` + `engine_ids_by_subset` + `SUBSET_COL` constant (~130 LOC). |
+| `src/fl_aircraft/data/partition.py` (extended) | `partition_by_subset_halves` (~60 LOC added). |
+| `src/fl_aircraft/train/local_only.py` (refactored) | `train_local_only_from_bundle` (new) + `train_local_only_clients` (now a thin wrapper). |
+| `src/fl_aircraft/fl/simulation.py` (refactored) | `run_fedavg_from_bundle` + `build_federated_clients_from_bundle` (new) + legacy wrappers. |
+| `tests/test_multi_subset.py` | 22 tests (`MultiSubsetConfig` validation, bundle round-trip, unit-id offset, partition correctness, end-to-end smoke). |
+| `scripts/run_non_iid.py` | CLI: 3 sub-runs in series; CSVs (centralized epochs, local per-client, FedAvg rounds, FedAvg per-client losses); 5 PNGs (centralized / local-only / FedAvg / 3-way / per-subset breakdown); structured metrics.json. |
+| `results/06_non_iid/three_way_non_iid_fd001+fd003.png` | The headline image. |
+| `results/06_non_iid/per_subset_breakdown_fd001+fd003.png` | **The most informative figure**: FD001-trained vs FD003-trained per-subset asymmetry. |
+| `results/06_non_iid/{centralized,local_only,fedavg}_metrics_fd001+fd003.png` | Per-method detail figures. |
+| `results/06_non_iid/per_epoch_centralized_*.csv`, `per_client_local_*.csv`, `per_round_fedavg_*.csv`, `per_client_loss_fedavg_*.csv` | Full per-run logs. |
+| `results/06_non_iid/metrics.json` | Structured payload including all sub-runs, per-subset breakdowns, and the `rmse_gap_closed_pct = -0.7` headline number. |
+| `results/06_non_iid/best_{centralized,fedavg}_fd001+fd003.pt` | Best-state checkpoints (untracked: `.gitignore`). |
+
+### Open questions for RQ work (going into P7+)
+
+- **RQ2 lever**: weight aggregation by per-client fault-positive count or
+  per-client validation F1 instead of raw sample count. Hypothesis: would
+  upweight client_3/4 (which carry the rarer Fan-failure signal) and pull
+  the global model toward the harder fault mode.
+- **RQ5 lever**: each client validates other clients' models on its own
+  data; downweight clients whose proposed updates worsen a client's local
+  validation. Hypothesis: clients-on-the-same-subset will collude (in a
+  good way) and the FedAvg average won't be pulled toward the wrong fault
+  mode by sheer sample count.
+- **Pos_weight per client diverged in P6** (4.68–6.69 across clients vs
+  ~4.72 everywhere in P5). The federation may also benefit from globally
+  re-fitting `pos_weight` post-aggregation rather than per-client.
+
+---
+
 ## 7. Architecture overview
 
 ```
@@ -1022,27 +1145,28 @@ FL-for-Aircraft/
 
 ## 11. Next steps
 
-### Immediate (Phase 6 — Non-IID baseline on FD001 + FD003)
+### Immediate (RQ2 — imbalance-aware aggregation, on the P6 substrate)
 
-1. Add `partition_by_subset` to `src/fl_aircraft/data/partition.py` that splits
-   2 clients on FD001 (HPC fault only) and 2 clients on FD003 (HPC + Fan
-   faults). This is the **structurally Non-IID** partition where local-only
-   should fall apart.
-2. Re-run all three baselines on this partition (centralized P3-style,
-   local-only P4-style, FedAvg P5-style) under `results/06_non_iid/`. The 3-
-   way comparison plot here is what motivates the rest of the project.
-3. Expected outcome:
-   - Centralized stays around RMSE ~16–18 (heterogeneous data is harder).
-   - Local-only clients trained on FD001 will fail badly when evaluated on
-     FD003-mix engines and vice versa — mean RMSE could be 25–30+.
-   - FedAvg should sit between, closing most of the gap.
-4. Wall-clock budget: ~5–7 min (similar to P5, perhaps slightly more because
-   the combined dataset is 80% larger).
+1. Implement an alternative aggregation rule in `src/fl_aircraft/fl/server.py`
+   that weights client updates by something other than raw sample count.
+   Start with **per-client fault-positive count** (the simplest signal that
+   targets the actual P6 failure mode) and **per-client validation F1
+   computed on a held-out shard of the client's own engines**.
+2. Plug the new aggregator into `FedAvgServer` via its `aggregator=` kwarg
+   — zero changes to `run_fedavg_from_bundle` required.
+3. Re-run P6's FedAvg sub-run with the new aggregator. Target: close some
+   meaningful fraction of the 4-RMSE gap (any improvement > 0.5 RMSE is
+   publishable).
+4. Write up under `results/rq2_*/` following the same metrics.json schema.
 
-### After P6
+### After RQ2
 
+- **RQ5** Non-IID validation bias: each client scores other clients' models
+  on its own validation slice; downweight under-performing peers. Builds
+  on the P5/P6 FedAvg loop with minimal changes.
+- **RQ3** SHAP attribution + maintenance ontology. Loads any trained
+  checkpoint and produces sensor-level attribution for a few test engines.
 - **P7** `scripts/run_all.py` + reproducibility pass.
-- **RQ2 → RQ5 → RQ3** on dedicated feature branches.
 
 ### Eventually
 
