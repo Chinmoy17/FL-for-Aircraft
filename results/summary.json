@@ -1,7 +1,7 @@
 {
   "project": "Federated Learning for Aircraft Engine PHM",
-  "generated_at": "2026-06-18T13:34:56.645719+00:00",
-  "git_commit": "bec0a78",
+  "generated_at": "2026-06-19T18:37:35.075928+00:00",
+  "git_commit": "a1ff9a8",
   "phases": {
     "00_eda": {
       "phase_id": "00_eda",
@@ -8109,6 +8109,731 @@
         }
       },
       "generated_at": "2026-06-18T13:31:09.270763+00:00"
+    },
+    "rq3_explanations": {
+      "phase_id": "rq3_explanations",
+      "phase_name": "RQ3 \u2014 Sensor attribution + maintenance ontology",
+      "interpretation": "RQ3 produced sensor-level attribution + maintenance-ontology grounded explanations for 3 test engines, each explained by 4 different trained checkpoints. The cross-model comparison surfaces a key finding from RQ2: federated models trained on Non-IID data attribute their predictions to different sensors than their centralized counterparts \u2014 meaning vanilla FedAvg's failure under Non-IID is not just an accuracy problem but also an interpretability one. The fault-mode rules in the ontology let a ground engineer translate sensor-level contributions into actionable maintenance recommendations.",
+      "artifacts": {
+        "cross_model_engine_25": "results/rq3_explanations/cross_model_comparison_engine_25.png",
+        "cross_model_engine_50": "results/rq3_explanations/cross_model_comparison_engine_50.png",
+        "cross_model_engine_75": "results/rq3_explanations/cross_model_comparison_engine_75.png"
+      },
+      "subset": null,
+      "config": {
+        "engines_explained": [
+          25,
+          50,
+          75
+        ],
+        "checkpoints": [
+          "p3_centralized_fd001",
+          "p5_fedavg_iid_fd001",
+          "p6_centralized_combined",
+          "p6_fedavg_non_iid"
+        ],
+        "top_k": 5,
+        "n_steps": 50,
+        "use_llm": false
+      },
+      "timing": {
+        "total_seconds": 14.772,
+        "seconds_per_engine": 4.924
+      },
+      "summary": {
+        "n_engines": 3,
+        "n_checkpoints": 4,
+        "ontology_size": 17,
+        "fault_rules": 3
+      },
+      "train": {},
+      "test": {},
+      "per_subset": {},
+      "per_client": {
+        "engine_25": {
+          "P3 Centralized (FD001, IID)": {
+            "predicted_rul": 117.9373,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_4",
+                "name": "T50",
+                "description": "Total temperature at LPT outlet",
+                "subsystem": "LPT",
+                "contribution": -7.8133
+              },
+              {
+                "column": "s_2",
+                "name": "T24",
+                "description": "Total temperature at LPC outlet",
+                "subsystem": "LPC",
+                "contribution": -6.4459
+              },
+              {
+                "column": "s_21",
+                "name": "W32",
+                "description": "LPT coolant bleed flow",
+                "subsystem": "LPT",
+                "contribution": -3.4919
+              },
+              {
+                "column": "s_15",
+                "name": "BPR",
+                "description": "Bypass ratio",
+                "subsystem": "Fan",
+                "contribution": 3.2901
+              },
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": 3.2144
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "LPT efficiency loss (secondary)",
+              "affected_components": [
+                "Low-Pressure Turbine (LPT) nozzle ring",
+                "LPT cooling-air supply"
+              ],
+              "recommended_action": "Cross-check HPC and Fan inspections; if both are normal, inspect LPT cooling-air manifold.",
+              "confidence_label": "secondary"
+            },
+            "narrative": "Predicted RUL: 117.9 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 T50      ( s_4)  lowers RUL by 7.81 \u2014 Total temperature at LPT outlet; subsystem: LPT\n  \u2022 T24      ( s_2)  lowers RUL by 6.45 \u2014 Total temperature at LPC outlet; subsystem: LPC\n  \u2022 W32      (s_21)  lowers RUL by 3.49 \u2014 LPT coolant bleed flow; subsystem: LPT\n  \u2022 BPR      (s_15)  raises RUL by 3.29 \u2014 Bypass ratio; subsystem: Fan\n  \u2022 Ps30     (s_11)  raises RUL by 3.21 \u2014 Static pressure at HPC outlet; subsystem: HPC\n\nInferred fault mode: LPT efficiency loss (secondary)\nAffected components:\n  - Low-Pressure Turbine (LPT) nozzle ring\n  - LPT cooling-air supply\nRecommended action: Cross-check HPC and Fan inspections; if both are normal, inspect LPT cooling-air manifold.",
+            "narrative_llm": null,
+            "convergence_delta": 0.011733,
+            "notes": []
+          },
+          "P5 FedAvg IID (FD001)": {
+            "predicted_rul": 114.8525,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_4",
+                "name": "T50",
+                "description": "Total temperature at LPT outlet",
+                "subsystem": "LPT",
+                "contribution": -15.696
+              },
+              {
+                "column": "s_2",
+                "name": "T24",
+                "description": "Total temperature at LPC outlet",
+                "subsystem": "LPC",
+                "contribution": -11.1202
+              },
+              {
+                "column": "s_15",
+                "name": "BPR",
+                "description": "Bypass ratio",
+                "subsystem": "Fan",
+                "contribution": 9.5635
+              },
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": 9.2098
+              },
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": 7.4165
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "LPT efficiency loss (secondary)",
+              "affected_components": [
+                "Low-Pressure Turbine (LPT) nozzle ring",
+                "LPT cooling-air supply"
+              ],
+              "recommended_action": "Cross-check HPC and Fan inspections; if both are normal, inspect LPT cooling-air manifold.",
+              "confidence_label": "secondary"
+            },
+            "narrative": "Predicted RUL: 114.9 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 T50      ( s_4)  lowers RUL by 15.70 \u2014 Total temperature at LPT outlet; subsystem: LPT\n  \u2022 T24      ( s_2)  lowers RUL by 11.12 \u2014 Total temperature at LPC outlet; subsystem: LPC\n  \u2022 BPR      (s_15)  raises RUL by 9.56 \u2014 Bypass ratio; subsystem: Fan\n  \u2022 W31      (s_20)  raises RUL by 9.21 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 Ps30     (s_11)  raises RUL by 7.42 \u2014 Static pressure at HPC outlet; subsystem: HPC\n\nInferred fault mode: LPT efficiency loss (secondary)\nAffected components:\n  - Low-Pressure Turbine (LPT) nozzle ring\n  - LPT cooling-air supply\nRecommended action: Cross-check HPC and Fan inspections; if both are normal, inspect LPT cooling-air manifold.",
+            "narrative_llm": null,
+            "convergence_delta": -0.095057,
+            "notes": []
+          },
+          "P6 Centralized (FD001+FD003)": {
+            "predicted_rul": 125.1438,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_9",
+                "name": "Nc",
+                "description": "Physical core speed",
+                "subsystem": "Core",
+                "contribution": 25.9485
+              },
+              {
+                "column": "os_2",
+                "name": "Mach",
+                "description": "Airspeed (Mach number)",
+                "subsystem": "Operational",
+                "contribution": 11.3194
+              },
+              {
+                "column": "s_12",
+                "name": "phi",
+                "description": "Ratio of fuel flow to Ps30",
+                "subsystem": "Combustion",
+                "contribution": 8.434
+              },
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": 8.2554
+              },
+              {
+                "column": "s_7",
+                "name": "P30",
+                "description": "Total pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": 7.6818
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 125.1 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 Nc       ( s_9)  raises RUL by 25.95 \u2014 Physical core speed; subsystem: Core\n  \u2022 Mach     (os_2)  raises RUL by 11.32 \u2014 Airspeed (Mach number); subsystem: Operational\n  \u2022 phi      (s_12)  raises RUL by 8.43 \u2014 Ratio of fuel flow to Ps30; subsystem: Combustion\n  \u2022 W31      (s_20)  raises RUL by 8.26 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 P30      ( s_7)  raises RUL by 7.68 \u2014 Total pressure at HPC outlet; subsystem: HPC\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.93335,
+            "notes": [
+              "Integrated-Gradients convergence_delta = +0.93; attribution map may be less reliable for this engine."
+            ]
+          },
+          "P6 FedAvg Non-IID (FD001+FD003)": {
+            "predicted_rul": 118.7124,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": 10.2023
+              },
+              {
+                "column": "s_4",
+                "name": "T50",
+                "description": "Total temperature at LPT outlet",
+                "subsystem": "LPT",
+                "contribution": -7.3241
+              },
+              {
+                "column": "s_2",
+                "name": "T24",
+                "description": "Total temperature at LPC outlet",
+                "subsystem": "LPC",
+                "contribution": -7.1822
+              },
+              {
+                "column": "s_15",
+                "name": "BPR",
+                "description": "Bypass ratio",
+                "subsystem": "Fan",
+                "contribution": -6.3623
+              },
+              {
+                "column": "os_1",
+                "name": "altitude",
+                "description": "Flight altitude",
+                "subsystem": "Operational",
+                "contribution": 6.1767
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 118.7 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W31      (s_20)  raises RUL by 10.20 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 T50      ( s_4)  lowers RUL by 7.32 \u2014 Total temperature at LPT outlet; subsystem: LPT\n  \u2022 T24      ( s_2)  lowers RUL by 7.18 \u2014 Total temperature at LPC outlet; subsystem: LPC\n  \u2022 BPR      (s_15)  lowers RUL by 6.36 \u2014 Bypass ratio; subsystem: Fan\n  \u2022 altitude (os_1)  raises RUL by 6.18 \u2014 Flight altitude; subsystem: Operational\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.111856,
+            "notes": []
+          }
+        },
+        "engine_50": {
+          "P3 Centralized (FD001, IID)": {
+            "predicted_rul": 93.7278,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_21",
+                "name": "W32",
+                "description": "LPT coolant bleed flow",
+                "subsystem": "LPT",
+                "contribution": -13.8527
+              },
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -9.9589
+              },
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": -6.7575
+              },
+              {
+                "column": "s_8",
+                "name": "Nf",
+                "description": "Physical fan speed",
+                "subsystem": "Fan",
+                "contribution": 5.361
+              },
+              {
+                "column": "s_12",
+                "name": "phi",
+                "description": "Ratio of fuel flow to Ps30",
+                "subsystem": "Combustion",
+                "contribution": -4.312
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 93.7 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W32      (s_21)  lowers RUL by 13.85 \u2014 LPT coolant bleed flow; subsystem: LPT\n  \u2022 Ps30     (s_11)  lowers RUL by 9.96 \u2014 Static pressure at HPC outlet; subsystem: HPC\n  \u2022 W31      (s_20)  lowers RUL by 6.76 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 Nf       ( s_8)  raises RUL by 5.36 \u2014 Physical fan speed; subsystem: Fan\n  \u2022 phi      (s_12)  lowers RUL by 4.31 \u2014 Ratio of fuel flow to Ps30; subsystem: Combustion\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.004932,
+            "notes": []
+          },
+          "P5 FedAvg IID (FD001)": {
+            "predicted_rul": 96.6965,
+            "fault_probability": 0.0001,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": -9.4984
+              },
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -8.8733
+              },
+              {
+                "column": "s_17",
+                "name": "htBleed",
+                "description": "Bleed enthalpy",
+                "subsystem": "Bleed",
+                "contribution": -8.2692
+              },
+              {
+                "column": "s_21",
+                "name": "W32",
+                "description": "LPT coolant bleed flow",
+                "subsystem": "LPT",
+                "contribution": -7.469
+              },
+              {
+                "column": "s_13",
+                "name": "NRf",
+                "description": "Corrected fan speed",
+                "subsystem": "Fan",
+                "contribution": -5.789
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 96.7 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W31      (s_20)  lowers RUL by 9.50 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 Ps30     (s_11)  lowers RUL by 8.87 \u2014 Static pressure at HPC outlet; subsystem: HPC\n  \u2022 htBleed  (s_17)  lowers RUL by 8.27 \u2014 Bleed enthalpy; subsystem: Bleed\n  \u2022 W32      (s_21)  lowers RUL by 7.47 \u2014 LPT coolant bleed flow; subsystem: LPT\n  \u2022 NRf      (s_13)  lowers RUL by 5.79 \u2014 Corrected fan speed; subsystem: Fan\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.25824,
+            "notes": []
+          },
+          "P6 Centralized (FD001+FD003)": {
+            "predicted_rul": 93.5426,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "os_2",
+                "name": "Mach",
+                "description": "Airspeed (Mach number)",
+                "subsystem": "Operational",
+                "contribution": 30.9071
+              },
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -23.6039
+              },
+              {
+                "column": "s_13",
+                "name": "NRf",
+                "description": "Corrected fan speed",
+                "subsystem": "Fan",
+                "contribution": -19.5402
+              },
+              {
+                "column": "s_17",
+                "name": "htBleed",
+                "description": "Bleed enthalpy",
+                "subsystem": "Bleed",
+                "contribution": 17.5533
+              },
+              {
+                "column": "s_21",
+                "name": "W32",
+                "description": "LPT coolant bleed flow",
+                "subsystem": "LPT",
+                "contribution": -16.2483
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 93.5 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 Mach     (os_2)  raises RUL by 30.91 \u2014 Airspeed (Mach number); subsystem: Operational\n  \u2022 Ps30     (s_11)  lowers RUL by 23.60 \u2014 Static pressure at HPC outlet; subsystem: HPC\n  \u2022 NRf      (s_13)  lowers RUL by 19.54 \u2014 Corrected fan speed; subsystem: Fan\n  \u2022 htBleed  (s_17)  raises RUL by 17.55 \u2014 Bleed enthalpy; subsystem: Bleed\n  \u2022 W32      (s_21)  lowers RUL by 16.25 \u2014 LPT coolant bleed flow; subsystem: LPT\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": -0.83667,
+            "notes": [
+              "Integrated-Gradients convergence_delta = -0.84; attribution map may be less reliable for this engine."
+            ]
+          },
+          "P6 FedAvg Non-IID (FD001+FD003)": {
+            "predicted_rul": 103.0138,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -39.3997
+              },
+              {
+                "column": "os_2",
+                "name": "Mach",
+                "description": "Airspeed (Mach number)",
+                "subsystem": "Operational",
+                "contribution": 16.1681
+              },
+              {
+                "column": "os_1",
+                "name": "altitude",
+                "description": "Flight altitude",
+                "subsystem": "Operational",
+                "contribution": 15.6256
+              },
+              {
+                "column": "s_8",
+                "name": "Nf",
+                "description": "Physical fan speed",
+                "subsystem": "Fan",
+                "contribution": -13.1702
+              },
+              {
+                "column": "s_13",
+                "name": "NRf",
+                "description": "Corrected fan speed",
+                "subsystem": "Fan",
+                "contribution": -13.1545
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 103.0 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 Ps30     (s_11)  lowers RUL by 39.40 \u2014 Static pressure at HPC outlet; subsystem: HPC\n  \u2022 Mach     (os_2)  raises RUL by 16.17 \u2014 Airspeed (Mach number); subsystem: Operational\n  \u2022 altitude (os_1)  raises RUL by 15.63 \u2014 Flight altitude; subsystem: Operational\n  \u2022 Nf       ( s_8)  lowers RUL by 13.17 \u2014 Physical fan speed; subsystem: Fan\n  \u2022 NRf      (s_13)  lowers RUL by 13.15 \u2014 Corrected fan speed; subsystem: Fan\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.199577,
+            "notes": []
+          }
+        },
+        "engine_75": {
+          "P3 Centralized (FD001, IID)": {
+            "predicted_rul": 106.742,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": -5.8158
+              },
+              {
+                "column": "s_7",
+                "name": "P30",
+                "description": "Total pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -5.339
+              },
+              {
+                "column": "s_2",
+                "name": "T24",
+                "description": "Total temperature at LPC outlet",
+                "subsystem": "LPC",
+                "contribution": -5.2208
+              },
+              {
+                "column": "s_3",
+                "name": "T30",
+                "description": "Total temperature at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -4.9372
+              },
+              {
+                "column": "s_4",
+                "name": "T50",
+                "description": "Total temperature at LPT outlet",
+                "subsystem": "LPT",
+                "contribution": -3.8146
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 106.7 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W31      (s_20)  lowers RUL by 5.82 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 P30      ( s_7)  lowers RUL by 5.34 \u2014 Total pressure at HPC outlet; subsystem: HPC\n  \u2022 T24      ( s_2)  lowers RUL by 5.22 \u2014 Total temperature at LPC outlet; subsystem: LPC\n  \u2022 T30      ( s_3)  lowers RUL by 4.94 \u2014 Total temperature at HPC outlet; subsystem: HPC\n  \u2022 T50      ( s_4)  lowers RUL by 3.81 \u2014 Total temperature at LPT outlet; subsystem: LPT\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.063482,
+            "notes": []
+          },
+          "P5 FedAvg IID (FD001)": {
+            "predicted_rul": 107.9522,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_20",
+                "name": "W31",
+                "description": "HPT coolant bleed flow",
+                "subsystem": "HPT",
+                "contribution": -18.6131
+              },
+              {
+                "column": "os_2",
+                "name": "Mach",
+                "description": "Airspeed (Mach number)",
+                "subsystem": "Operational",
+                "contribution": 15.0298
+              },
+              {
+                "column": "s_3",
+                "name": "T30",
+                "description": "Total temperature at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -12.1525
+              },
+              {
+                "column": "s_4",
+                "name": "T50",
+                "description": "Total temperature at LPT outlet",
+                "subsystem": "LPT",
+                "contribution": -8.351
+              },
+              {
+                "column": "s_21",
+                "name": "W32",
+                "description": "LPT coolant bleed flow",
+                "subsystem": "LPT",
+                "contribution": 6.1521
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 108.0 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W31      (s_20)  lowers RUL by 18.61 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 Mach     (os_2)  raises RUL by 15.03 \u2014 Airspeed (Mach number); subsystem: Operational\n  \u2022 T30      ( s_3)  lowers RUL by 12.15 \u2014 Total temperature at HPC outlet; subsystem: HPC\n  \u2022 T50      ( s_4)  lowers RUL by 8.35 \u2014 Total temperature at LPT outlet; subsystem: LPT\n  \u2022 W32      (s_21)  raises RUL by 6.15 \u2014 LPT coolant bleed flow; subsystem: LPT\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.046499,
+            "notes": []
+          },
+          "P6 Centralized (FD001+FD003)": {
+            "predicted_rul": 120.0795,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "s_9",
+                "name": "Nc",
+                "description": "Physical core speed",
+                "subsystem": "Core",
+                "contribution": 27.6429
+              },
+              {
+                "column": "s_12",
+                "name": "phi",
+                "description": "Ratio of fuel flow to Ps30",
+                "subsystem": "Combustion",
+                "contribution": 16.3361
+              },
+              {
+                "column": "s_7",
+                "name": "P30",
+                "description": "Total pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": 11.5596
+              },
+              {
+                "column": "os_1",
+                "name": "altitude",
+                "description": "Flight altitude",
+                "subsystem": "Operational",
+                "contribution": 9.6888
+              },
+              {
+                "column": "s_2",
+                "name": "T24",
+                "description": "Total temperature at LPC outlet",
+                "subsystem": "LPC",
+                "contribution": -8.1375
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 120.1 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 Nc       ( s_9)  raises RUL by 27.64 \u2014 Physical core speed; subsystem: Core\n  \u2022 phi      (s_12)  raises RUL by 16.34 \u2014 Ratio of fuel flow to Ps30; subsystem: Combustion\n  \u2022 P30      ( s_7)  raises RUL by 11.56 \u2014 Total pressure at HPC outlet; subsystem: HPC\n  \u2022 altitude (os_1)  raises RUL by 9.69 \u2014 Flight altitude; subsystem: Operational\n  \u2022 T24      ( s_2)  lowers RUL by 8.14 \u2014 Total temperature at LPC outlet; subsystem: LPC\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": -1.770584,
+            "notes": [
+              "Integrated-Gradients convergence_delta = -1.77; attribution map may be less reliable for this engine."
+            ]
+          },
+          "P6 FedAvg Non-IID (FD001+FD003)": {
+            "predicted_rul": 129.3726,
+            "fault_probability": 0.0,
+            "target_head": "rul",
+            "top_sensors": [
+              {
+                "column": "os_2",
+                "name": "Mach",
+                "description": "Airspeed (Mach number)",
+                "subsystem": "Operational",
+                "contribution": 14.7843
+              },
+              {
+                "column": "s_11",
+                "name": "Ps30",
+                "description": "Static pressure at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": -12.717
+              },
+              {
+                "column": "s_4",
+                "name": "T50",
+                "description": "Total temperature at LPT outlet",
+                "subsystem": "LPT",
+                "contribution": -9.8231
+              },
+              {
+                "column": "s_3",
+                "name": "T30",
+                "description": "Total temperature at HPC outlet",
+                "subsystem": "HPC",
+                "contribution": 8.8507
+              },
+              {
+                "column": "s_2",
+                "name": "T24",
+                "description": "Total temperature at LPC outlet",
+                "subsystem": "LPC",
+                "contribution": -5.509
+              }
+            ],
+            "inferred_fault_mode": {
+              "fault_mode": "HPC degradation",
+              "affected_components": [
+                "High-Pressure Compressor (HPC) rotor and stator assembly",
+                "HPC outlet temperature probe (T30)",
+                "HPC bleed valve"
+              ],
+              "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+              "confidence_label": "moderate"
+            },
+            "narrative": "Predicted RUL: 129.4 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 Mach     (os_2)  raises RUL by 14.78 \u2014 Airspeed (Mach number); subsystem: Operational\n  \u2022 Ps30     (s_11)  lowers RUL by 12.72 \u2014 Static pressure at HPC outlet; subsystem: HPC\n  \u2022 T50      ( s_4)  lowers RUL by 9.82 \u2014 Total temperature at LPT outlet; subsystem: LPT\n  \u2022 T30      ( s_3)  raises RUL by 8.85 \u2014 Total temperature at HPC outlet; subsystem: HPC\n  \u2022 T24      ( s_2)  lowers RUL by 5.51 \u2014 Total temperature at LPC outlet; subsystem: LPC\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+            "narrative_llm": null,
+            "convergence_delta": 0.1008,
+            "notes": []
+          }
+        }
+      },
+      "generated_at": "2026-06-19T18:35:02.779139+00:00"
     }
   }
 }

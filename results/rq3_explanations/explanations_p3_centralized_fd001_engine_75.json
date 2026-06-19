@@ -1,0 +1,56 @@
+{
+  "predicted_rul": 106.742,
+  "fault_probability": 0.0,
+  "target_head": "rul",
+  "top_sensors": [
+    {
+      "column": "s_20",
+      "name": "W31",
+      "description": "HPT coolant bleed flow",
+      "subsystem": "HPT",
+      "contribution": -5.8158
+    },
+    {
+      "column": "s_7",
+      "name": "P30",
+      "description": "Total pressure at HPC outlet",
+      "subsystem": "HPC",
+      "contribution": -5.339
+    },
+    {
+      "column": "s_2",
+      "name": "T24",
+      "description": "Total temperature at LPC outlet",
+      "subsystem": "LPC",
+      "contribution": -5.2208
+    },
+    {
+      "column": "s_3",
+      "name": "T30",
+      "description": "Total temperature at HPC outlet",
+      "subsystem": "HPC",
+      "contribution": -4.9372
+    },
+    {
+      "column": "s_4",
+      "name": "T50",
+      "description": "Total temperature at LPT outlet",
+      "subsystem": "LPT",
+      "contribution": -3.8146
+    }
+  ],
+  "inferred_fault_mode": {
+    "fault_mode": "HPC degradation",
+    "affected_components": [
+      "High-Pressure Compressor (HPC) rotor and stator assembly",
+      "HPC outlet temperature probe (T30)",
+      "HPC bleed valve"
+    ],
+    "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+    "confidence_label": "moderate"
+  },
+  "narrative": "Predicted RUL: 106.7 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W31      (s_20)  lowers RUL by 5.82 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 P30      ( s_7)  lowers RUL by 5.34 \u2014 Total pressure at HPC outlet; subsystem: HPC\n  \u2022 T24      ( s_2)  lowers RUL by 5.22 \u2014 Total temperature at LPC outlet; subsystem: LPC\n  \u2022 T30      ( s_3)  lowers RUL by 4.94 \u2014 Total temperature at HPC outlet; subsystem: HPC\n  \u2022 T50      ( s_4)  lowers RUL by 3.81 \u2014 Total temperature at LPT outlet; subsystem: LPT\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+  "narrative_llm": null,
+  "convergence_delta": 0.063482,
+  "notes": []
+}
