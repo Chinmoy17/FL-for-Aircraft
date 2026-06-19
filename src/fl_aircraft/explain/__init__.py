@@ -31,6 +31,16 @@ from .attribution import (
     attribute_dataset,
     attribute_window,
 )
+from .checkpoint_catalog import (
+    CheckpointSpec,
+    WindowPair,
+    available_checkpoints,
+    candidate_checkpoints,
+    find_engine,
+    load_bundle,
+    load_model,
+    prepare_test_windows,
+)
 from .narrative import (
     EngineExplanation,
     build_explanation,
@@ -46,14 +56,22 @@ from .ontology import (
 
 __all__ = [
     "AttributionResult",
+    "CheckpointSpec",
     "EngineExplanation",
     "FAULT_MODE_RULES",
     "FaultModeRule",
     "SENSOR_ONTOLOGY",
     "SensorMeta",
+    "WindowPair",
     "attribute_dataset",
     "attribute_window",
+    "available_checkpoints",
     "build_explanation",
+    "candidate_checkpoints",
     "explain_window",
+    "find_engine",
+    "load_bundle",
+    "load_model",
     "lookup_sensor",
+    "prepare_test_windows",
 ]
