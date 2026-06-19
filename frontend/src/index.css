@@ -1,296 +1,84 @@
 /*
- * Minimal styling — readable demo, no design framework yet.
- * Pick up Tailwind / shadcn later if the live demo needs more polish.
+ * Tailwind v4 + design tokens derived from the UI-craft strategy:
+ *   60/30/10 surface split, single accent color, 3 semantic colors,
+ *   Inter for UI / JetBrains Mono for numbers / Instrument Serif for
+ *   long-form research display headlines.
  */
+@import "tailwindcss";
 
-:root {
-  --bg: #0d1117;
-  --panel: #161b22;
-  --border: #30363d;
-  --text: #e6edf3;
-  --text-dim: #8b949e;
-  --accent: #58a6ff;
-  --good: #3fb950;
-  --bad: #f85149;
+@theme {
+  /* Color tokens — dark theme, named by role (not by hex) so we can
+     re-skin later without grep-replacing every file. */
+  --color-bg: #0d1117;
+  --color-bg-subtle: #161b22;
+  --color-surface: #1c2128;
+  --color-border: #30363d;
+  --color-border-strong: #484f58;
+  --color-text: #e6edf3;
+  --color-text-dim: #8b949e;
+  --color-text-muted: #6e7681;
+  --color-accent: #58a6ff;
+  --color-accent-subtle: #1f6feb33;
+  --color-good: #3fb950;
+  --color-bad: #f85149;
+  --color-warn: #d29922;
+
+  /* Font roles. Inter is shipped via Google Fonts <link> in index.html;
+     Instrument Serif likewise. JetBrains Mono is bundled with Vite via
+     local installation later if needed; today we fall back. */
+  --font-ui:
+    "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
+  --font-display:
+    "Instrument Serif", "Georgia", "Times New Roman", serif;
 }
 
-* {
-  box-sizing: border-box;
-}
-
+/* Page-level resets — Tailwind v4 doesn't ship the heavyweight preflight
+   we want for a research app, so keep this small. */
 html,
 body,
 #root {
   height: 100%;
-  margin: 0;
 }
 
 body {
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
 }
 
 a {
-  color: var(--accent);
+  color: var(--color-accent);
+  text-decoration: none;
 }
 
-.app {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 32px 24px;
+a:hover {
+  text-decoration: underline;
 }
 
-header.site-header {
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+/* Reusable utility for code-shaped numbers */
+.font-mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
-header.site-header h1 {
-  margin: 0 0 4px;
-  font-size: 22px;
-  font-weight: 600;
+/* Generous prose width for the RQ2 / RQ3 long-form pages */
+.prose-narrow {
+  max-width: 68ch;
 }
 
-header.site-header .subtitle {
-  margin: 0;
-  color: var(--text-dim);
-  font-size: 14px;
-}
-
-.panel {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px 24px;
-  margin-bottom: 20px;
-}
-
-.panel h2 {
-  margin: 0 0 16px;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.controls {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  align-items: end;
-}
-
-.controls label {
-  display: block;
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-bottom: 6px;
-}
-
-.controls select,
-.controls input[type="number"] {
-  width: 100%;
-  background: var(--bg);
-  color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 14px;
-}
-
-.controls button {
-  background: var(--accent);
-  color: #0d1117;
-  border: none;
-  border-radius: 6px;
-  padding: 9px 16px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.controls button:hover:not(:disabled) {
-  filter: brightness(1.1);
-}
-
-.controls button:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.checkbox-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  color: var(--text-dim);
-  font-size: 13px;
-}
-
-.headline-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.metric-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
-}
-
-.metric-card .label {
-  font-size: 12px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.metric-card .value {
-  font-size: 24px;
-  font-weight: 600;
-  margin-top: 4px;
-}
-
-.metric-card .delta {
-  font-size: 13px;
-  color: var(--text-dim);
-  margin-top: 2px;
-}
-
-.metric-card .value.good {
-  color: var(--good);
-}
-
-.metric-card .value.bad {
-  color: var(--bad);
-}
-
-.sensor-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sensor-row {
-  display: grid;
-  grid-template-columns: 110px 1fr 80px;
-  gap: 12px;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.sensor-row:last-child {
-  border-bottom: none;
-}
-
-.sensor-row .col-name {
-  font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", monospace;
-  font-size: 13px;
-}
-
-.sensor-row .col-name .short {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.sensor-row .col-name .raw {
-  color: var(--text-dim);
-  margin-left: 6px;
-}
-
-.sensor-row .col-desc {
-  font-size: 13px;
-  color: var(--text-dim);
-}
-
-.sensor-row .col-bar {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", monospace;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.contrib-bar {
-  height: 8px;
-  border-radius: 4px;
-  margin-right: 8px;
-}
-
-.contrib-bar.pos {
-  background: var(--good);
-}
-
-.contrib-bar.neg {
-  background: var(--bad);
-}
-
-.fault-mode-box {
-  background: var(--bg);
-  border-left: 3px solid var(--accent);
-  padding: 12px 16px;
-  border-radius: 0 6px 6px 0;
-  margin-top: 16px;
-}
-
-.fault-mode-box .label {
-  font-size: 12px;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.fault-mode-box .name {
-  font-size: 16px;
-  font-weight: 600;
-  margin: 4px 0 8px;
-}
-
-.fault-mode-box .recommendation {
-  font-size: 14px;
-  color: var(--text);
-}
-
-.narrative-box {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
-  margin-top: 16px;
-  font-family: "JetBrains Mono", "Cascadia Mono", "Consolas", monospace;
-  font-size: 13px;
-  white-space: pre-wrap;
-  color: var(--text);
-}
-
-.error-box {
-  background: rgba(248, 81, 73, 0.1);
-  border: 1px solid var(--bad);
-  border-radius: 6px;
-  padding: 12px 16px;
-  color: var(--bad);
-  font-size: 14px;
-}
-
-.muted {
-  color: var(--text-dim);
-  font-size: 13px;
-}
-
+/* Spinner kept from the live-demo CSS */
 .spinner {
   display: inline-block;
   width: 12px;
   height: 12px;
-  border: 2px solid var(--text-dim);
-  border-top-color: var(--accent);
+  border: 2px solid var(--color-text-dim);
+  border-top-color: var(--color-accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
   margin-right: 8px;
@@ -300,5 +88,11 @@ header.site-header .subtitle {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
   }
 }

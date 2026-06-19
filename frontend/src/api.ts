@@ -11,6 +11,7 @@ import type {
   PredictRequest,
   PredictResponse,
 } from "./types";
+import type { SummaryEnvelope } from "./summaryTypes";
 
 async function jsonGet<T>(path: string): Promise<T> {
   const res = await fetch(path, { headers: { Accept: "application/json" } });
@@ -42,4 +43,18 @@ export const api = {
     ),
   predict: (req: PredictRequest) =>
     jsonPost<PredictRequest, PredictResponse>("/api/predict", req),
+  getSummary: () => jsonGet<SummaryEnvelope>("/api/summary"),
 };
+
+/**
+ * Build a URL the browser can fetch directly (img src, anchor href, etc.)
+ * for a figure path stored in metrics.json under the `artifacts` map.
+ *
+ * Backend serves `/api/figures/{rel_path}` where rel_path is relative
+ * to `results/`. metrics.json stores paths as `results/<phase>/<file>.png`,
+ * so we strip the leading "results/" prefix.
+ */
+export function figureUrl(artifactPath: string): string {
+  const rel = artifactPath.replace(/^results\//, "");
+  return `/api/figures/${rel}`;
+}
