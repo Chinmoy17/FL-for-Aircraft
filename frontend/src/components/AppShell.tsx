@@ -77,7 +77,7 @@ const SECTIONS: NavSection[] = [
     eyebrow: "Overview",
     items: [
       { kind: "internal", label: "Cover", to: "/", end: true },
-      { kind: "soon", label: "Abstract & contributions" },
+      { kind: "internal", label: "Abstract & contributions", to: "/abstract" },
     ],
   },
   {
