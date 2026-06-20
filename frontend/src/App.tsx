@@ -3,6 +3,7 @@ import { LiveDemoPage } from "./pages/LiveDemoPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { Rq2StoryPage } from "./pages/Rq2StoryPage";
 import { Rq3StoryPage } from "./pages/Rq3StoryPage";
+import { Rq7StoryPage } from "./pages/Rq7StoryPage";
 
 export function App() {
   return (
@@ -15,6 +16,7 @@ export function App() {
             <Route path="/results" element={<ResultsPage />} />
             <Route path="/rq2-story" element={<Rq2StoryPage />} />
             <Route path="/rq3-story" element={<Rq3StoryPage />} />
+            <Route path="/rq7-story" element={<Rq7StoryPage />} />
             <Route
               path="*"
               element={
@@ -70,6 +72,9 @@ function TopNav() {
           </NavLink>
           <NavLink to="/rq3-story" className={linkClass}>
             RQ3 story
+          </NavLink>
+          <NavLink to="/rq7-story" className={linkClass}>
+            RQ7 security
           </NavLink>
         </nav>
       </div>
