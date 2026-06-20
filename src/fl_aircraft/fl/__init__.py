@@ -43,6 +43,21 @@ from .personalised import (
     build_personalised_clients_from_bundle,
     run_fedrep_from_bundle,
 )
+from .poisoned_simulation import (
+    PoisonedHistory,
+    PoisonedRoundRecord,
+    run_fedavg_with_attackers,
+)
+from .poisoning import (
+    GradientScaleAttacker,
+    LabelFlipAttacker,
+    MaliciousClient,
+)
+from .robust_aggregators import (
+    make_krum_aggregator,
+    make_median_aggregator,
+    make_trimmed_mean_aggregator,
+)
 from .server import ClientUpdate, FedAvgServer, fedavg_aggregate
 from .simulation import (
     FederatedHistory,
@@ -63,8 +78,13 @@ __all__ = [
     "FedRepRoundRecord",
     "FederatedClient",
     "FederatedHistory",
+    "GradientScaleAttacker",
     "ImbalanceAwareHistory",
+    "LabelFlipAttacker",
+    "MaliciousClient",
     "PersonalisedClient",
+    "PoisonedHistory",
+    "PoisonedRoundRecord",
     "RoundRecord",
     "build_federated_clients",
     "build_federated_clients_from_bundle",
@@ -73,10 +93,14 @@ __all__ = [
     "fedavg_aggregate",
     "make_fault_count_aggregator",
     "make_inverse_loss_aggregator",
+    "make_krum_aggregator",
+    "make_median_aggregator",
+    "make_trimmed_mean_aggregator",
     "make_validation_signal_aggregator",
     "run_fedavg",
     "run_fedavg_from_bundle",
     "run_fedavg_imbalance_aware",
+    "run_fedavg_with_attackers",
     "run_fedccfa_from_bundle",
     "run_fedrep_from_bundle",
 ]
