@@ -843,3 +843,283 @@ fails, so the pipeline never depends on an external API for correctness.
 | [`src/fl_aircraft/explain/plots.py`](src/fl_aircraft/explain/plots.py) | Heatmap, top-K bar, trajectory-with-attribution helpers | ~170 |
 | [`scripts/run_rq3.py`](scripts/run_rq3.py) | CLI: discovers checkpoints, runs per-engine pipeline, writes JSON + 4 figure types + metrics.json | ~360 |
 | [`tests/test_explain.py`](tests/test_explain.py) | 23 unit + integration tests (ontology integrity, IG completeness, narrative templates, end-to-end CMAPSS smoke) | ~470 |
+
+
+---
+
+## RQ2 follow-up — FedProx (µ-sweep)
+
+**Source:** [`scripts/run_fedprox.py`](scripts/run_fedprox.py) ·
+[`results/rq2_fedprox/metrics.json`](results/rq2_fedprox/metrics.json) ·
+branch `fedprox`
+
+### What we did
+
+RQ2 ruled out aggregation-layer fixes for the Non-IID gap (best scheme
++2.8%). FedProx (Li et al., MLSys 2020) tests the *client-optimisation*
+layer — add a proximal term $\frac{\mu}{2}\|W_\mathrm{local} - W_\mathrm{global}\|^2$
+to each client's local loss to penalise drift away from the round-start
+global weights.
+
+We swept $\mu \in \{0, 0.001, 0.01, 0.1\}$ on the same FD001+FD003 Non-IID
+partition / seed / 50 rounds as P6 + RQ2. $\mu=0$ is the sanity-check that
+must reproduce vanilla FedAvg bit-exactly (it does: RMSE 17.95).
+
+### Headline numbers
+
+| µ | Combined RMSE | NASA | AUPRC | F1 | Gap closed |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0.0 (vanilla, control) | 17.95 | 1,647 | 0.951 | 0.871 | 0.0% |
+| 0.001 | 17.85 | **1,589** | **0.956** | **0.909** | +2.4% |
+| 0.01 | 17.94 | 1,683 | 0.947 | 0.857 | +0.2% |
+| **0.1** (best RMSE) | **17.70** | 1,742 | 0.953 | 0.871 | **+6.0%** |
+
+Best gap closure was twice RQ2's best (+6.0% vs +2.8%) but the absolute
+improvement remained small — FedProx is a partial fix, not a complete one.
+
+### The per-subset story (the operational win)
+
+| Subset | Vanilla FedAvg | FedProx µ=0.001 | FedProx µ=0.1 | Centralized P6 ref |
+| --- | ---: | ---: | ---: | ---: |
+| FD001 (HPC) | **17.0** (good) | 18.2 | 18.0 | 14.8 |
+| FD003 (HPC+Fan) | **18.9** (bad) | 17.5 | 17.4 | 12.7 |
+| FD003 F1 | **0.727** | **0.895** (+0.17) | 0.800 (+0.07) | — |
+
+Vanilla FedAvg is *biased toward FD001* (low RMSE on the easy subset, high
+on the hard subset). FedProx **balances** the two: both subsets land near
+17.7 RMSE. The FD003 F1 jump from 0.727 ? 0.895 at µ=0.001 is a +23%
+relative recall improvement on the harder failure mode — operationally
+significant for a maintenance pipeline even if the headline RMSE barely
+moved.
+
+### Interpretation — the second negative finding
+
+RQ2 ruled out the server-aggregation layer. FedProx rules out the
+client-optimisation layer **alone** as a complete fix — best $\mu$ ceilings
+at RMSE 17.7, just 0.1 cycles better than RQ2's best 17.80. Both
+intervention layers ceiling around RMSE 17.7 on this 4-client / 2-local-
+epoch setup, leaving ~4 RMSE unaccounted-for vs centralized 13.77. That
+remaining gap is structural and points at the architectural layer
+(FedRep / FedCCFA) — see next two sections.
+
+### Figures
+
+| Topic | Figure |
+| --- | --- |
+| Headline comparison (all 4 µ values + references) | [`results/rq2_fedprox/headline_comparison_fd001+fd003.png`](results/rq2_fedprox/headline_comparison_fd001+fd003.png) |
+| Per-round RMSE trajectories | [`results/rq2_fedprox/per_round_rmse_fd001+fd003.png`](results/rq2_fedprox/per_round_rmse_fd001+fd003.png) |
+| **Smoking-gun: per-subset RMSE balancing** | [`results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png`](results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png) |
+
+### Reproducing
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_fedprox.py
+# defaults: --mus 0.0 0.001 0.01 0.1, --n-rounds 50, --seed 42
+```
+
+---
+
+## RQ2 follow-up — FedRep (per-client heads)
+
+**Source:** [`scripts/run_fedrep.py`](scripts/run_fedrep.py) ·
+[`results/rq2_fedrep/metrics.json`](results/rq2_fedrep/metrics.json) ·
+branch `fedrep`
+
+### What we did
+
+After RQ2 (aggregation, +2.8%) and FedProx (drift control, +6.0%) ruled
+themselves out as complete fixes, the architectural layer was the
+remaining hypothesis: **what if the problem isn't *how* you average a
+shared model — it's that you shouldn't have ONE shared model in the first
+place?**
+
+FedRep (Collins et al., ICML 2021) splits the model:
+
+- **Shared** — encoder + trunk (~29k params). Federated via FedAvg.
+- **Personal** — `rul_head` + `fault_head` (130 params total). Stay
+  on each client; never leave; never averaged.
+
+Each round, each client trains heads first (encoder frozen) then encoder
+(heads frozen). The server only ever sees encoder updates.
+
+### Headline numbers
+
+| Method | Combined RMSE | Gap closed |
+| --- | ---: | ---: |
+| Centralized P6 (upper bound) | 13.77 | 100% |
+| Local-only mean (lower bound) | 17.92 | 0% |
+| Vanilla FedAvg | 17.95 | 0.0% |
+| FedProx best (µ=0.1) | 17.70 | +6.0% |
+| **FedRep (this run)** | **14.91** | **+73.0%** |
+
+Per-client at best round (48):
+
+| Client | Subset | RMSE | Centralized ref on same subset |
+| --- | --- | ---: | ---: |
+| client_1 | FD001 | **14.46** | 14.80 (FedRep **beats** centralized) |
+| client_2 | FD001 | **14.22** | 14.80 (FedRep beats centralized) |
+| client_3 | FD003 | 15.79 | 12.70 (3 RMSE behind) |
+| client_4 | FD003 | 15.17 | 12.70 (2.5 RMSE behind) |
+
+**FedRep matches or beats centralized on FD001** and substantially closes
+the gap on FD003. The remaining ~3 RMSE on FD003 is consistent with each
+FD003 client having only 50 engines worth of supervision for a head that
+has to handle two fault modes (HPC + Fan).
+
+### Caveat on the comparison
+
+FedRep's macro RMSE is each client scoring on **only its own subset**,
+while centralized's 13.77 is scored on the **combined** test set. Strictly
+speaking these are not the same number. The honest per-subset comparison
+(FD001: 14.34 mean vs centralized 14.80; FD003: 15.48 mean vs centralized
+12.70) is the more rigorous picture, which still shows FedRep clearly
+wins on FD001 and substantially closes the gap on FD003.
+
+### Why this matters
+
+This is **the** positive finding for RQ2: structural Non-IID PHM is not
+fundamentally an optimisation problem; it's an architectural one.
+Forcing all clients to share a single decision boundary across opposing
+fault modes is intrinsically lossy; letting each client own its boundary
+captures most of the federated-vs-centralized gap.
+
+### Figures
+
+| Topic | Figure |
+| --- | --- |
+| Headline comparison (FedRep vs vanilla, FedProx, centralized) | [`results/rq2_fedrep/headline_comparison_fd001+fd003.png`](results/rq2_fedrep/headline_comparison_fd001+fd003.png) |
+| **Smoking-gun: per-subset FedRep vs centralized** | [`results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png`](results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png) |
+| Per-client RMSE trajectories | [`results/rq2_fedrep/per_client_rmse_fd001+fd003.png`](results/rq2_fedrep/per_client_rmse_fd001+fd003.png) |
+
+### Reproducing
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_fedrep.py
+# defaults: --head-epochs 1, --encoder-epochs 1, --n-rounds 50, --seed 42
+```
+
+### Implementation summary
+
+| Component | Role | LOC |
+| --- | --- | --- |
+| `MultiTaskCNN.{is_shared_key, shared_state_dict, load_shared_state_dict, ...}` | Encoder/head split helpers + strict key-set validation | ~60 |
+| [`src/fl_aircraft/fl/personalised.py`](src/fl_aircraft/fl/personalised.py) | `PersonalisedClient`, two-phase local training, encoder-only aggregation, per-client eval | ~400 |
+| [`tests/test_fedrep.py`](tests/test_fedrep.py) | 11 unit tests (split-helper invariants, aggregation, phase-1-freeze) | ~250 |
+| [`scripts/run_fedrep.py`](scripts/run_fedrep.py) | CLI: same partition/seed as P6+RQ2+FedProx; auto-loads references | ~360 |
+
+---
+
+## RQ2 follow-up — FedCCFA (clustered heads, null result)
+
+**Source:** [`scripts/run_fedccfa.py`](scripts/run_fedccfa.py) ·
+[`results/rq2_fedccfa/metrics.json`](results/rq2_fedccfa/metrics.json) ·
+branch `fedccfa`
+
+### What we did
+
+FedRep gave every client its own head. FedCCFA (Chen et al., NeurIPS
+2024) adds **clustering on top of FedRep**: clients with similar heads
+should share, clients with dissimilar heads should not. For our setup
+the natural expected structure was two clusters — `{client_1, client_2}`
+on FD001 and `{client_3, client_4}` on FD003.
+
+Per round, after local training, the server:
+1. Computes pairwise cosine similarity of flattened head vectors.
+2. Greedy connectivity clustering (similarity = threshold ? same cluster).
+3. Per-cluster head averaging (sample-count weighted).
+4. Broadcasts cluster heads back so each client receives its cluster's mean.
+
+### Headline numbers
+
+| Method | Combined RMSE | Gap closed |
+| --- | ---: | ---: |
+| FedRep | 14.91 | +73.0% |
+| **FedCCFA (this run, threshold=0.5)** | **15.00** | **+71.0%** |
+| FedCCFA (diagnostic, threshold=0.99) | 15.00 | +71.0% |
+
+FedCCFA does *0.09 RMSE worse than FedRep* and the diagnostic at
+threshold=0.99 (requiring near-perfect agreement to merge) produces
+**identical** numbers — confirming the algorithm's similarity check is
+not the bottleneck.
+
+### Why it didn't help — three stacked causes
+
+The cluster-evolution plot shows that from round 5 onward all four
+clients live in a single cluster. The mechanism:
+
+1. **Same initialisation** — required by vanilla FedAvg's cold-start
+   protocol. Every client begins round 1 with byte-identical weights,
+   including identical heads.
+2. **Tiny head capacity** — each head is 64?1 = 65 parameters. There
+   aren't enough degrees of freedom for the heads to express
+   cluster-discriminating decision boundaries.
+3. **Shared averaged encoder** — every round all clients receive the
+   same backbone, so they compute very similar features on their
+   training data, and the small head can only fit those features one
+   way.
+
+Pairwise cosine similarity is `[1.00, 1.00]` from round 5 to round 50.
+
+### What this finding rules in
+
+Clustering can't help when the heads don't develop cluster structure to
+begin with. Two architectural follow-ups would test this hypothesis:
+
+- **Higher-capacity heads** (multi-layer per-client decision module) —
+  more degrees of freedom for diverging heads to use.
+- **Cluster-aware initialisation** — give clients different head inits
+  from round 1 so they start in different basins.
+
+Neither is needed for our current writeup since FedRep already validated
+the architectural-layer claim; both would be follow-ups to publish the
+FedCCFA refinement story properly.
+
+### Figures
+
+| Topic | Figure |
+| --- | --- |
+| Headline comparison (FedCCFA vs every prior phase) | [`results/rq2_fedccfa/headline_comparison_fd001+fd003.png`](results/rq2_fedccfa/headline_comparison_fd001+fd003.png) |
+| **Smoking-gun: cluster evolution heatmap** | [`results/rq2_fedccfa/cluster_evolution_fd001+fd003.png`](results/rq2_fedccfa/cluster_evolution_fd001+fd003.png) |
+| Per-subset RMSE vs centralized | [`results/rq2_fedccfa/per_subset_breakdown_fd001+fd003.png`](results/rq2_fedccfa/per_subset_breakdown_fd001+fd003.png) |
+
+### Reproducing
+
+```powershell
+.\.venv\Scripts\python.exe scripts\run_fedccfa.py
+# defaults: --similarity-threshold 0.5, --warmup-rounds 3, --n-rounds 50, --seed 42
+```
+
+### Implementation summary
+
+| Component | Role | LOC |
+| --- | --- | --- |
+| [`src/fl_aircraft/fl/clustered.py`](src/fl_aircraft/fl/clustered.py) | `_flatten_heads`, `_pairwise_cosine_similarity`, `_cluster_clients` (union-find), `_aggregate_cluster_heads`, `_load_personal_state_dict`, `run_fedccfa_from_bundle` | ~330 |
+| [`tests/test_fedccfa.py`](tests/test_fedccfa.py) | 14 unit tests (flattening, cosine props, clustering correctness, aggregation, head loader) | ~200 |
+| [`scripts/run_fedccfa.py`](scripts/run_fedccfa.py) | CLI: warmup rounds + similarity threshold; cluster-evolution heatmap | ~320 |
+
+---
+
+## RQ2 — complete intervention-layer hierarchy
+
+The full RQ2 research arc, layer by layer:
+
+| # | Layer | Method | RMSE | Gap closed | Verdict |
+| ---: | --- | --- | ---: | ---: | --- |
+| — | upper bound | Centralized | **13.77** | — | reference |
+| — | lower bound | Local-only mean | 17.92 | — | reference |
+| 1 | Server aggregation | Vanilla FedAvg | 17.95 | 0.0% | control |
+| 1 | Server aggregation | RQ2 (3 reweighting schemes) | 17.80 | +2.8% | ? Negative |
+| 2 | Client optimisation | FedProx (µ=0.1) | 17.70 | +6.0% | ?? Small positive |
+| 3a | Client architecture (per-client heads) | **FedRep** | **14.91** | **+73.0%** | ? **Big positive** |
+| 3b | Client architecture (clustered heads) | FedCCFA | 15.00 | +71.0% | ?? Null vs FedRep |
+
+The empirical hierarchy:
+
+$$\text{aggregation} < \text{drift-control} < \text{per-client architecture}$$
+
+For structural Non-IID PHM, **the architectural layer is where the actual
+money is**. Server tricks (+2.8%) and local-optimisation tweaks (+6.0%)
+help on the margins; restructuring what gets federated (+73%) changes
+the answer. Clustering on top of personalisation adds nothing on this
+dataset because the model's heads don't develop enough diversity for
+clustering to act on.
