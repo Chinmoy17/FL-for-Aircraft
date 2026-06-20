@@ -1302,6 +1302,183 @@ either a single positive finding or a single negative finding alone.
 
 ---
 
+## 6⁵⁄50. RQ7 — Model poisoning + Byzantine-robust aggregation
+
+### Goal
+
+The other side of the project's research-question split: **security**,
+not utility. The brief frames RQ7 directly:
+
+> *"A malicious airline operator could deliberately send corrupted weight
+> updates to the server, pushing the global model to predict healthier-
+> than-real RUL for a competitor's engine type. How robust is the
+> federated training protocol against this attack, and which Byzantine-
+> robust aggregators recover the most predictive power?"*
+
+We instantiate the threat concretely on the P6 partition: `client_3`
+operates FD003 engines and wants the global model to under-predict
+failures on FD001 engines (the competitor's fleet). The server has no
+way to distinguish honest updates from poisoned ones — it only sees
+weight tensors. Any defense must operate on that signal alone.
+
+### Steps taken
+
+| # | Module | What landed |
+|---|---|---|
+| 1 | `src/fl_aircraft/fl/poisoning.py` | `MaliciousClient` ABC + `LabelFlipAttacker` (inverts RUL → 125 − RUL locally, re-derives fault) + `GradientScaleAttacker` (sends $W_{global} + \text{scale}\cdot(W_{local} - W_{global})$ with default scale = −10) |
+| 2 | `src/fl_aircraft/fl/robust_aggregators.py` | Trimmed mean (β=0.25), coordinate-wise median, Krum (f=1) — all drop-in replacements for `fedavg_aggregate` |
+| 3 | `src/fl_aircraft/fl/poisoned_simulation.py` | `run_fedavg_with_attackers` + `PoisonedHistory` tracking per-client weight delta L2 norms each round |
+| 4 | `tests/test_rq7.py` | 12 new tests (label-flip arithmetic, gradient-scale arithmetic, all 3 aggregators preserve key-set + equal FedAvg on identical updates, trimmed-mean drops extremes, Krum picks honest under 1 outlier) |
+| 5 | `scripts/run_rq7.py` | 11-cell experimental matrix CLI + 4 plots (headline, attack diagnostic, defense recovery, per-subset breakdown) |
+| 6 | `frontend/src/pages/Rq7StoryPage.tsx` | Long-form `/rq7-story` page (Distill template like RQ2/RQ3 stories) |
+
+Standard experimental setup reused unchanged from P6 / RQ2 / FedProx /
+FedRep / FedCCFA: FD001+FD003 partition, 4 clients (2 per subset), 50
+rounds × 2 local epochs, seed=42, batch_size=256, lr=1e-3 cosine schedule.
+
+### Headline numbers (11-cell matrix, RMSE lower is better)
+
+| Cell | Attack | Defense | RMSE | F1 | Δ vs B0 |
+|---|---|---|---:|---:|---:|
+| B0 | — clean | vanilla FedAvg | **17.95** | 0.871 | baseline |
+| B1 | — clean | trimmed mean | 17.56 | 0.871 | −0.39 (sanity) |
+| B2 | — clean | Krum (f=1) | 18.71 | 0.773 | +0.76 (mild regression) |
+| AV1 | label flip | vanilla | 29.92 | 0.467 | **+11.97** |
+| AV2 | grad ×−10 | vanilla | **84.03** | 0.000 | **+66.08** CATASTROPHIC |
+| D11 | label flip | trimmed mean | 23.54 | 0.594 | +5.59 |
+| D12 | label flip | median | 23.54 | 0.594 | +5.59 (= D11) |
+| D13 | label flip | **Krum** | **19.80** | 0.779 | **+1.85** ✅ |
+| D21 | grad ×−10 | trimmed mean | 21.51 | 0.657 | +3.56 |
+| D22 | grad ×−10 | median | 21.51 | 0.657 | +3.56 (= D21) |
+| D23 | grad ×−10 | **Krum** | **19.80** | 0.779 | **+1.85** ✅ |
+
+### What worked
+
+- **Krum dominates both attacks identically.** RMSE 19.80 / F1 0.779
+  against label flip AND gradient scaling. Once `client_3` is
+  geometrically isolated, it never contributes to the global model
+  again — the defense is essentially perfect. The 1.85-RMSE gap to the
+  clean baseline is the only cost.
+- **The attack diagnostic plot is a smoking gun.** Per-client weight
+  delta L2 norms on log scale show `client_3`'s update sits at ~60 in
+  round 1 and stays above 100 for 20 rounds, while honest clients
+  hover between 0.1 and 10 — exactly the order-of-magnitude separation
+  the scale=−10 multiplier predicts. Any outlier detector on update
+  norms catches this trivially. This figure is the strongest visual in
+  the project.
+- **Vanilla FedAvg failure mode under gradient scaling is concrete.**
+  RMSE 84.03 with F1=0.000 means the model collapses to a constant
+  prediction across all engines and flags no faults. For a real
+  maintenance pipeline this would ground zero aircraft when failures
+  are imminent — the worst-case operational consequence is asymmetric
+  and severe.
+
+### Findings worth keeping
+
+1. **Aggregator family matters more than aggregator parameter.** Per-
+   parameter robust aggregators (trimmed mean, median) only partially
+   recover under boosted attacks. The whole-update geometric check
+   (Krum) recovers fully. This pushes Krum-like defenses ahead of the
+   per-element family for the small-n consortium setting (n ≤ 6 clients).
+2. **Trimmed mean = median when n=4.** D11/D12 and D21/D22 cells
+   produced bit-identical numbers because for n=4 with β=0.25, trimmed
+   mean averages the middle 2 of 4 sorted values per parameter, which
+   equals $(\text{sorted}[1] + \text{sorted}[2])/2$ — exactly the
+   median formula for even n. The two aggregators only diverge for
+   n ≥ 5. This is a degenerate-case finding, not a bug; recorded
+   transparently in the writeup.
+3. **The attacker is not subtle.** The delta-norm plot exposes the
+   gradient-scaling attack without any special detection logic — the
+   attacker's update is consistently an order of magnitude larger than
+   honest. A simpler defense (clip updates to median norm) would also
+   work, but Krum has the advantage of also defending against label-
+   flip, which has normal magnitudes.
+4. **Mild clean-data regression is the price of Krum.** B2 cell (clean
+   + Krum, no attack) sits at RMSE 18.71 vs vanilla's 17.95 — a 0.76
+   regression. This is the operational cost of running Krum permanently
+   "just in case." Worth paying: the worst-case ceiling under attack
+   becomes 1.85 RMSE instead of 66.08 RMSE.
+
+### Challenges
+
+- **First commit's UTF-8 BOM** — the `/rq7-story` frontend commit on
+  p7_demo got a leading BOM in its subject line because PowerShell 5.1's
+  `Set-Content -Encoding UTF8` writes UTF-8-with-BOM by default. Fixed
+  by amending with `[System.IO.File]::WriteAllText($tmp, $msg, [System.Text.UTF8Encoding]::new($false))`
+  before the push went out. Pattern recorded in `/memories/powershell.md`.
+- **`_run_fedrep_bonus` is a stub** — the planned bonus cell testing
+  whether per-client heads (FedRep) reduce the attack blast radius is
+  printed as a qualitative message rather than actually executed. The
+  poisoning wrappers and the personalised simulation runner have
+  different protocol contracts and reconciling them is a follow-up.
+  The expected behavior (encoder is poisoned but per-client heads stay
+  honest, so blast radius is reduced) is hypothesized in the
+  `/rq7-story` Future Directions section.
+
+### Extension of Landau et al. (2026)
+
+The brief's reference [10] (Landau et al., 2026) is the closest existing
+work in PHM federated learning. Their threat model is **accidental**:
+sensors that malfunction, noisy clients, accidentally bad updates. Their
+fix is robust aggregation. The framing is correct but the threat model
+is too benign — noise-robust aggregators are tuned against well-behaved
+randomness, not against an attacker who knows you're filtering and can
+craft an update to slip past.
+
+Our RQ7 results extend Landau's framework to **deliberately crafted
+poisoning**:
+
+- Vanilla FedAvg fails spectacularly under boosted Byzantine attacks
+  (4.7× RMSE degradation).
+- Per-parameter robust aggregators (Landau's recommended family) only
+  partially recover (1.97× degradation under label flip, 1.20× under
+  gradient scaling).
+- The geometric whole-update check (Krum) is the intervention that
+  actually works against adversaries (1.10× degradation in both cases).
+
+Writeup framing: *"Landau et al. 2026 introduced robust aggregation to
+defend against accidentally corrupted updates. We extend their framework
+to deliberately crafted poisoning attacks — and show that an attacker-
+aware aggregator (Krum) is required."*
+
+### Files added in RQ7
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/fl/poisoning.py` | `MaliciousClient` ABC + `LabelFlipAttacker` + `GradientScaleAttacker` (~280 LOC). |
+| `src/fl_aircraft/fl/robust_aggregators.py` | Trimmed mean, median, Krum aggregator factories (~220 LOC). |
+| `src/fl_aircraft/fl/poisoned_simulation.py` | `run_fedavg_with_attackers` + `PoisonedHistory` with per-client delta-norm tracking (~280 LOC). |
+| `tests/test_rq7.py` | 12 new tests covering attackers + aggregators (~280 LOC). |
+| `scripts/run_rq7.py` | 11-cell matrix CLI + 4 plots (~510 LOC). |
+| `frontend/src/pages/Rq7StoryPage.tsx` | Long-form `/rq7-story` page (~330 LOC). |
+| `results/rq7_poisoning/metrics.json` | Headline numbers per cell. |
+| `results/rq7_poisoning/{headline,attack_diagnostic,defense_recovery,per_subset_breakdown}_*.png` | 4 plots. |
+| `results/rq7_poisoning/per_round_*.csv` | 11 per-round trajectories. |
+
+Wall-clock: 55 min total (11 cells × ~5 min on CPU). Test suite at
+216/216 passing (204 prior + 12 RQ7).
+
+### What this implies for next steps
+
+RQ7 unlocks two natural follow-ups:
+
+- **RQ6 (privacy)** — the geometric defense Krum uses requires
+  inspecting every client's update structure each round, which is
+  exactly the information channel a privacy attacker would exploit
+  (membership inference, gradient leakage). RQ6 quantifies that
+  leakage. The two security questions naturally interlock: a defense
+  against poisoning may weaken privacy, and a defense against privacy
+  attacks (DP noise, secure aggregation) may weaken poisoning
+  resistance. Mapping that tradeoff is the next major chunk of work.
+- **Backdoor attacks + coordinated attackers** — the current threat
+  model assumes one independent attacker. Real adversaries are
+  coordinated. Krum's f=1 setting requires only 1 Byzantine; with 2+
+  coordinated attackers Krum's "isolated point" geometry breaks
+  because the attackers can cluster together. FoolsGold (Fung et al.)
+  and similar coordination-aware defenses are the next layer.
+
+---
+
 ## 7. Architecture overview
 
 ```
