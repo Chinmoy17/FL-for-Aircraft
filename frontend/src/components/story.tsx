@@ -18,7 +18,10 @@
 import { figureUrl } from "../api";
 
 // ---------------------------------------------------------------------------
-// Section — 68ch reading width, top spacing scales with the article's rhythm.
+// Section — academic-shell-aligned section block. The content is
+// constrained to a comfortable reading width but the surrounding
+// padding matches the full-width shell, so sections don't visually
+// disconnect from the page header.
 // ---------------------------------------------------------------------------
 export function StorySection({
   title,
@@ -28,11 +31,11 @@ export function StorySection({
   children: React.ReactNode;
 }) {
   return (
-    <section className="max-w-3xl mx-auto mt-16">
-      <h2 className="text-xl font-semibold tracking-tight text-text mb-4">
+    <section className="px-10 md:px-16 lg:px-24 mt-16">
+      <h2 className="font-display text-2xl md:text-3xl tracking-tight text-text mb-4 max-w-[36ch]">
         {title}
       </h2>
-      <div className="space-y-4 text-[16px] leading-[1.7] text-text">
+      <div className="space-y-4 text-[16px] leading-[1.7] text-text max-w-[78ch]">
         {children}
       </div>
     </section>
@@ -131,8 +134,9 @@ export function FormulaBlock({ children }: { children: React.ReactNode }) {
 }
 
 // ---------------------------------------------------------------------------
-// SmokingGunFigure — one full-width figure (max-w-5xl), serif eyebrow,
-// long caption explaining the mechanism. Click → opens in new tab.
+// SmokingGunFigure — left-aligned eyebrow + title (matches academic-shell
+// rhythm) followed by the figure. Caption sits below the image, constrained
+// to a comfortable reading width. Click → opens in new tab.
 // ---------------------------------------------------------------------------
 export function SmokingGunFigure({
   eyebrow,
@@ -149,29 +153,21 @@ export function SmokingGunFigure({
 }) {
   const url = figureUrl(artifactPath);
   return (
-    <section className="max-w-5xl mx-auto mt-16 px-6">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
-          {eyebrow}
-        </p>
-        <h2 className="mt-3 text-xl font-semibold tracking-tight text-text">
-          {title}
-        </h2>
-      </div>
-      <figure className="mt-6">
+    <section className="px-10 md:px-16 lg:px-24 mt-16">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-3 font-display text-2xl md:text-3xl tracking-tight text-text mb-6 max-w-[40ch]">
+        {title}
+      </h2>
+      <figure>
         <a
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="block rounded-md overflow-hidden border border-border hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+          className="block rounded-md overflow-hidden border border-border bg-white hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
         >
-          <img
-            src={url}
-            alt={alt}
-            className="w-full h-auto bg-white"
-          />
+          <img src={url} alt={alt} className="w-full h-auto" />
         </a>
-        <figcaption className="mt-4 max-w-2xl mx-auto text-sm text-text-dim leading-relaxed">
+        <figcaption className="mt-4 text-sm text-text-dim leading-relaxed max-w-[78ch]">
           {caption}
         </figcaption>
       </figure>
@@ -180,8 +176,9 @@ export function SmokingGunFigure({
 }
 
 // ---------------------------------------------------------------------------
-// StoryHero — eyebrow + Instrument Serif display headline + lead paragraph.
-// The accent-colored italic span lets each page have its own micro-flourish.
+// StoryHero — academic-shell-aligned hero. Left-aligned (not centered)
+// to match the experiment-page rhythm. Eyebrow + Instrument Serif display
+// headline + lead paragraph.
 // ---------------------------------------------------------------------------
 export function StoryHero({
   eyebrow,
@@ -194,17 +191,14 @@ export function StoryHero({
   lead: React.ReactNode;
 }) {
   return (
-    <header className="max-w-3xl mx-auto text-center">
-      <p className="text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
-        {eyebrow}
-      </p>
-      <h1
-        style={{ fontFamily: "var(--font-display)" }}
-        className="mt-4 text-5xl md:text-6xl leading-[1.05] tracking-tight text-text"
-      >
+    <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
+      <div className="eyebrow">{eyebrow}</div>
+      <h1 className="font-display text-[44px] sm:text-[52px] lg:text-[60px] leading-[1.05] tracking-tight text-text mt-4 max-w-[22ch]">
         {children}
       </h1>
-      <p className="mt-6 text-lg text-text-dim leading-relaxed">{lead}</p>
+      <p className="mt-6 text-lg text-text-dim leading-relaxed max-w-[68ch]">
+        {lead}
+      </p>
     </header>
   );
 }
