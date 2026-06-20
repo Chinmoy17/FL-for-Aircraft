@@ -154,6 +154,65 @@ class MultiTaskCNN(nn.Module):
     def count_parameters(self) -> int:
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
+    # -----------------------------------------------------------------
+    # Encoder / head split helpers
+    #
+    # Used by FedRep / FedCCFA-style federated training where the encoder
+    # (shared knowledge: degradation features) is averaged across clients
+    # while the heads (per-client decision boundaries: HPC-only vs HPC+Fan)
+    # are kept private. The split is purely cosmetic at the parameter level
+    # — these helpers just slice ``state_dict()`` by key prefix so callers
+    # can route encoder/trunk weights to the server and head weights to a
+    # per-client checkpoint.
+    #
+    # Shared = encoder + trunk (the representation layer)
+    # Personal = rul_head + fault_head (the decision layer; ~130 params total)
+    # -----------------------------------------------------------------
+    @staticmethod
+    def is_shared_key(state_dict_key: str) -> bool:
+        """True for parameters that should be federated (encoder + trunk)."""
+        return state_dict_key.startswith(("encoder.", "trunk."))
+
+    @staticmethod
+    def is_personal_key(state_dict_key: str) -> bool:
+        """True for parameters that should stay local per client (heads)."""
+        return state_dict_key.startswith(("rul_head.", "fault_head."))
+
+    def shared_state_dict(self) -> dict[str, torch.Tensor]:
+        """Subset of ``state_dict()`` containing only the encoder + trunk."""
+        full = self.state_dict()
+        return {k: v for k, v in full.items() if self.is_shared_key(k)}
+
+    def personal_state_dict(self) -> dict[str, torch.Tensor]:
+        """Subset of ``state_dict()`` containing only the two heads."""
+        full = self.state_dict()
+        return {k: v for k, v in full.items() if self.is_personal_key(k)}
+
+    def load_shared_state_dict(
+        self, shared_state: dict[str, torch.Tensor]
+    ) -> None:
+        """Overwrite only the encoder + trunk; leave heads untouched.
+
+        Raises ``RuntimeError`` if ``shared_state`` contains any key that
+        isn't a shared key, or omits a shared key the model expects — the
+        check is strict to catch federation-pipeline bugs early.
+        """
+        full = self.state_dict()
+        expected = {k for k in full if self.is_shared_key(k)}
+        provided = set(shared_state.keys())
+        if provided != expected:
+            missing = expected - provided
+            unexpected = provided - expected
+            raise RuntimeError(
+                "load_shared_state_dict key mismatch: "
+                f"missing={sorted(missing)} unexpected={sorted(unexpected)}"
+            )
+        merged = {
+            k: (shared_state[k] if self.is_shared_key(k) else v)
+            for k, v in full.items()
+        }
+        self.load_state_dict(merged)
+
 
 @dataclass(frozen=True)
 class RULPrediction:
