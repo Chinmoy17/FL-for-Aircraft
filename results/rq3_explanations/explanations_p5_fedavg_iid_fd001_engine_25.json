@@ -1,0 +1,55 @@
+{
+  "predicted_rul": 114.8525,
+  "fault_probability": 0.0,
+  "target_head": "rul",
+  "top_sensors": [
+    {
+      "column": "s_4",
+      "name": "T50",
+      "description": "Total temperature at LPT outlet",
+      "subsystem": "LPT",
+      "contribution": -15.696
+    },
+    {
+      "column": "s_2",
+      "name": "T24",
+      "description": "Total temperature at LPC outlet",
+      "subsystem": "LPC",
+      "contribution": -11.1202
+    },
+    {
+      "column": "s_15",
+      "name": "BPR",
+      "description": "Bypass ratio",
+      "subsystem": "Fan",
+      "contribution": 9.5635
+    },
+    {
+      "column": "s_20",
+      "name": "W31",
+      "description": "HPT coolant bleed flow",
+      "subsystem": "HPT",
+      "contribution": 9.2098
+    },
+    {
+      "column": "s_11",
+      "name": "Ps30",
+      "description": "Static pressure at HPC outlet",
+      "subsystem": "HPC",
+      "contribution": 7.4165
+    }
+  ],
+  "inferred_fault_mode": {
+    "fault_mode": "LPT efficiency loss (secondary)",
+    "affected_components": [
+      "Low-Pressure Turbine (LPT) nozzle ring",
+      "LPT cooling-air supply"
+    ],
+    "recommended_action": "Cross-check HPC and Fan inspections; if both are normal, inspect LPT cooling-air manifold.",
+    "confidence_label": "secondary"
+  },
+  "narrative": "Predicted RUL: 114.9 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 T50      ( s_4)  lowers RUL by 15.70 \u2014 Total temperature at LPT outlet; subsystem: LPT\n  \u2022 T24      ( s_2)  lowers RUL by 11.12 \u2014 Total temperature at LPC outlet; subsystem: LPC\n  \u2022 BPR      (s_15)  raises RUL by 9.56 \u2014 Bypass ratio; subsystem: Fan\n  \u2022 W31      (s_20)  raises RUL by 9.21 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 Ps30     (s_11)  raises RUL by 7.42 \u2014 Static pressure at HPC outlet; subsystem: HPC\n\nInferred fault mode: LPT efficiency loss (secondary)\nAffected components:\n  - Low-Pressure Turbine (LPT) nozzle ring\n  - LPT cooling-air supply\nRecommended action: Cross-check HPC and Fan inspections; if both are normal, inspect LPT cooling-air manifold.",
+  "narrative_llm": null,
+  "convergence_delta": -0.095057,
+  "notes": []
+}

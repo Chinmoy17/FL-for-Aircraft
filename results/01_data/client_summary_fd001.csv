@@ -1,0 +1,5 @@
+client_id,n_engines,n_rows,n_windows,mean_lifetime,min_lifetime,max_lifetime,rul_capped_max,fault_pos_rate,fault_pos_count
+client_1,25,5159,4434,206.4,137,336,125.0,0.1748,775
+client_2,25,5163,4438,206.5,137,341,125.0,0.1746,775
+client_3,25,5138,4413,205.5,135,313,125.0,0.1756,775
+client_4,25,5171,4446,206.8,128,362,125.0,0.1743,775

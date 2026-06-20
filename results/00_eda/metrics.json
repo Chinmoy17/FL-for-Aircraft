@@ -1,0 +1,153 @@
+{
+  "phase_id": "00_eda",
+  "phase_name": "Phase 0 \u2014 Exploratory data analysis",
+  "interpretation": "C-MAPSS is structurally clean: 4 subsets, 709 training engines, ~160k rows, zero NaNs. FD001/FD003 are single-regime; FD002/FD004 mix 6 regimes. The literature 'drop 7 constant sensors' rule for FD001/FD003 matches 6 of 7 globally (sensor 6 is near-constant). The same rule for FD002/FD004 cannot be globally validated because regime variation dominates the global std \u2014 per-regime validation is deferred to Phase 2+. Engine lifetimes span 128\u2013543 cycles; the 30-cycle sliding window is comfortably safe. Global fault positive rate (RUL \u2264 30) is uniform at 12.5\u201315.0% across subsets; per-client heterogeneity is engineered in P1 / P6 / RQ2.",
+  "artifacts": {
+    "engine_lifetimes_png": "results/00_eda/01_engine_lifetimes.png",
+    "sensor_correlation_png": "results/00_eda/02_sensor_correlation.png",
+    "operational_regimes_png": "results/00_eda/03_operational_regimes.png",
+    "sensor_trajectories_png": "results/00_eda/04_sensor_trajectories.png",
+    "rul_distribution_png": "results/00_eda/05_rul_distribution.png",
+    "fault_imbalance_png": "results/00_eda/06_fault_imbalance.png",
+    "notebook": "notebooks/01_eda_cmapss.ipynb"
+  },
+  "subset": null,
+  "config": {
+    "subsets": [
+      "FD001",
+      "FD002",
+      "FD003",
+      "FD004"
+    ],
+    "rul_cap": 125,
+    "fault_threshold": 30
+  },
+  "timing": {},
+  "summary": {
+    "total_train_engines": 709,
+    "total_train_rows": 160359,
+    "total_test_engines": 707,
+    "total_test_rows": 104897,
+    "any_nans_in_data": 0,
+    "min_engine_lifetime_global": 128
+  },
+  "train": {},
+  "test": {},
+  "per_subset": {
+    "FD001": {
+      "train_engines": 100,
+      "test_engines": 100,
+      "train_rows": 20631,
+      "test_rows": 13096,
+      "min_engine_lifetime": 128,
+      "mean_engine_lifetime": 206.3,
+      "max_engine_lifetime": 362,
+      "ground_truth_test_rul_count": 100,
+      "n_unique_op_setting_rows": 1423,
+      "n_assumed_op_regimes": 1,
+      "n_literature_constant_sensors": 7,
+      "literature_constant_sensors": [
+        1,
+        5,
+        6,
+        10,
+        16,
+        18,
+        19
+      ],
+      "n_empirical_constant_sensors_global_std": 6,
+      "empirical_constant_sensors_global_std": [
+        1,
+        5,
+        10,
+        16,
+        18,
+        19
+      ],
+      "n_informative_sensors": 14,
+      "fault_positive_rate_global": 0.1503
+    },
+    "FD002": {
+      "train_engines": 260,
+      "test_engines": 259,
+      "train_rows": 53759,
+      "test_rows": 33991,
+      "min_engine_lifetime": 128,
+      "mean_engine_lifetime": 206.8,
+      "max_engine_lifetime": 378,
+      "ground_truth_test_rul_count": 259,
+      "n_unique_op_setting_rows": 9824,
+      "n_assumed_op_regimes": 6,
+      "n_literature_constant_sensors": 5,
+      "literature_constant_sensors": [
+        10,
+        13,
+        16,
+        18,
+        19
+      ],
+      "n_empirical_constant_sensors_global_std": 0,
+      "empirical_constant_sensors_global_std": [],
+      "n_informative_sensors": 16,
+      "fault_positive_rate_global": 0.1499
+    },
+    "FD003": {
+      "train_engines": 100,
+      "test_engines": 100,
+      "train_rows": 24720,
+      "test_rows": 16596,
+      "min_engine_lifetime": 145,
+      "mean_engine_lifetime": 247.2,
+      "max_engine_lifetime": 525,
+      "ground_truth_test_rul_count": 100,
+      "n_unique_op_setting_rows": 1479,
+      "n_assumed_op_regimes": 1,
+      "n_literature_constant_sensors": 7,
+      "literature_constant_sensors": [
+        1,
+        5,
+        6,
+        10,
+        16,
+        18,
+        19
+      ],
+      "n_empirical_constant_sensors_global_std": 5,
+      "empirical_constant_sensors_global_std": [
+        1,
+        5,
+        16,
+        18,
+        19
+      ],
+      "n_informative_sensors": 14,
+      "fault_positive_rate_global": 0.1254
+    },
+    "FD004": {
+      "train_engines": 249,
+      "test_engines": 248,
+      "train_rows": 61249,
+      "test_rows": 41214,
+      "min_engine_lifetime": 128,
+      "mean_engine_lifetime": 246.0,
+      "max_engine_lifetime": 543,
+      "ground_truth_test_rul_count": 248,
+      "n_unique_op_setting_rows": 10232,
+      "n_assumed_op_regimes": 6,
+      "n_literature_constant_sensors": 5,
+      "literature_constant_sensors": [
+        10,
+        13,
+        16,
+        18,
+        19
+      ],
+      "n_empirical_constant_sensors_global_std": 0,
+      "empirical_constant_sensors_global_std": [],
+      "n_informative_sensors": 16,
+      "fault_positive_rate_global": 0.126
+    }
+  },
+  "per_client": {},
+  "generated_at": "2026-06-18T08:36:20.735526+00:00"
+}

@@ -1,0 +1,77 @@
+{
+  "phase_id": "01_data",
+  "phase_name": "Phase 1 \u2014 Data pipeline sanity check",
+  "interpretation": "Stratified-by-lifetime partitioning of FD001 across 4 clients yields a deliberately balanced split: per-client fault positive rate 17.43\u201317.56% (spread 0.13 pp). This isolates 'does FedAvg converge?' from 'does FedAvg handle Non-IID?'. Meaningful Non-IID arrives in P6 (FD001+FD003 mix) and the RQ2 experiment.",
+  "artifacts": {
+    "client_summary_csv": "results/01_data/client_summary_fd001.csv",
+    "client_fault_imbalance_png": "results/01_data/client_fault_imbalance_fd001.png"
+  },
+  "subset": "FD001",
+  "config": {
+    "n_clients": 4,
+    "window_size": 30,
+    "stride": 1,
+    "rul_cap": 125,
+    "fault_threshold": 30,
+    "seed": 42,
+    "n_features": 17
+  },
+  "timing": {},
+  "summary": {
+    "total_train_engines": 100,
+    "total_train_rows": 20631,
+    "total_central_windows": 17731,
+    "total_test_windows": 100,
+    "global_fault_pos_rate": 0.1503,
+    "test_fault_pos_rate": 0.25,
+    "per_client_fault_rate_min": 0.1743,
+    "per_client_fault_rate_max": 0.1756,
+    "per_client_fault_rate_spread_pp": 0.13
+  },
+  "train": {},
+  "test": {},
+  "per_subset": {},
+  "per_client": {
+    "client_1": {
+      "n_engines": 25,
+      "n_rows": 5159,
+      "n_windows": 4434,
+      "mean_lifetime": 206.4,
+      "min_lifetime": 137,
+      "max_lifetime": 336,
+      "fault_pos_rate": 0.1748,
+      "fault_pos_count": 775
+    },
+    "client_2": {
+      "n_engines": 25,
+      "n_rows": 5163,
+      "n_windows": 4438,
+      "mean_lifetime": 206.5,
+      "min_lifetime": 137,
+      "max_lifetime": 341,
+      "fault_pos_rate": 0.1746,
+      "fault_pos_count": 775
+    },
+    "client_3": {
+      "n_engines": 25,
+      "n_rows": 5138,
+      "n_windows": 4413,
+      "mean_lifetime": 205.5,
+      "min_lifetime": 135,
+      "max_lifetime": 313,
+      "fault_pos_rate": 0.1756,
+      "fault_pos_count": 775
+    },
+    "client_4": {
+      "n_engines": 25,
+      "n_rows": 5171,
+      "n_windows": 4446,
+      "mean_lifetime": 206.8,
+      "min_lifetime": 128,
+      "max_lifetime": 362,
+      "fault_pos_rate": 0.1743,
+      "fault_pos_count": 775
+    }
+  },
+  "generated_at": "2026-06-18T08:35:17.843623+00:00"
+}

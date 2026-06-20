@@ -1,0 +1,56 @@
+{
+  "predicted_rul": 96.6965,
+  "fault_probability": 0.0001,
+  "target_head": "rul",
+  "top_sensors": [
+    {
+      "column": "s_20",
+      "name": "W31",
+      "description": "HPT coolant bleed flow",
+      "subsystem": "HPT",
+      "contribution": -9.4984
+    },
+    {
+      "column": "s_11",
+      "name": "Ps30",
+      "description": "Static pressure at HPC outlet",
+      "subsystem": "HPC",
+      "contribution": -8.8733
+    },
+    {
+      "column": "s_17",
+      "name": "htBleed",
+      "description": "Bleed enthalpy",
+      "subsystem": "Bleed",
+      "contribution": -8.2692
+    },
+    {
+      "column": "s_21",
+      "name": "W32",
+      "description": "LPT coolant bleed flow",
+      "subsystem": "LPT",
+      "contribution": -7.469
+    },
+    {
+      "column": "s_13",
+      "name": "NRf",
+      "description": "Corrected fan speed",
+      "subsystem": "Fan",
+      "contribution": -5.789
+    }
+  ],
+  "inferred_fault_mode": {
+    "fault_mode": "HPC degradation",
+    "affected_components": [
+      "High-Pressure Compressor (HPC) rotor and stator assembly",
+      "HPC outlet temperature probe (T30)",
+      "HPC bleed valve"
+    ],
+    "recommended_action": "Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+    "confidence_label": "moderate"
+  },
+  "narrative": "Predicted RUL: 96.7 cycles \u00b7 Fault probability: 0.0%  (explained head: RUL regression)\n\nMost influential inputs (top contributors):\n  \u2022 W31      (s_20)  lowers RUL by 9.50 \u2014 HPT coolant bleed flow; subsystem: HPT\n  \u2022 Ps30     (s_11)  lowers RUL by 8.87 \u2014 Static pressure at HPC outlet; subsystem: HPC\n  \u2022 htBleed  (s_17)  lowers RUL by 8.27 \u2014 Bleed enthalpy; subsystem: Bleed\n  \u2022 W32      (s_21)  lowers RUL by 7.47 \u2014 LPT coolant bleed flow; subsystem: LPT\n  \u2022 NRf      (s_13)  lowers RUL by 5.79 \u2014 Corrected fan speed; subsystem: Fan\n\nInferred fault mode: HPC degradation\nAffected components:\n  - High-Pressure Compressor (HPC) rotor and stator assembly\n  - HPC outlet temperature probe (T30)\n  - HPC bleed valve\nRecommended action: Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.",
+  "narrative_llm": null,
+  "convergence_delta": 0.25824,
+  "notes": []
+}
