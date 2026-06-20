@@ -84,12 +84,12 @@ const SECTIONS: NavSection[] = [
     eyebrow: "Experiments",
     items: [
       { kind: "internal", label: "00 · EDA", to: "/experiments/00-eda" },
-      { kind: "soon", label: "01 · Data pipeline" },
-      { kind: "soon", label: "02 · Smoke run" },
-      { kind: "soon", label: "03 · Centralized" },
-      { kind: "soon", label: "04 · Local-only" },
-      { kind: "soon", label: "05 · FedAvg IID" },
-      { kind: "soon", label: "06 · Non-IID baseline" },
+      { kind: "internal", label: "01 · Data pipeline", to: "/experiments/01-data" },
+      { kind: "internal", label: "02 · Smoke run", to: "/experiments/02-smoke" },
+      { kind: "internal", label: "03 · Centralized", to: "/experiments/03-centralized" },
+      { kind: "internal", label: "04 · Local-only", to: "/experiments/04-local-only" },
+      { kind: "internal", label: "05 · FedAvg IID", to: "/experiments/05-fedavg" },
+      { kind: "internal", label: "06 · Non-IID baseline", to: "/experiments/06-non-iid" },
     ],
   },
   {

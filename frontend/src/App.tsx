@@ -2,7 +2,13 @@ import { NavLink, Route, BrowserRouter, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { AbstractPage } from "./pages/AbstractPage";
 import { CoverPage } from "./pages/CoverPage";
+import { ExperimentCentralizedPage } from "./pages/ExperimentCentralizedPage";
+import { ExperimentDataPage } from "./pages/ExperimentDataPage";
 import { ExperimentEdaPage } from "./pages/ExperimentEdaPage";
+import { ExperimentFedavgPage } from "./pages/ExperimentFedavgPage";
+import { ExperimentLocalOnlyPage } from "./pages/ExperimentLocalOnlyPage";
+import { ExperimentNonIidPage } from "./pages/ExperimentNonIidPage";
+import { ExperimentSmokePage } from "./pages/ExperimentSmokePage";
 import { LiveDemoPage } from "./pages/LiveDemoPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { Rq2StoryPage } from "./pages/Rq2StoryPage";
@@ -26,6 +32,12 @@ export function App() {
           <Route path="/" element={<CoverPage />} />
           <Route path="/abstract" element={<AbstractPage />} />
           <Route path="/experiments/00-eda" element={<ExperimentEdaPage />} />
+          <Route path="/experiments/01-data" element={<ExperimentDataPage />} />
+          <Route path="/experiments/02-smoke" element={<ExperimentSmokePage />} />
+          <Route path="/experiments/03-centralized" element={<ExperimentCentralizedPage />} />
+          <Route path="/experiments/04-local-only" element={<ExperimentLocalOnlyPage />} />
+          <Route path="/experiments/05-fedavg" element={<ExperimentFedavgPage />} />
+          <Route path="/experiments/06-non-iid" element={<ExperimentNonIidPage />} />
           <Route path="/demo" element={<LiveDemoPage />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/rq2-story" element={<Rq2StoryPage />} />
