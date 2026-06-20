@@ -301,6 +301,12 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           FedAvg simulation, but it changes the intervention layer from{" "}
           <em>aggregation</em> to <em>local optimisation</em>.
         </p>
+        <p className="mt-4 text-text-dim text-sm">
+          We then{" "}
+          <strong className="text-text">ran the FedProx experiment</strong>{" "}
+          to put the hypothesis to the test. The follow-up section below
+          reports what happened.
+        </p>
       </StorySection>
 
       {/* WHY THIS COUNTS AS A POSITIVE -------------------------------- */}
@@ -331,7 +337,258 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           on GitHub.
         </p>
       </StorySection>
+
+      {/* ==================================================================
+          FEDPROX FOLLOW-UP — the experiment RQ2 pointed at, with its
+          own narrative arc. Sits inside the same /rq2-story page on
+          purpose: this is the same research line continuing.
+          ================================================================== */}
+      <FedProxFollowup />
     </article>
+  );
+}
+
+// ===========================================================================
+// FedProx follow-up section — narrative coda for the same page.
+// ===========================================================================
+function FedProxFollowup() {
+  return (
+    <>
+      <div className="max-w-3xl mx-auto mt-24 pt-12 border-t border-border">
+        <p className="text-center text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
+          Follow-up · FedProx μ-sweep
+        </p>
+        <h2
+          style={{ fontFamily: "var(--font-display)" }}
+          className="mt-3 text-4xl md:text-5xl leading-[1.1] tracking-tight text-text text-center"
+        >
+          Did it work?{" "}
+          <em className="text-accent not-italic">Sort of.</em>
+        </h2>
+        <p className="mt-5 text-center text-base text-text-dim leading-relaxed">
+          We swept <span className="font-mono-num text-text">μ ∈ {"{0, 0.001, 0.01, 0.1}"}</span>{" "}
+          on the same Non-IID partition, same seed, same rounds. The headline
+          RMSE moved a little. The per-subset story moved a lot.
+        </p>
+      </div>
+
+      {/* Anchor stats */}
+      <div className="max-w-3xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <AnchorStat
+          tone="accent"
+          value="+6.0%"
+          label="Best gap closed by FedProx (μ=0.1)"
+          sub="~2× what reweighting achieved. Still short of 'fixed'."
+        />
+        <AnchorStat
+          tone="good"
+          value="+0.17"
+          label="FD003 F1 boost (vanilla → FedProx μ=0.001)"
+          sub="0.727 → 0.895 on the harder HPC+Fan subset."
+        />
+        <AnchorStat
+          value="RMSE 17.7"
+          label="Shared ceiling across both interventions"
+          sub="RQ2 best 17.80, FedProx best 17.70 — within 0.1 RMSE."
+        />
+      </div>
+
+      <StorySection title="What FedProx did">
+        <p>
+          The implementation was minimal: one new kwarg{" "}
+          <span className="font-mono-num text-accent">mu</span> on the
+          client's local-training loop, plus a snapshot of the round-start
+          global weights so the proximal term can pull each gradient step
+          back toward them. Same seed, same partition, same 50 rounds ×
+          2 local epochs as P6 and RQ2 — so the comparison is apples-to-apples.
+          A dedicated must-pass test verifies that{" "}
+          <span className="font-mono-num text-text">mu=0.0</span> is
+          bit-exact equivalent to vanilla FedAvg.
+        </p>
+      </StorySection>
+
+      <StorySection title="What the numbers said">
+        <FedProxComparisonTable />
+        <p className="mt-4 text-text-dim text-sm">
+          On combined RMSE, the best FedProx run (μ=0.1) beats RQ2's best
+          (Scheme B at 17.80) by 0.10 cycles. It closes{" "}
+          <span className="font-mono-num text-good">+6.0%</span> of the
+          local→centralized gap — about twice what reweighting achieved,
+          but still leaves <span className="font-mono-num text-text">~4</span>{" "}
+          RMSE on the table.
+        </p>
+      </StorySection>
+
+      <SmokingGunFigure
+        eyebrow="The smoking-gun figure (II)"
+        title="FedProx fixes the per-subset imbalance, even when combined RMSE barely moves"
+        artifactPath="results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png"
+        alt="Per-subset RMSE bars for μ ∈ {0.0, 0.001, 0.01, 0.1} on FD001 and FD003."
+        caption={
+          <>
+            Vanilla FedAvg (μ=0, red) is{" "}
+            <span className="font-mono-num text-text">low</span> on FD001 (the
+            easy HPC-only subset) and{" "}
+            <span className="font-mono-num text-text">high</span> on FD003
+            (the harder HPC+Fan subset). FedProx at μ=0.001 (blue) and
+            μ=0.1 (purple) re-balance the two: both subsets land around{" "}
+            <span className="font-mono-num text-text">17.7</span>. The
+            average is the same, but the model is no longer biased toward
+            the easy class.{" "}
+            <strong className="text-text">
+              For a maintenance use-case, balanced-on-both is strictly more
+              useful than good-on-easy / bad-on-hard.
+            </strong>
+          </>
+        }
+      />
+
+      <StorySection title="The second negative finding">
+        <p>
+          Two independent intervention layers, both motivated by the same
+          hypothesis about Non-IID failure, both ruled themselves out within{" "}
+          <span className="font-mono-num text-text">0.1</span> RMSE of each
+          other:
+        </p>
+        <ul className="mt-4 space-y-3">
+          <Bullet>
+            <strong>Server-side reweighting (RQ2):</strong> best RMSE 17.80,
+            +2.8% gap closed.
+          </Bullet>
+          <Bullet>
+            <strong>Client-side drift control (FedProx):</strong> best RMSE
+            17.70, +6.0% gap closed.
+          </Bullet>
+        </ul>
+        <p className="mt-4">
+          The remaining{" "}
+          <span className="font-mono-num text-text">~4 RMSE</span> gap is
+          consistent with a third hypothesis we haven't tested yet:{" "}
+          <strong>different fault modes need different decision boundaries</strong>.
+          A single shared classifier can't simultaneously be optimal for
+          HPC-only data and for HPC+Fan data. The right next layer is{" "}
+          <em>architectural</em> — FedRep / FedCCFA style personalised heads
+          on top of a shared encoder.
+        </p>
+      </StorySection>
+
+      <StorySection title="The operational silver lining">
+        <p>
+          Even without closing the headline RMSE gap, FedProx delivered
+          something a maintenance team would actually deploy: the per-subset
+          F1 on FD003 went from{" "}
+          <span className="font-mono-num text-bad">0.727</span> (vanilla) to{" "}
+          <span className="font-mono-num text-good">0.895</span> at
+          μ=0.001. That's <span className="font-mono-num text-text">+23%</span>{" "}
+          relative recall improvement on the harder failure mode — fewer
+          missed Fan-degradation engines.
+        </p>
+        <p className="mt-4 text-text-dim text-sm">
+          For a maintenance-decision pipeline, missing a Fan degradation is
+          much worse than missing an HPC degradation by the same margin (Fan
+          failures are catastrophic; HPC failures are gradual). The
+          per-subset balancing FedProx introduces is operationally aligned
+          with that asymmetry, even though the headline RMSE doesn't reward
+          it.
+        </p>
+        <p className="mt-4">
+          Full details:{" "}
+          <a href="/results" className="text-accent">
+            → Results / rq2_fedprox
+          </a>{" "}
+          shows the per-round trajectories, headline plot, and per-engine
+          breakdown.
+        </p>
+      </StorySection>
+    </>
+  );
+}
+
+// ===========================================================================
+// FedProx comparison table — hard-coded from results/rq2_fedprox/metrics.json
+// ===========================================================================
+function FedProxComparisonTable() {
+  type Row = {
+    label: string;
+    rmse: string;
+    f1: string;
+    fd003_f1: string;
+    gap: string;
+    gapTone: "good" | "bad" | "neutral";
+    highlight?: boolean;
+  };
+  const rows: Row[] = [
+    {
+      label: "Centralized (P6, upper bound)",
+      rmse: "13.77", f1: "0.957", fd003_f1: "—",
+      gap: "—", gapTone: "neutral",
+    },
+    {
+      label: "FedAvg μ=0 (control)",
+      rmse: "17.95", f1: "0.871", fd003_f1: "0.727",
+      gap: "+0.0%", gapTone: "neutral",
+    },
+    {
+      label: "FedProx μ=0.001",
+      rmse: "17.85", f1: "0.909", fd003_f1: "0.895",
+      gap: "+2.4%", gapTone: "good",
+    },
+    {
+      label: "FedProx μ=0.01",
+      rmse: "17.94", f1: "0.857", fd003_f1: "0.688",
+      gap: "+0.2%", gapTone: "neutral",
+    },
+    {
+      label: "FedProx μ=0.1 (best RMSE)",
+      rmse: "17.70", f1: "0.871", fd003_f1: "0.800",
+      gap: "+6.0%", gapTone: "good",
+      highlight: true,
+    },
+  ];
+  return (
+    <div className="overflow-x-auto rounded-md border border-border bg-bg">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border bg-bg-subtle/40 text-text-dim">
+            <th className="text-left px-4 py-2 font-medium">Method</th>
+            <th className="text-right px-4 py-2 font-medium">RMSE</th>
+            <th className="text-right px-4 py-2 font-medium">F1 (overall)</th>
+            <th className="text-right px-4 py-2 font-medium">F1 (FD003)</th>
+            <th className="text-right px-4 py-2 font-medium">Gap closed</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((r) => (
+            <tr
+              key={r.label}
+              className={
+                r.highlight
+                  ? "bg-accent/5"
+                  : r.label.startsWith("Centralized")
+                    ? "bg-bg-subtle/30 text-text-dim italic"
+                    : ""
+              }
+            >
+              <td className="px-4 py-2">{r.label}</td>
+              <td className="px-4 py-2 text-right font-mono-num">{r.rmse}</td>
+              <td className="px-4 py-2 text-right font-mono-num">{r.f1}</td>
+              <td className="px-4 py-2 text-right font-mono-num">{r.fd003_f1}</td>
+              <td
+                className={`px-4 py-2 text-right font-mono-num ${
+                  r.gapTone === "good"
+                    ? "text-good"
+                    : r.gapTone === "bad"
+                      ? "text-bad"
+                      : "text-text-dim"
+                }`}
+              >
+                {r.gap}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
