@@ -106,36 +106,50 @@ export function LiveDemoPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight text-text">
-          Live demo
+    <article className="w-full">
+      <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
+        <div className="eyebrow">Interactive · ~5 seconds per prediction</div>
+        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[24ch]">
+          Live <em className="not-italic text-accent">prediction</em> +
+          attribution
         </h1>
-        <p className="mt-2 text-text-dim max-w-3xl">
-          Pick a trained checkpoint and a test engine; the backend runs
+        <p className="mt-6 text-lg text-text-dim max-w-[68ch]">
+          Pick a trained checkpoint and a test engine. The backend runs
           Integrated Gradients on demand and returns a sensor-level
-          explanation grounded in a maintenance ontology.
+          explanation grounded in the project&apos;s 17-entry maintenance
+          ontology — the same pipeline described on the{" "}
+          <a href="/rq3-story" className="text-accent">
+            RQ3 story page
+          </a>
+          , exposed as an interactive API.
         </p>
+        <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
+          <span>4 checkpoints · 200-engine test set · CPU-only inference</span>
+          <span className="text-text-muted/50">·</span>
+          <span className="font-mono-num">FastAPI /api/predict</span>
+        </div>
       </header>
 
-      <ControlsPanel
-        checkpoints={checkpoints}
-        selectedCheckpoint={selectedCheckpoint}
-        onCheckpointChange={setSelectedCheckpoint}
-        engines={engines}
-        selectedEngineId={selectedEngineId}
-        onEngineChange={setSelectedEngineId}
-        topK={topK}
-        onTopKChange={setTopK}
-        useLlm={useLlm}
-        onUseLlmChange={setUseLlm}
-        canPredict={canPredict}
-        isPredicting={prediction.kind === "loading"}
-        onPredict={runPredict}
-        currentCheckpointName={checkpointDisplayName}
-      />
-      <ResultsPanel prediction={prediction} />
-    </div>
+      <div className="px-10 md:px-16 lg:px-24 py-10">
+        <ControlsPanel
+          checkpoints={checkpoints}
+          selectedCheckpoint={selectedCheckpoint}
+          onCheckpointChange={setSelectedCheckpoint}
+          engines={engines}
+          selectedEngineId={selectedEngineId}
+          onEngineChange={setSelectedEngineId}
+          topK={topK}
+          onTopKChange={setTopK}
+          useLlm={useLlm}
+          onUseLlmChange={setUseLlm}
+          canPredict={canPredict}
+          isPredicting={prediction.kind === "loading"}
+          onPredict={runPredict}
+          currentCheckpointName={checkpointDisplayName}
+        />
+        <ResultsPanel prediction={prediction} />
+      </div>
+    </article>
   );
 }
 
