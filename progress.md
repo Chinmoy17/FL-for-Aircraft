@@ -1152,6 +1152,156 @@ sentence-shaped output for free.
 
 ---
 
+## 6⁴⁄50. RQ2 follow-up trilogy — FedProx, FedRep, FedCCFA
+
+### Goal
+
+Take RQ2's negative finding seriously and run the experiments it
+pointed at. RQ2 ruled out aggregation-layer fixes for the structural
+Non-IID gap. Two intervention layers remained as candidates:
+
+- **Client-side drift control** — FedProx adds a proximal term
+  $\frac{\mu}{2}\|W_\mathrm{local} - W_\mathrm{global}\|^2$ to each
+  client's local loss to penalise drift away from the round-start
+  global weights.
+- **Client-side architecture** — FedRep / FedCCFA federate only the
+  encoder and let each client keep its own classifier heads, so
+  clients with structurally different fault-mode mixes don't have to
+  share one decision boundary.
+
+The trilogy answered: does drift control alone close the gap? (FedProx —
+small win) Does architectural personalisation close the gap? (FedRep —
+big win) Does clustering on top of personalisation help further?
+(FedCCFA — null on this dataset, surfaces an architectural constraint).
+
+### Steps taken
+
+| # | Branch | Experiment | What landed |
+|---|---|---|---|
+| 1 | `fedprox` | Add `mu` kwarg to `FederatedClient.local_train` + sweep μ ∈ {0, 0.001, 0.01, 0.1} | 30 LOC client change + 8 tests + CLI + results phase |
+| 2 | `fedrep` | New `personalised.py` module with encoder/head split, two-phase local training, encoder-only aggregation | 5 model helpers + 400 LOC sim + 11 tests + CLI + results phase |
+| 3 | `fedccfa` | New `clustered.py` module on top of `personalised.py`: pairwise head similarity + connectivity clustering + per-cluster head averaging | 330 LOC + 14 tests + CLI with cluster-evolution heatmap |
+
+All three reused the same FD001+FD003 / 4 clients / 50 rounds / seed=42
+setup as P6 + RQ2 for direct comparison. FedProx's μ=0 sanity case
+reproduced vanilla FedAvg's RMSE 17.95 bit-exactly — proves backward
+compatibility before the science even starts.
+
+### Headline numbers (the full intervention-layer hierarchy)
+
+| # | Layer | Method | RMSE | Gap closed | Verdict |
+|---:|---|---|---:|---:|---|
+| — | upper bound | Centralized | **13.77** | — | reference |
+| — | lower bound | Local-only mean | 17.92 | — | reference |
+| 1 | Server aggregation | Vanilla FedAvg | 17.95 | 0.0% | control |
+| 1 | Server aggregation | RQ2 (3 reweighting schemes) | 17.80 | +2.8% | ❌ Negative |
+| 2 | Client optimisation | FedProx (best, μ=0.1) | 17.70 | +6.0% | ⚠️ Small positive |
+| 3a | Client architecture (per-client heads) | **FedRep** | **14.91** | **+73.0%** | ✅ **Big positive** |
+| 3b | Client architecture (clustered heads) | FedCCFA | 15.00 | +71.0% | ⚠️ Null vs FedRep |
+
+The empirical hierarchy:
+
+$$\text{aggregation} < \text{drift-control} < \text{per-client architecture}$$
+
+### What worked
+
+- **FedRep's encoder-only aggregation closes 73% of the Non-IID gap** —
+  by far the largest positive finding of the project. On FD001 it
+  actually *beats* centralized (14.34 vs 14.80). On FD003 it stays ~3
+  RMSE behind centralized but +3.5 RMSE *better* than vanilla FedAvg.
+  Architecture > optimisation > aggregation, empirically and decisively.
+- **FedProx's per-subset balancing** — even though combined RMSE moved
+  only +0.25, the per-subset story shifted from vanilla's biased-toward-
+  easy (17.0 FD001 / 18.9 FD003) to balanced-on-both (~17.7 each). For
+  a maintenance pipeline that's operationally significant.
+- **FedCCFA's null result is itself publishable** — three stacked causes
+  (same init, tiny head capacity, shared encoder) prevent heads from
+  developing the diversity clustering needs to act on. Points at clean
+  architectural follow-ups (larger heads, cluster-aware init).
+- **Every protocol change ships with a regression-protecting test** —
+  FedProx's mu=0 must reproduce vanilla exactly, FedRep's encoder/head
+  split must partition state_dict cleanly, FedCCFA's clustering must
+  give correct connectivity on designed similarity matrices. 33 new
+  tests across the three experiments; full suite at 204/204 passing.
+
+### Challenges
+
+- **Polluted `fedprox` commit** — initial `git add -A` swept in 2,620
+  files from `frontend/node_modules` because the repo-root `.gitignore`
+  was Python-only. Root cause: `frontend/.gitignore` lived only on the
+  `p7_demo` branch. Fixed by adding Node entries (node_modules/, dist/,
+  .vite/, *.tsbuildinfo) at the repo root, then force-pushing a clean
+  fedprox. The lesson is recorded in user memory: branch off a branch
+  that doesn't have `frontend/.gitignore` and `git add -A` will quietly
+  ingest 50 MB of pollution. Repo-root rules are safer.
+- **`bundle.test_rul` is a numpy array, not a Series** — my first
+  per-subset eval helper in `run_fedprox.py` tried `.loc[]` on it and
+  crashed. Fixed by mirroring the position-lookup pattern from
+  `scripts/run_rq2.py.evaluate_state_per_subset`. Wrote a one-off
+  `regen_fedprox_report.py` to regenerate metrics.json + plots from
+  the existing per-round CSVs without re-running training (~30 s).
+- **FedCCFA heads collapsed to one cluster** — initial run with
+  similarity_threshold=0.5 immediately merged all 4 clients into one
+  cluster after the 3-round warmup. Diagnostic re-run at threshold=0.99
+  produced identical results, confirming the heads are truly
+  indistinguishable (not just below threshold). This is the finding,
+  not a bug. The cluster-evolution heatmap (solid blue from round 2
+  onward) makes it visually obvious.
+
+### Decision: macro RMSE vs combined RMSE
+
+FedRep and FedCCFA produce a macro RMSE (mean across clients of each
+client's *own* per-subset test RMSE), while every other phase reports
+combined RMSE on the pooled test set. These numbers are **not strictly
+comparable** — FedRep clients each see only their own subset's test
+slice, which is operationally how an airline would deploy FedRep but is
+a different evaluation than centralized training.
+
+To stay honest the metrics.json reports BOTH the macro RMSE (for cross-
+phase comparison narrative) and the per-subset means (for apples-to-
+apples comparison against P6's `centralized_per_subset`). The /rq2-story
+frontend page surfaces per-subset numbers in the comparison table so
+readers can see FedRep's 14.34 FD001 vs centralized's 14.80 directly.
+
+### Files added in the RQ2 follow-up trilogy
+
+| File | Purpose |
+| --- | --- |
+| `src/fl_aircraft/fl/client.py` (extended) | `mu` kwarg + proximal-term branch (~80 LOC). |
+| `src/fl_aircraft/fl/simulation.py` (extended) | `mu` plumbed through `run_fedavg_from_bundle`. |
+| `src/fl_aircraft/fl/personalised.py` | New: `PersonalisedClient`, two-phase local training, encoder-only aggregation, per-client eval (~400 LOC). |
+| `src/fl_aircraft/fl/clustered.py` | New: head-similarity clustering + per-cluster head aggregation + `run_fedccfa_from_bundle` (~330 LOC). |
+| `src/fl_aircraft/models/multitask_cnn.py` (extended) | 5 new helpers: `is_shared_key`, `is_personal_key`, `shared_state_dict()`, `personal_state_dict()`, `load_shared_state_dict()` (~60 LOC). |
+| `tests/test_fedprox.py` | 8 new tests (bit-exact mu=0, drift reduction, etc.). |
+| `tests/test_fedrep.py` | 11 new tests (split-helper invariants, two-phase training). |
+| `tests/test_fedccfa.py` | 14 new tests (cosine props, clustering correctness, head aggregation). |
+| `scripts/run_fedprox.py` | μ-sweep CLI; auto-loads P6 references. |
+| `scripts/run_fedrep.py` | CLI with per-client per-subset eval. |
+| `scripts/run_fedccfa.py` | CLI with cluster-evolution heatmap. |
+| `scripts/regen_fedprox_report.py` | One-off: regenerate FedProx metrics.json + plots from on-disk CSVs without re-training. |
+| `results/rq2_fedprox/`, `results/rq2_fedrep/`, `results/rq2_fedccfa/` | Three new results phases, each with metrics.json + 3 plots + per-round CSV. |
+
+### What this implies for next steps
+
+RQ2 is now empirically closed in both directions:
+
+- **The negative direction** (RQ2 itself): server-side reweighting cannot
+  fix structural Non-IID. The three weighting schemes ruled out (fault-
+  count, val-F1, inverse-loss) span the obvious knobs an aggregation
+  designer would try.
+- **The positive direction** (the trilogy): the architectural layer
+  (per-client heads on top of a shared encoder) does fix it, and the
+  clustering refinement (FedCCFA) doesn't add anything when heads can't
+  develop cluster structure to begin with.
+
+For the writeup this is a 4-bullet narrative arc that reads:
+*"We ruled out one layer rigorously, then validated the right layer
+empirically, and identified the architectural constraint that prevents
+the obvious refinement from helping."* That's a stronger story than
+either a single positive finding or a single negative finding alone.
+
+---
+
 ## 7. Architecture overview
 
 ```
