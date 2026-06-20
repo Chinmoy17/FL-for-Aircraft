@@ -215,14 +215,22 @@ def run_fedavg_from_bundle(
     use_cosine_schedule: bool = True,
     seed: int = 42,
     log_every: int = 1,
+    mu: float = 0.0,
 ) -> FederatedHistory:
-    """Run a full FedAvg simulation against ``bundle``'s data and ``shards``."""
+    """Run a full FedAvg simulation against ``bundle``'s data and ``shards``.
+
+    Set ``mu > 0`` to enable the FedProx proximal term (Li et al., MLSys
+    2020) during local training. ``mu = 0.0`` is exactly vanilla FedAvg
+    and reproduces every prior phase bit-exactly with the same seed.
+    """
     if n_rounds < 1:
         raise ValueError(f"n_rounds must be >= 1, got {n_rounds}.")
     if local_epochs < 1:
         raise ValueError(f"local_epochs must be >= 1, got {local_epochs}.")
     if not shards:
         raise ValueError("shards must be non-empty.")
+    if mu < 0:
+        raise ValueError(f"mu must be >= 0, got {mu}.")
 
     clients, test_loader = build_federated_clients_from_bundle(
         bundle, shards, batch_size, lambda_fault, seed,
@@ -270,7 +278,10 @@ def run_fedavg_from_bundle(
         updates = []
         for client in clients:
             ct, cr, cf = client.local_train(
-                local_epochs=local_epochs, lr=current_lr, weight_decay=weight_decay
+                local_epochs=local_epochs,
+                lr=current_lr,
+                weight_decay=weight_decay,
+                mu=mu,
             )
             per_round_client_losses[client.client_id].append(ct)
             round_total += ct

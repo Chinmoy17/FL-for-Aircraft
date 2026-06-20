@@ -41,3 +41,17 @@ checkpoints/
 *.npz
 *.npy
 *.log
+
+# Node.js / Vite / TS build artefacts (frontend/). Listed here at repo root so
+# every branch inherits the rule, regardless of whether frontend/ exists yet.
+# Before this rule landed, branching from a branch without frontend/.gitignore
+# meant `git add -A` would slurp the entire node_modules tree (~50 MB).
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

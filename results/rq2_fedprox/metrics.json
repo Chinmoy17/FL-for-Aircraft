@@ -1,0 +1,157 @@
+{
+  "phase_id": "rq2_fedprox",
+  "phase_name": "RQ2 follow-up \u2014 FedProx (\u03bc-sweep) on FD001 + FD003",
+  "interpretation": "FedProx with \u03bc=0.1 achieved best combined RMSE 17.70 on the FD001+FD003 Non-IID partition. This closes +6.0% of the local\u2192centralized RMSE gap (headroom = 17.92 \u2212 13.77 cycles). The per-subset breakdown tells the real story: vs vanilla FedAvg the best FedProx run shifts +1.44 RMSE on FD003 (harder, HPC+Fan; F1 0.727 \u2192 0.800, a +0.073 F1 delta) at the cost of +0.98 RMSE on FD001 (easier, HPC-only). Combined with RQ2's finding (best reweighting scheme closed only +2.8% of the gap), two intervention layers \u2014 server-side weights and client-side drift control \u2014 both ceiling around RMSE 17.7 on this 4-client / 2-local-epoch setup. The remaining ~4 RMSE gap is consistent with the structural-Non-IID hypothesis that different fault modes need different decision boundaries (FedRep / FedCCFA architectural layer).",
+  "artifacts": {
+    "headline_comparison_png": "results/rq2_fedprox/headline_comparison_fd001+fd003.png",
+    "per_round_rmse_png": "results/rq2_fedprox/per_round_rmse_fd001+fd003.png",
+    "per_subset_breakdown_png": "results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png"
+  },
+  "subset": "FD001+FD003",
+  "config": {
+    "mus": [
+      0.0,
+      0.001,
+      0.01,
+      0.1
+    ],
+    "n_clients_per_subset": 2,
+    "n_rounds": 50,
+    "local_epochs": 2,
+    "batch_size": 256,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "lambda_fault": 0.5,
+    "use_cosine_schedule": true,
+    "seed": 42,
+    "subsets": [
+      "FD001",
+      "FD003"
+    ],
+    "regenerated_from_csv": true
+  },
+  "timing": {
+    "total_seconds": 1519.1
+  },
+  "summary": {
+    "best_mu": "mu_0.1",
+    "best_rmse": 17.6989,
+    "best_gap_closed_pct": 5.95,
+    "vanilla_rmse_p6": 17.9479,
+    "centralized_rmse_p6": 13.7658,
+    "rmse_gap_p6": 4.1821,
+    "per_mu_gap_closed_pct": {
+      "mu_0.0": 0.0,
+      "mu_0.001": 2.29,
+      "mu_0.01": 0.14,
+      "mu_0.1": 5.95
+    }
+  },
+  "train": {},
+  "test": {},
+  "per_subset": {
+    "mu_0.0": {
+      "FD001": {
+        "subset": "FD001",
+        "n_engines": 100,
+        "rmse": 16.9917,
+        "nasa_score": 657.5675,
+        "auprc": 0.9699,
+        "f1": 0.9615
+      },
+      "FD003": {
+        "subset": "FD003",
+        "n_engines": 100,
+        "rmse": 18.8556,
+        "nasa_score": 989.4377,
+        "auprc": 0.9248,
+        "f1": 0.7273
+      }
+    },
+    "mu_0.001": {
+      "FD001": {
+        "subset": "FD001",
+        "n_engines": 100,
+        "rmse": 18.2056,
+        "nasa_score": 835.5295,
+        "auprc": 0.9545,
+        "f1": 0.92
+      },
+      "FD003": {
+        "subset": "FD003",
+        "n_engines": 100,
+        "rmse": 17.4911,
+        "nasa_score": 753.0948,
+        "auprc": 0.963,
+        "f1": 0.8947
+      }
+    },
+    "mu_0.01": {
+      "FD001": {
+        "subset": "FD001",
+        "n_engines": 100,
+        "rmse": 16.8806,
+        "nasa_score": 648.5776,
+        "auprc": 0.9817,
+        "f1": 0.9615
+      },
+      "FD003": {
+        "subset": "FD003",
+        "n_engines": 100,
+        "rmse": 18.9444,
+        "nasa_score": 1034.3225,
+        "auprc": 0.8992,
+        "f1": 0.6875
+      }
+    },
+    "mu_0.1": {
+      "FD001": {
+        "subset": "FD001",
+        "n_engines": 100,
+        "rmse": 17.9749,
+        "nasa_score": 996.312,
+        "auprc": 0.9685,
+        "f1": 0.92
+      },
+      "FD003": {
+        "subset": "FD003",
+        "n_engines": 100,
+        "rmse": 17.4185,
+        "nasa_score": 745.9139,
+        "auprc": 0.9341,
+        "f1": 0.8
+      }
+    }
+  },
+  "per_client": {
+    "mu_0.0": {
+      "best_round": 12,
+      "rmse": 17.9479,
+      "nasa_score": 1647.0052,
+      "auprc": 0.951,
+      "f1": 0.8706
+    },
+    "mu_0.001": {
+      "best_round": 38,
+      "rmse": 17.852,
+      "nasa_score": 1588.6243,
+      "auprc": 0.9559,
+      "f1": 0.9091
+    },
+    "mu_0.01": {
+      "best_round": 12,
+      "rmse": 17.9422,
+      "nasa_score": 1682.9001,
+      "auprc": 0.9469,
+      "f1": 0.8571
+    },
+    "mu_0.1": {
+      "best_round": 38,
+      "rmse": 17.6989,
+      "nasa_score": 1742.2259,
+      "auprc": 0.9526,
+      "f1": 0.8706
+    }
+  },
+  "generated_at": "2026-06-20T08:06:04.384554+00:00"
+}
