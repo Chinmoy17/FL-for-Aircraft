@@ -30,33 +30,30 @@ import argparse
 import json
 import sys
 import time
-from dataclasses import dataclass
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SRC = REPO_ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from fl_aircraft.data import (  # noqa: E402
-    CMAPSSConfig,
-    MultiSubsetConfig,
-    Normalizer,
-    TrainTestBundle,
-    bundle_from_config,
-    load_multi_subset_bundle,
-    make_test_windows,
-)
+from fl_aircraft.data import TrainTestBundle  # noqa: E402
 from fl_aircraft.explain import (  # noqa: E402
     AttributionResult,
+    CheckpointSpec,
     EngineExplanation,
+    WindowPair,
     attribute_window,
+    available_checkpoints,
     build_explanation,
+    find_engine,
+    load_bundle,
+    load_model,
+    prepare_test_windows,
 )
 from fl_aircraft.explain.narrative import rewrite_with_llm  # noqa: E402
 from fl_aircraft.explain.plots import (  # noqa: E402
@@ -64,131 +61,11 @@ from fl_aircraft.explain.plots import (  # noqa: E402
     plot_sensor_trajectory_with_attribution,
     plot_top_sensor_bar,
 )
-from fl_aircraft.models import MultiTaskCNN, MultiTaskCNNConfig  # noqa: E402
+from fl_aircraft.models import MultiTaskCNN  # noqa: E402
 from fl_aircraft.utils import PhaseMetrics, dump_phase_metrics, seed_everything  # noqa: E402
 
 PHASE_ID = "rq3_explanations"
 PHASE_NAME = "RQ3 — Sensor attribution + maintenance ontology"
-
-
-# ---------------------------------------------------------------------------
-# Checkpoint catalogue
-# ---------------------------------------------------------------------------
-@dataclass(frozen=True)
-class CheckpointSpec:
-    """One trained-model checkpoint that the demo / RQ3 will load."""
-
-    key: str
-    display_name: str
-    checkpoint_path: Path
-    bundle_kind: str  # "single" or "multi"
-    subset: str | None = None
-    subsets: tuple[str, ...] | None = None
-
-
-def _candidate_checkpoints() -> list[CheckpointSpec]:
-    """Return the checkpoints we'd like to compare, in display order."""
-    return [
-        CheckpointSpec(
-            key="p3_centralized_fd001",
-            display_name="P3 Centralized (FD001, IID)",
-            checkpoint_path=REPO_ROOT / "results" / "03_centralized" / "best_model_fd001.pt",
-            bundle_kind="single", subset="FD001",
-        ),
-        CheckpointSpec(
-            key="p5_fedavg_iid_fd001",
-            display_name="P5 FedAvg IID (FD001)",
-            checkpoint_path=REPO_ROOT / "results" / "05_fedavg" / "best_global_model_fd001.pt",
-            bundle_kind="single", subset="FD001",
-        ),
-        CheckpointSpec(
-            key="p6_centralized_combined",
-            display_name="P6 Centralized (FD001+FD003)",
-            checkpoint_path=REPO_ROOT / "results" / "06_non_iid" / "best_centralized_fd001+fd003.pt",
-            bundle_kind="multi", subsets=("FD001", "FD003"),
-        ),
-        CheckpointSpec(
-            key="p6_fedavg_non_iid",
-            display_name="P6 FedAvg Non-IID (FD001+FD003)",
-            checkpoint_path=REPO_ROOT / "results" / "06_non_iid" / "best_fedavg_fd001+fd003.pt",
-            bundle_kind="multi", subsets=("FD001", "FD003"),
-        ),
-    ]
-
-
-def _load_bundle(spec: CheckpointSpec, data_dir: Path) -> TrainTestBundle:
-    """Build the appropriate bundle for a checkpoint's training distribution."""
-    if spec.bundle_kind == "single":
-        cfg = CMAPSSConfig(subset=spec.subset, data_dir=data_dir)
-        return bundle_from_config(cfg)
-    if spec.bundle_kind == "multi":
-        cfg = MultiSubsetConfig(subsets=spec.subsets, data_dir=data_dir)
-        return load_multi_subset_bundle(cfg)
-    raise ValueError(f"Unknown bundle_kind {spec.bundle_kind!r}")
-
-
-def _load_model(spec: CheckpointSpec, bundle: TrainTestBundle) -> MultiTaskCNN:
-    """Reconstruct the model architecture from the saved config and load weights."""
-    state = torch.load(spec.checkpoint_path, map_location="cpu", weights_only=True)
-    cfg_payload = state.get("config", {})
-    n_features = cfg_payload.get("n_features", bundle.n_features)
-    window_size = cfg_payload.get("window_size", bundle.window_size)
-    model = MultiTaskCNN(
-        MultiTaskCNNConfig(n_features=n_features, window_size=window_size)
-    )
-    model.load_state_dict(state["state_dict"])
-    model.eval()
-    return model
-
-
-# ---------------------------------------------------------------------------
-# Test-window preparation
-# ---------------------------------------------------------------------------
-@dataclass
-class WindowPair:
-    """One test engine's window in both normalized and physical space."""
-
-    engine_id: int
-    subset: str  # 'FD001' or 'FD003' (or whatever the bundle exposes)
-    window_normalized: np.ndarray  # (T, F), z-scored
-    rul_true: float
-    fault_true: int
-
-
-def _prepare_test_windows(bundle: TrainTestBundle) -> list[WindowPair]:
-    """Build per-engine windows in the bundle's preprocessing space."""
-    normalizer = Normalizer.fit(bundle.train_df, bundle.feature_cols)
-    arrays = make_test_windows(
-        normalizer.transform(bundle.test_raw_df),
-        bundle.test_rul,
-        bundle.feature_cols,
-        bundle.window_size,
-        bundle.rul_cap,
-        bundle.fault_threshold,
-    )
-    pairs: list[WindowPair] = []
-    # `make_test_windows` returns engines in sorted unit_id order, matching test_rul.
-    sorted_unit_ids = sorted(bundle.test_raw_df["unit_id"].unique())
-    for i, uid in enumerate(sorted_unit_ids):
-        # Determine origin subset (multi-subset bundles have a source_subset col).
-        if "source_subset" in bundle.test_raw_df.columns:
-            origin = str(
-                bundle.test_raw_df.loc[
-                    bundle.test_raw_df["unit_id"] == uid, "source_subset"
-                ].iloc[0]
-            )
-        else:
-            origin = bundle.subsets[0]
-        pairs.append(
-            WindowPair(
-                engine_id=int(uid),
-                subset=origin,
-                window_normalized=arrays.X[i],
-                rul_true=float(arrays.y_rul[i]),
-                fault_true=int(arrays.y_fault[i]),
-            )
-        )
-    return pairs
 
 
 # ---------------------------------------------------------------------------
@@ -266,12 +143,10 @@ def _run_for_engine(
     rul_true_observed: float | None = None
 
     for spec in specs:
-        pairs = windows[spec.key]
-        matches = [p for p in pairs if p.engine_id == engine_id]
-        if not matches:
+        pair = find_engine(windows[spec.key], engine_id)
+        if pair is None:
             print(f"  · [{spec.key}] engine {engine_id} not in test set — skipped")
             continue
-        pair = matches[0]
         rul_true_observed = pair.rul_true
         bundle = bundles[spec.key]
         model = models[spec.key]
@@ -371,7 +246,7 @@ def main() -> None:
     data_dir = REPO_ROOT / "Dataset" / "CMAPSS_NASA"
 
     # 1. Discover which checkpoints actually exist on disk.
-    specs = [s for s in _candidate_checkpoints() if s.checkpoint_path.exists()]
+    specs = available_checkpoints(REPO_ROOT)
     if not specs:
         raise SystemExit(
             "No saved checkpoints found. Run P3/P5/P6 first to populate "
@@ -387,10 +262,10 @@ def main() -> None:
     models: dict[str, MultiTaskCNN] = {}
     use_llm = not args.no_llm
     for spec in specs:
-        bundle = _load_bundle(spec, data_dir)
+        bundle = load_bundle(spec, data_dir)
         bundles[spec.key] = bundle
-        windows[spec.key] = _prepare_test_windows(bundle)
-        models[spec.key] = _load_model(spec, bundle)
+        windows[spec.key] = prepare_test_windows(bundle)
+        models[spec.key] = load_model(spec, bundle)
         print(f"  loaded {spec.key}: {len(windows[spec.key])} test engines, "
               f"{models[spec.key].count_parameters():,} params")
 

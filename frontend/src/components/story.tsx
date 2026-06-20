@@ -1,0 +1,204 @@
+/**
+ * Shared atoms for the long-form RQ story pages.
+ *
+ * Both /rq2-story and /rq3-story follow the same Distill-style template:
+ *
+ *   - editorial hero with eyebrow + serif display headline
+ *   - 3 anchor statistics (Anchoring Bias)
+ *   - Section blocks with 68ch reading width
+ *   - hypothesis / methodology cards
+ *   - bulleted lists with accent dots
+ *   - inline formula blocks
+ *   - one full-width smoking-gun figure
+ *
+ * Keeping these atoms in one place guarantees both pages share spacing,
+ * type ramp, and color usage. Per UI-craft trust-emphasis guidance:
+ * 8px grid, single accent color, AA contrast throughout.
+ */
+import { figureUrl } from "../api";
+
+// ---------------------------------------------------------------------------
+// Section — academic-shell-aligned section block. The content is
+// constrained to a comfortable reading width but the surrounding
+// padding matches the full-width shell, so sections don't visually
+// disconnect from the page header.
+// ---------------------------------------------------------------------------
+export function StorySection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="px-10 md:px-16 lg:px-24 mt-16">
+      <h2 className="font-display text-2xl md:text-3xl tracking-tight text-text mb-4 max-w-[36ch]">
+        {title}
+      </h2>
+      <div className="space-y-4 text-[16px] leading-[1.7] text-text max-w-[78ch]">
+        {children}
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AnchorStat — the three big numbers under each hero. Anchoring Bias says
+// the first number a reader sees calibrates their judgement of the rest.
+// ---------------------------------------------------------------------------
+type StatTone = "neutral" | "good" | "bad" | "accent";
+
+const statToneClass: Record<StatTone, string> = {
+  neutral: "text-text",
+  good: "text-good",
+  bad: "text-bad",
+  accent: "text-accent",
+};
+
+export function AnchorStat({
+  value,
+  label,
+  sub,
+  tone = "neutral",
+}: {
+  value: string;
+  label: string;
+  sub: string;
+  tone?: StatTone;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-bg-subtle p-4 text-center">
+      <div
+        className={`text-3xl font-semibold font-mono-num ${statToneClass[tone]}`}
+      >
+        {value}
+      </div>
+      <div className="mt-2 text-xs uppercase tracking-wider text-text-dim font-medium">
+        {label}
+      </div>
+      <div className="mt-2 text-xs text-text-muted leading-snug">{sub}</div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// HypothesisCard — short card used to describe one experimental scheme,
+// model, or method. Title, formula/code line, one-sentence explanation.
+// ---------------------------------------------------------------------------
+export function HypothesisCard({
+  label,
+  formula,
+  text,
+}: {
+  label: string;
+  formula?: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-bg-subtle p-4">
+      <div className="text-xs uppercase tracking-wider text-text-dim font-medium">
+        {label}
+      </div>
+      {formula && (
+        <div className="mt-2 font-mono-num text-sm text-accent">{formula}</div>
+      )}
+      <p className="mt-2 text-sm text-text-dim leading-snug">{text}</p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Bullet — accent-dot list item, more editorial than default <li>.
+// ---------------------------------------------------------------------------
+export function Bullet({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="pl-5 relative">
+      <span
+        aria-hidden
+        className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-accent"
+      />
+      <span className="text-text">{children}</span>
+    </li>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FormulaBlock — inline math / pseudo-code, accent-colored, centered.
+// ---------------------------------------------------------------------------
+export function FormulaBlock({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="my-4 rounded-md border border-border bg-bg px-4 py-3 font-mono-num text-sm text-accent text-center">
+      {children}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SmokingGunFigure — left-aligned eyebrow + title (matches academic-shell
+// rhythm) followed by the figure. Caption sits below the image, constrained
+// to a comfortable reading width. Click → opens in new tab.
+// ---------------------------------------------------------------------------
+export function SmokingGunFigure({
+  eyebrow,
+  title,
+  artifactPath,
+  caption,
+  alt,
+}: {
+  eyebrow: string;
+  title: string;
+  artifactPath: string;
+  caption: React.ReactNode;
+  alt: string;
+}) {
+  const url = figureUrl(artifactPath);
+  return (
+    <section className="px-10 md:px-16 lg:px-24 mt-16">
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 className="mt-3 font-display text-2xl md:text-3xl tracking-tight text-text mb-6 max-w-[40ch]">
+        {title}
+      </h2>
+      <figure>
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="block rounded-md overflow-hidden border border-border bg-white hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
+        >
+          <img src={url} alt={alt} className="w-full h-auto" />
+        </a>
+        <figcaption className="mt-4 text-sm text-text-dim leading-relaxed max-w-[78ch]">
+          {caption}
+        </figcaption>
+      </figure>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// StoryHero — academic-shell-aligned hero. Left-aligned (not centered)
+// to match the experiment-page rhythm. Eyebrow + Instrument Serif display
+// headline + lead paragraph.
+// ---------------------------------------------------------------------------
+export function StoryHero({
+  eyebrow,
+  children,
+  lead,
+}: {
+  eyebrow: string;
+  /** Headline content; pass a fragment so callers control where the accent goes. */
+  children: React.ReactNode;
+  lead: React.ReactNode;
+}) {
+  return (
+    <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
+      <div className="eyebrow">{eyebrow}</div>
+      <h1 className="font-display text-[44px] sm:text-[52px] lg:text-[60px] leading-[1.05] tracking-tight text-text mt-4 max-w-[22ch]">
+        {children}
+      </h1>
+      <p className="mt-6 text-lg text-text-dim leading-relaxed max-w-[68ch]">
+        {lead}
+      </p>
+    </header>
+  );
+}

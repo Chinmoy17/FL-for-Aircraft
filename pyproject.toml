@@ -47,6 +47,14 @@ eda = [
     "ipykernel>=6.29.0",
     "nbformat>=5.10.0",
 ]
+# Backend stack — FastAPI + Uvicorn for the demo server. Kept out of the
+# default install so the science package stays lean. Enable locally with:
+#   uv sync --group backend
+backend = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "httpx2>=2.0.0",
+]
 
 # Force torch (and any CUDA-by-default friends added later) from the CPU-only wheel
 # index. Keeps the install lean and Docker-friendly for the planned Azure free-tier deploy.

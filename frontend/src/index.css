@@ -1,0 +1,121 @@
+/*
+ * Tailwind v4 + design tokens — LIGHT theme, slate-blue accent.
+ *
+ * Inspired by academic publications (Distill, NeurIPS) and the
+ * chinmoy17.github.io portfolio aesthetic. Calm, paper-like palette;
+ * single restrained accent; serif display headlines for long-form RQ
+ * pages and a clean Inter UI for everything else.
+ *
+ * Role-based token names (--color-bg, --color-accent, …) so the next
+ * skin swap is a one-file change instead of a grep-replace tour.
+ */
+@import "tailwindcss";
+
+@theme {
+  /* Surfaces — warm near-white "paper" feel with a subtler band for
+     the sidebar and a pure-white surface for lifted cards. */
+  --color-bg: #fafaf7;
+  --color-bg-subtle: #f3f2ee;
+  --color-surface: #ffffff;
+  --color-border: #e0ddd5;
+  --color-border-strong: #c4c1b8;
+
+  /* Text — near-black (not pure) for body; two dimmer tiers for
+     supporting copy and quiet metadata. */
+  --color-text: #1a1a1a;
+  --color-text-dim: #525252;
+  --color-text-muted: #8a8a85;
+
+  /* Accent — slate blue. One accent only; everything else is monochrome. */
+  --color-accent: #3b5980;
+  --color-accent-subtle: rgba(59, 89, 128, 0.08);
+
+  /* Semantic — calmer than the dark-theme defaults so they don't pop
+     louder than the accent. */
+  --color-good: #2d7a3f;
+  --color-bad: #b91c1c;
+  --color-warn: #b45309;
+
+  /* Font roles. Inter + Instrument Serif + JetBrains Mono are loaded
+     via the Google Fonts <link> in index.html. */
+  --font-ui:
+    "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
+  --font-display:
+    "Instrument Serif", "Georgia", "Times New Roman", serif;
+}
+
+/* Page-level resets — Tailwind v4 doesn't ship the heavyweight preflight
+   we want for a research app, so keep this small. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Reusable utility for code-shaped numbers (figures, tables, metric grids). */
+.font-mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* All-caps eyebrow used above sections and sidebar groups. */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Generous prose width for the long-form RQ pages — content stays
+   readable even though the surrounding shell is full-width. */
+.prose-narrow {
+  max-width: 68ch;
+}
+
+/* Spinner kept from the live-demo CSS. */
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-text-dim);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
