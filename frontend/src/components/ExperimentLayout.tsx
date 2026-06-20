@@ -24,7 +24,7 @@ export function ExperimentLayout({
   next,
 }: {
   phaseId: string;
-  title: string;
+  title: ReactNode;
   lede: ReactNode;
   metaRow?: ReactNode;
   children: ReactNode;

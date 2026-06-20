@@ -113,7 +113,11 @@ const SECTIONS: NavSection[] = [
         to: "/rq7-story",
         badge: "positive",
       },
-      { kind: "soon", label: "RQ4 / RQ5 — Synthesis" },
+      {
+        kind: "internal",
+        label: "RQ4 / RQ5 — Synthesis",
+        to: "/rq4-rq5-synthesis",
+      },
     ],
   },
   {
