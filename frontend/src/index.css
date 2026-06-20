@@ -1,31 +1,43 @@
 /*
- * Tailwind v4 + design tokens derived from the UI-craft strategy:
- *   60/30/10 surface split, single accent color, 3 semantic colors,
- *   Inter for UI / JetBrains Mono for numbers / Instrument Serif for
- *   long-form research display headlines.
+ * Tailwind v4 + design tokens — LIGHT theme, slate-blue accent.
+ *
+ * Inspired by academic publications (Distill, NeurIPS) and the
+ * chinmoy17.github.io portfolio aesthetic. Calm, paper-like palette;
+ * single restrained accent; serif display headlines for long-form RQ
+ * pages and a clean Inter UI for everything else.
+ *
+ * Role-based token names (--color-bg, --color-accent, …) so the next
+ * skin swap is a one-file change instead of a grep-replace tour.
  */
 @import "tailwindcss";
 
 @theme {
-  /* Color tokens — dark theme, named by role (not by hex) so we can
-     re-skin later without grep-replacing every file. */
-  --color-bg: #0d1117;
-  --color-bg-subtle: #161b22;
-  --color-surface: #1c2128;
-  --color-border: #30363d;
-  --color-border-strong: #484f58;
-  --color-text: #e6edf3;
-  --color-text-dim: #8b949e;
-  --color-text-muted: #6e7681;
-  --color-accent: #58a6ff;
-  --color-accent-subtle: #1f6feb33;
-  --color-good: #3fb950;
-  --color-bad: #f85149;
-  --color-warn: #d29922;
+  /* Surfaces — warm near-white "paper" feel with a subtler band for
+     the sidebar and a pure-white surface for lifted cards. */
+  --color-bg: #fafaf7;
+  --color-bg-subtle: #f3f2ee;
+  --color-surface: #ffffff;
+  --color-border: #e0ddd5;
+  --color-border-strong: #c4c1b8;
 
-  /* Font roles. Inter is shipped via Google Fonts <link> in index.html;
-     Instrument Serif likewise. JetBrains Mono is bundled with Vite via
-     local installation later if needed; today we fall back. */
+  /* Text — near-black (not pure) for body; two dimmer tiers for
+     supporting copy and quiet metadata. */
+  --color-text: #1a1a1a;
+  --color-text-dim: #525252;
+  --color-text-muted: #8a8a85;
+
+  /* Accent — slate blue. One accent only; everything else is monochrome. */
+  --color-accent: #3b5980;
+  --color-accent-subtle: rgba(59, 89, 128, 0.08);
+
+  /* Semantic — calmer than the dark-theme defaults so they don't pop
+     louder than the accent. */
+  --color-good: #2d7a3f;
+  --color-bad: #b91c1c;
+  --color-warn: #b45309;
+
+  /* Font roles. Inter + Instrument Serif + JetBrains Mono are loaded
+     via the Google Fonts <link> in index.html. */
   --font-ui:
     "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
   --font-mono:
@@ -48,8 +60,9 @@ body {
   color: var(--color-text);
   font-family: var(--font-ui);
   font-size: 15px;
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 a {
@@ -61,18 +74,28 @@ a:hover {
   text-decoration: underline;
 }
 
-/* Reusable utility for code-shaped numbers */
+/* Reusable utility for code-shaped numbers (figures, tables, metric grids). */
 .font-mono-num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-/* Generous prose width for the RQ2 / RQ3 long-form pages */
+/* All-caps eyebrow used above sections and sidebar groups. */
+.eyebrow {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* Generous prose width for the long-form RQ pages — content stays
+   readable even though the surrounding shell is full-width. */
 .prose-narrow {
   max-width: 68ch;
 }
 
-/* Spinner kept from the live-demo CSS */
+/* Spinner kept from the live-demo CSS. */
 .spinner {
   display: inline-block;
   width: 12px;

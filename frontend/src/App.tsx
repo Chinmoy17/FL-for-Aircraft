@@ -1,100 +1,45 @@
 import { NavLink, Route, BrowserRouter, Routes } from "react-router-dom";
+import { AppShell } from "./components/AppShell";
 import { LiveDemoPage } from "./pages/LiveDemoPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { Rq2StoryPage } from "./pages/Rq2StoryPage";
 import { Rq3StoryPage } from "./pages/Rq3StoryPage";
 import { Rq7StoryPage } from "./pages/Rq7StoryPage";
 
+/**
+ * Top-level router.
+ *
+ * The single layout route mounts `AppShell` (sticky left sidebar +
+ * full-width content area) and renders the active page through its
+ * <Outlet />. The old top nav + site footer are gone — the sidebar
+ * is the table of contents, the author byline, and the GitHub link
+ * all in one.
+ */
 export function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-full flex flex-col">
-        <TopNav />
-        <main className="flex-1">
-          <Routes>
-            <Route path="/" element={<LiveDemoPage />} />
-            <Route path="/results" element={<ResultsPage />} />
-            <Route path="/rq2-story" element={<Rq2StoryPage />} />
-            <Route path="/rq3-story" element={<Rq3StoryPage />} />
-            <Route path="/rq7-story" element={<Rq7StoryPage />} />
-            <Route
-              path="*"
-              element={
-                <div className="max-w-6xl mx-auto px-6 py-12 text-text-dim">
-                  Not found.{" "}
-                  <NavLink to="/" className="text-accent">
-                    Back to live demo
-                  </NavLink>
-                </div>
-              }
-            />
-          </Routes>
-        </main>
-        <SiteFooter />
-      </div>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/" element={<LiveDemoPage />} />
+          <Route path="/results" element={<ResultsPage />} />
+          <Route path="/rq2-story" element={<Rq2StoryPage />} />
+          <Route path="/rq3-story" element={<Rq3StoryPage />} />
+          <Route path="/rq7-story" element={<Rq7StoryPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
 
-function TopNav() {
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    [
-      "px-3 py-2 text-sm rounded-md transition-colors",
-      isActive
-        ? "bg-bg-subtle text-text font-medium"
-        : "text-text-dim hover:text-text hover:bg-bg-subtle/60",
-    ].join(" ");
-
+function NotFoundPage() {
   return (
-    <header className="border-b border-border bg-bg/95 backdrop-blur sticky top-0 z-10">
-      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-        <NavLink
-          to="/"
-          end
-          className="flex items-baseline gap-2 hover:no-underline"
-        >
-          <span className="text-text font-semibold tracking-tight">
-            FL-Aircraft PHM
-          </span>
-          <span className="text-text-muted text-xs hidden sm:inline">
-            federated learning · NASA C-MAPSS
-          </span>
-        </NavLink>
-        <nav className="flex items-center gap-1" aria-label="Primary">
-          <NavLink to="/" end className={linkClass}>
-            Live demo
-          </NavLink>
-          <NavLink to="/results" className={linkClass}>
-            Results
-          </NavLink>
-          <NavLink to="/rq2-story" className={linkClass}>
-            RQ2 story
-          </NavLink>
-          <NavLink to="/rq3-story" className={linkClass}>
-            RQ3 story
-          </NavLink>
-          <NavLink to="/rq7-story" className={linkClass}>
-            RQ7 security
-          </NavLink>
-        </nav>
-      </div>
-    </header>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer className="mt-16 border-t border-border">
-      <div className="max-w-6xl mx-auto px-6 py-6 text-xs text-text-muted">
-        Research project · Federated Learning for Aircraft Engine PHM ·{" "}
-        <a
-          href="https://github.com/Chinmoy17/FL-for-Aircraft"
-          target="_blank"
-          rel="noreferrer"
-        >
-          github.com/Chinmoy17/FL-for-Aircraft
-        </a>
-      </div>
-    </footer>
+    <div className="px-10 py-16 text-text-dim">
+      <h1 className="font-display text-3xl text-text mb-2">Not found</h1>
+      <p className="mb-4">That page doesn't exist (yet).</p>
+      <NavLink to="/" className="text-accent">
+        ← Back to the live demo
+      </NavLink>
+    </div>
   );
 }
