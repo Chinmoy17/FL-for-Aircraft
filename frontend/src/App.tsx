@@ -2,6 +2,7 @@ import { NavLink, Route, BrowserRouter, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
 import { AbstractPage } from "./pages/AbstractPage";
 import { CoverPage } from "./pages/CoverPage";
+import { ExperimentEdaPage } from "./pages/ExperimentEdaPage";
 import { LiveDemoPage } from "./pages/LiveDemoPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { Rq2StoryPage } from "./pages/Rq2StoryPage";
@@ -24,6 +25,7 @@ export function App() {
         <Route element={<AppShell />}>
           <Route path="/" element={<CoverPage />} />
           <Route path="/abstract" element={<AbstractPage />} />
+          <Route path="/experiments/00-eda" element={<ExperimentEdaPage />} />
           <Route path="/demo" element={<LiveDemoPage />} />
           <Route path="/results" element={<ResultsPage />} />
           <Route path="/rq2-story" element={<Rq2StoryPage />} />

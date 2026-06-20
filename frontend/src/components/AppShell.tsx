@@ -83,7 +83,7 @@ const SECTIONS: NavSection[] = [
   {
     eyebrow: "Experiments",
     items: [
-      { kind: "soon", label: "00 · EDA" },
+      { kind: "internal", label: "00 · EDA", to: "/experiments/00-eda" },
       { kind: "soon", label: "01 · Data pipeline" },
       { kind: "soon", label: "02 · Smoke run" },
       { kind: "soon", label: "03 · Centralized" },
