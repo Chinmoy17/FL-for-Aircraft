@@ -436,7 +436,7 @@ const PATHS: Path[] = [
     title: "Walk the empirical baseline",
     blurb:
       "Phases 00–06: EDA, data pipeline, centralized baseline, local-only floor, vanilla FedAvg, Non-IID partition. Every figure with a 2-paragraph explanation.",
-    to: "/", // experiments index — will route once built
+    to: "/experiments/00-eda",
   },
   {
     eyebrow: "Interactive · 5 min",
@@ -450,7 +450,7 @@ const PATHS: Path[] = [
     title: "Read the technical reports",
     blurb:
       "Three long-form .md reports (RQ2 / RQ3 / RQ7), each with 8 sections + TL;DR + artifact pointers. Closest to a chapter draft.",
-    to: "/", // reports page — will route once built
+    to: "/reports",
   },
 ];
 

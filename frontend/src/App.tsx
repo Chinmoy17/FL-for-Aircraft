@@ -10,6 +10,7 @@ import { ExperimentLocalOnlyPage } from "./pages/ExperimentLocalOnlyPage";
 import { ExperimentNonIidPage } from "./pages/ExperimentNonIidPage";
 import { ExperimentSmokePage } from "./pages/ExperimentSmokePage";
 import { LiveDemoPage } from "./pages/LiveDemoPage";
+import { ReportsPage } from "./pages/ReportsPage";
 import { ResultsPage } from "./pages/ResultsPage";
 import { Rq2StoryPage } from "./pages/Rq2StoryPage";
 import { Rq3StoryPage } from "./pages/Rq3StoryPage";
@@ -41,6 +42,7 @@ export function App() {
           <Route path="/experiments/06-non-iid" element={<ExperimentNonIidPage />} />
           <Route path="/demo" element={<LiveDemoPage />} />
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/reports" element={<ReportsPage />} />
           <Route path="/rq2-story" element={<Rq2StoryPage />} />
           <Route path="/rq3-story" element={<Rq3StoryPage />} />
           <Route path="/rq7-story" element={<Rq7StoryPage />} />

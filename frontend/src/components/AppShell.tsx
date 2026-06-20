@@ -133,7 +133,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { kind: "internal", label: "Live demo", to: "/demo" },
       { kind: "internal", label: "Results browser", to: "/results" },
-      { kind: "soon", label: "Technical reports" },
+      { kind: "internal", label: "Technical reports", to: "/reports" },
       {
         kind: "external",
         label: "GitHub →",
