@@ -25,6 +25,11 @@ from .aggregators import (
     make_validation_signal_aggregator,
 )
 from .client import FederatedClient
+from .clustered import (
+    FedCCFAHistory,
+    FedCCFARoundRecord,
+    run_fedccfa_from_bundle,
+)
 from .imbalance_aware import (
     ImbalanceAwareHistory,
     build_imbalance_aware_clients,
@@ -51,6 +56,8 @@ from .simulation import (
 __all__ = [
     "ClientUpdate",
     "FedAvgServer",
+    "FedCCFAHistory",
+    "FedCCFARoundRecord",
     "FedRepClientMetrics",
     "FedRepHistory",
     "FedRepRoundRecord",
@@ -70,5 +77,6 @@ __all__ = [
     "run_fedavg",
     "run_fedavg_from_bundle",
     "run_fedavg_imbalance_aware",
+    "run_fedccfa_from_bundle",
     "run_fedrep_from_bundle",
 ]
