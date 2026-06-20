@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { api, figureUrl } from "../api";
+import { api } from "../api";
+import {
+  AnchorStat,
+  Bullet,
+  FormulaBlock,
+  HypothesisCard,
+  SmokingGunFigure,
+  StoryHero,
+  StorySection,
+} from "../components/story";
 import type { PhaseMetrics, ProjectSummary } from "../summaryTypes";
 
 /**
@@ -69,24 +78,20 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
   return (
     <article className="mx-auto px-6 py-10">
       {/* HERO ----------------------------------------------------------- */}
-      <header className="max-w-3xl mx-auto text-center">
-        <p className="text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
-          Research finding · RQ2
-        </p>
-        <h1
-          style={{ fontFamily: "var(--font-display)" }}
-          className="mt-4 text-5xl md:text-6xl leading-[1.05] tracking-tight text-text"
-        >
-          A negative finding,{" "}
-          <em className="text-accent not-italic">on purpose.</em>
-        </h1>
-        <p className="mt-6 text-lg text-text-dim leading-relaxed">
-          We tested three alternative aggregation schemes against vanilla
-          FedAvg on a Non-IID partition of NASA C-MAPSS. None of them closed
-          the centralized-vs-federated gap. This page explains why that's
-          the most useful answer we could have gotten.
-        </p>
-      </header>
+      <StoryHero
+        eyebrow="Research finding · RQ2"
+        lead={
+          <>
+            We tested three alternative aggregation schemes against vanilla
+            FedAvg on a Non-IID partition of NASA C-MAPSS. None of them
+            closed the centralized-vs-federated gap. This page explains why
+            that's the most useful answer we could have gotten.
+          </>
+        }
+      >
+        A negative finding,{" "}
+        <em className="text-accent not-italic">on purpose.</em>
+      </StoryHero>
 
       {/* ANCHOR NUMBER -------------------------------------------------- */}
       <div className="max-w-3xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -110,7 +115,7 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
       </div>
 
       {/* THE QUESTION --------------------------------------------------- */}
-      <Section title="The question">
+      <StorySection title="The question">
         <p>
           In Phase 6 we partitioned FD001 + FD003 across 4 clients so that
           each client saw a structurally different fault-mode mix. Vanilla
@@ -124,10 +129,10 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           failure-mode signal, is sample count the wrong yardstick? RQ2
           tested three alternatives.
         </p>
-      </Section>
+      </StorySection>
 
       {/* HYPOTHESES ----------------------------------------------------- */}
-      <Section title="The four hypotheses">
+      <StorySection title="The four hypotheses">
         <p>
           All four schemes were run on the same Non-IID partition, with the
           same model, the same 50 rounds and 2 local epochs, the same seed.
@@ -155,10 +160,10 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
             text="Up-weight clients with lower training loss. Included as a contrast — we expected it to underperform."
           />
         </div>
-      </Section>
+      </StorySection>
 
       {/* RESULTS TABLE -------------------------------------------------- */}
-      <Section title="What the numbers said">
+      <StorySection title="What the numbers said">
         <div className="overflow-x-auto rounded-md border border-border bg-bg">
           <table className="w-full text-sm">
             <thead>
@@ -216,18 +221,38 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           vanilla (0.871). On RMSE the four FL schemes are visually
           indistinguishable.
         </p>
-      </Section>
+      </StorySection>
 
       {/* SMOKING GUN FIGURE -------------------------------------------- */}
       <SmokingGunFigure
+        eyebrow="The smoking-gun figure"
+        title="Scheme B's aggregation weights barely move"
         artifactPath={
           phase.artifacts?.["weight_evolution_png"] ??
           "results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png"
         }
+        alt="Per-client aggregation weights stay near uniform 0.25 across all 50 rounds for Scheme B."
+        caption={
+          <>
+            The softmax-of-validation-F1 weights for the 4 clients stay
+            clustered between{" "}
+            <span className="font-mono-num text-text">0.23</span> and{" "}
+            <span className="font-mono-num text-text">0.27</span> — all of
+            them within 4 percentage points of uniform{" "}
+            <span className="font-mono-num text-text">0.25</span>. Reason:
+            every client's validation F1 score sits in roughly the same band
+            throughout training (typically 0.85–0.92), so the
+            softmax-with-temperature rescaling cannot find a strong signal
+            to differentiate them.{" "}
+            <strong className="text-text">
+              This is the mechanistic explanation for the negative finding.
+            </strong>
+          </>
+        }
       />
 
       {/* WHAT THIS RULES OUT ------------------------------------------- */}
-      <Section title="What this rules out">
+      <StorySection title="What this rules out">
         <p>
           The mechanistic story is visible in that figure. Every weighting
           signal we tried was nearly-uniform across clients — and you can't
@@ -253,10 +278,10 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           So the root cause of vanilla FedAvg's Non-IID failure isn't{" "}
           <em>"the server gives the wrong client the wrong weight"</em>.
         </p>
-      </Section>
+      </StorySection>
 
       {/* WHERE IT POINTS ----------------------------------------------- */}
-      <Section title="Where the next experiment should look">
+      <StorySection title="Where the next experiment should look">
         <p>
           It's the <strong>local-epoch drift problem</strong>. During the 2
           local epochs of training on opposing-bias data, the client models
@@ -276,10 +301,10 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           FedAvg simulation, but it changes the intervention layer from{" "}
           <em>aggregation</em> to <em>local optimisation</em>.
         </p>
-      </Section>
+      </StorySection>
 
       {/* WHY THIS COUNTS AS A POSITIVE -------------------------------- */}
-      <Section title="Why a negative result is a research contribution">
+      <StorySection title="Why a negative result is a research contribution">
         <blockquote className="border-l-2 border-accent/70 pl-4 italic text-text-dim my-4">
           "Any failed attempt is valuable research finding, it tells the
           community which directions are not worth pursuing."
@@ -305,152 +330,16 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           </a>{" "}
           on GitHub.
         </p>
-      </Section>
+      </StorySection>
     </article>
   );
 }
 
 // ===========================================================================
-// Sub-components
-// ===========================================================================
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="max-w-3xl mx-auto mt-16">
-      <h2 className="text-xl font-semibold tracking-tight text-text mb-4">
-        {title}
-      </h2>
-      <div className="space-y-4 text-[16px] leading-[1.7] text-text">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-function AnchorStat({
-  value,
-  label,
-  sub,
-  tone = "neutral",
-}: {
-  value: string;
-  label: string;
-  sub: string;
-  tone?: "neutral" | "good" | "bad" | "accent";
-}) {
-  const toneClass =
-    tone === "good"
-      ? "text-good"
-      : tone === "bad"
-        ? "text-bad"
-        : tone === "accent"
-          ? "text-accent"
-          : "text-text";
-  return (
-    <div className="rounded-md border border-border bg-bg-subtle p-4 text-center">
-      <div className={`text-3xl font-semibold font-mono-num ${toneClass}`}>
-        {value}
-      </div>
-      <div className="mt-2 text-xs uppercase tracking-wider text-text-dim font-medium">
-        {label}
-      </div>
-      <div className="mt-2 text-xs text-text-muted leading-snug">{sub}</div>
-    </div>
-  );
-}
-
-function HypothesisCard({
-  label,
-  formula,
-  text,
-}: {
-  label: string;
-  formula: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-md border border-border bg-bg-subtle p-4">
-      <div className="text-xs uppercase tracking-wider text-text-dim font-medium">
-        {label}
-      </div>
-      <div className="mt-2 font-mono-num text-sm text-accent">{formula}</div>
-      <p className="mt-2 text-sm text-text-dim leading-snug">{text}</p>
-    </div>
-  );
-}
-
-function Bullet({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="pl-5 relative">
-      <span
-        aria-hidden
-        className="absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-accent"
-      />
-      <span className="text-text">{children}</span>
-    </li>
-  );
-}
-
-function FormulaBlock({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="my-4 rounded-md border border-border bg-bg px-4 py-3 font-mono-num text-sm text-accent text-center">
-      {children}
-    </div>
-  );
-}
-
-function SmokingGunFigure({ artifactPath }: { artifactPath: string }) {
-  return (
-    <section className="max-w-5xl mx-auto mt-16 px-6">
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
-          The smoking-gun figure
-        </p>
-        <h2 className="mt-3 text-xl font-semibold tracking-tight text-text">
-          Scheme B's aggregation weights barely move
-        </h2>
-      </div>
-      <figure className="mt-6">
-        <a
-          href={figureUrl(artifactPath)}
-          target="_blank"
-          rel="noreferrer"
-          className="block rounded-md overflow-hidden border border-border hover:border-border-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40"
-        >
-          <img
-            src={figureUrl(artifactPath)}
-            alt="Per-client aggregation weights stay near uniform 0.25 across all 50 rounds for Scheme B."
-            className="w-full h-auto bg-white"
-          />
-        </a>
-        <figcaption className="mt-4 max-w-2xl mx-auto text-sm text-text-dim leading-relaxed">
-          The softmax-of-validation-F1 weights for the 4 clients stay
-          clustered between <span className="font-mono-num text-text">0.23</span>{" "}
-          and <span className="font-mono-num text-text">0.27</span> — all of
-          them within 4 percentage points of uniform{" "}
-          <span className="font-mono-num text-text">0.25</span>. Reason:
-          every client's validation F1 score sits in roughly the same band
-          throughout training (typically 0.85–0.92), so the
-          softmax-with-temperature rescaling cannot find a strong signal to
-          differentiate them. <strong className="text-text">
-            This is the mechanistic explanation for the negative finding.
-          </strong>
-        </figcaption>
-      </figure>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Parser — pull the 4-way comparison out of metrics.json. The numbers are
 // hard-coded as a fallback since per_client shape isn't strictly typed
 // upstream. Sourced from rq2_report.md.
-// ---------------------------------------------------------------------------
+// ===========================================================================
 type SchemeRow = {
   label: string;
   rmse: string;

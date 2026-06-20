@@ -18,12 +18,15 @@ const PHASE_ORDER: string[] = [
   "04_local_only",
   "05_fedavg",
   "06_non_iid",
-  "rq3_explanations",
 ];
 
-// RQ2 has its own dedicated page (/rq2-story) so it's excluded from the
-// generic results list to avoid two competing presentations.
-const EXCLUDED_FROM_RESULTS = new Set<string>(["rq2_imbalance_aware"]);
+// RQ2 and RQ3 each have their own dedicated long-form story page; they
+// are excluded from the generic results list so the dedicated framing is
+// not in tension with the metrics-dump treatment.
+const EXCLUDED_FROM_RESULTS = new Set<string>([
+  "rq2_imbalance_aware",
+  "rq3_explanations",
+]);
 
 export function ResultsPage() {
   const [summary, setSummary] = useState<LoadState<ProjectSummary>>({
@@ -138,17 +141,28 @@ export function ResultsPage() {
             })}
           </nav>
 
-          <div className="mt-6 rounded-md border border-border bg-bg-subtle p-3 text-xs text-text-dim leading-relaxed">
-            <p className="font-semibold text-text mb-1">
-              RQ2 has its own page
-            </p>
-            <p>
-              The imbalance-aware aggregation finding is presented as a
-              long-form story —{" "}
-              <a href="/rq2-story" className="text-accent">
-                read it →
-              </a>
-            </p>
+          <div className="mt-6 rounded-md border border-border bg-bg-subtle p-3 text-xs text-text-dim leading-relaxed space-y-3">
+            <div>
+              <p className="font-semibold text-text mb-1">
+                Research questions have their own pages
+              </p>
+              <p>
+                RQ2 and RQ3 are presented as long-form stories with
+                dedicated framing for their findings.
+              </p>
+            </div>
+            <ul className="space-y-1">
+              <li>
+                <a href="/rq2-story" className="text-accent">
+                  → RQ2 story (negative finding)
+                </a>
+              </li>
+              <li>
+                <a href="/rq3-story" className="text-accent">
+                  → RQ3 story (cross-model interpretability)
+                </a>
+              </li>
+            </ul>
           </div>
         </aside>
 
