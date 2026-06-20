@@ -500,7 +500,293 @@ function FedProxFollowup() {
           breakdown.
         </p>
       </StorySection>
+
+      {/* ==================================================================
+          THIRD CODA — FedRep + FedCCFA. The architectural layer.
+          ================================================================== */}
+      <ArchitecturalCoda />
     </>
+  );
+}
+
+// ===========================================================================
+// Architectural coda — the FedRep + FedCCFA story as one section.
+// ===========================================================================
+function ArchitecturalCoda() {
+  return (
+    <>
+      <div className="max-w-3xl mx-auto mt-24 pt-12 border-t border-border">
+        <p className="text-center text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
+          Third follow-up · the architectural layer
+        </p>
+        <h2
+          style={{ fontFamily: "var(--font-display)" }}
+          className="mt-3 text-4xl md:text-5xl leading-[1.1] tracking-tight text-text text-center"
+        >
+          Federate the encoder.{" "}
+          <em className="text-accent not-italic">Personalise the head.</em>
+        </h2>
+        <p className="mt-5 text-center text-base text-text-dim leading-relaxed">
+          Both prior layers shared <em>one</em> classifier across all clients.
+          What if the structural Non-IID problem isn't about how to average it
+          — it's that you shouldn't have one in the first place?
+        </p>
+      </div>
+
+      {/* Anchor stats */}
+      <div className="max-w-3xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <AnchorStat
+          tone="good"
+          value="+73%"
+          label="Gap closed by FedRep"
+          sub="vs +2.8% (RQ2 best) and +6.0% (FedProx best)."
+        />
+        <AnchorStat
+          value="14.91"
+          label="FedRep macro RMSE"
+          sub="vs centralized 13.77 (upper bound) and FedAvg 17.95 (control)."
+        />
+        <AnchorStat
+          tone="bad"
+          value="+71%"
+          label="FedCCFA — same as FedRep"
+          sub="Heads collapsed to one cluster. Clustering can't help when there's nothing to cluster."
+        />
+      </div>
+
+      <StorySection title="What FedRep did">
+        <p>
+          The model already has structure: <span className="font-mono-num text-text">encoder
+          (25 k params)</span> → <span className="font-mono-num text-text">trunk
+          (4 k)</span> → <span className="font-mono-num text-text">two heads
+          (130 params total)</span>. The encoder learns degradation
+          features that are useful for <em>any</em> fault mode; the heads
+          interpret those features into a decision boundary.
+        </p>
+        <p>
+          FedRep (Collins et al., ICML 2021) federates only the encoder.
+          Each client keeps its own classifier heads — they never leave the
+          client and are never averaged. Two-phase local training each
+          round: heads first (encoder frozen), then encoder (heads frozen).
+          The server averages encoders the usual FedAvg way. That's it.
+        </p>
+      </StorySection>
+
+      <StorySection title="What the numbers said">
+        <ArchitecturalComparisonTable />
+        <p className="mt-4 text-text-dim text-sm">
+          On the FD001 subset, FedRep actually <strong className="text-text">
+          beats</strong> centralized (14.34 vs 14.80). On the harder FD003
+          subset (HPC + Fan failures), it stays ~3 RMSE behind centralized
+          because each FD003 client only has 50 engines worth of local
+          supervision for a head that has to handle two fault modes — but
+          even there it beats vanilla FedAvg by 3.5 RMSE.
+        </p>
+      </StorySection>
+
+      <SmokingGunFigure
+        eyebrow="The smoking-gun figure (III)"
+        title="FedRep dramatically closes the Non-IID gap on FD001, substantially on FD003"
+        artifactPath="results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png"
+        alt="Per-subset RMSE bars: FedRep green bars vs Centralized P6 black bars on FD001 and FD003."
+        caption={
+          <>
+            FedRep's per-client per-subset RMSE (green) compared to the
+            centralized P6 reference (black) on each subset's test slice.
+            <strong className="text-text"> On FD001, FedRep beats
+            centralized.</strong> On FD003, FedRep is ~3 RMSE behind
+            centralized but still a massive improvement over vanilla FedAvg
+            (~18.9). This is the architectural intervention layer paying off
+            — clients with structurally different fault-mode mixes get
+            their own decision boundaries instead of being forced to share
+            one.
+          </>
+        }
+      />
+
+      <StorySection title="And then FedCCFA collapsed to one cluster">
+        <p>
+          FedCCFA (Chen et al., NeurIPS 2024) adds clustering on top of
+          FedRep — clients with similar heads should share, clients with
+          different heads should not. The natural expectation for our
+          partition: two clusters (FD001-only vs FD003-only).
+        </p>
+        <p className="mt-4">
+          The actual result:{" "}
+          <strong>all four clients' heads converge to numerically
+          indistinguishable vectors from round 5 onward</strong>. Pairwise
+          cosine similarity{" "}
+          <span className="font-mono-num text-text">[1.00, 1.00]</span>{" "}
+          every round. A diagnostic re-run with similarity_threshold=0.99
+          (requiring near-perfect agreement) still collapses everything into
+          a single cluster.
+        </p>
+        <p className="mt-4">
+          Three causes stack to produce this:
+        </p>
+        <ul className="mt-2 space-y-3">
+          <Bullet>
+            <strong>Same init seed</strong> — required by vanilla FedAvg's
+            cold-start protocol. Heads begin identical.
+          </Bullet>
+          <Bullet>
+            <strong>Tiny head capacity</strong> — each head is 64→1 = 65
+            parameters. Not enough degrees of freedom to express a
+            cluster-discriminating decision boundary.
+          </Bullet>
+          <Bullet>
+            <strong>Shared averaged encoder</strong> — all clients see the
+            same backbone, so they compute very similar features on their
+            training data, and the small head can only fit those features
+            one way.
+          </Bullet>
+        </ul>
+        <p className="mt-4">
+          FedCCFA therefore reduces to FedRep + extra averaging steps and
+          lands at RMSE 15.00 vs FedRep's 14.91 — a 0.09 cycle regression
+          from the noise of the cluster-mean operation. This is itself a
+          clean architectural finding:{" "}
+          <strong>clustering can't help when the heads don't develop
+          cluster structure to begin with</strong>. Fixing it would need
+          either (a) a higher-capacity per-client head module, or (b)
+          cluster-aware initialisation per client from round 1.
+        </p>
+      </StorySection>
+
+      <StorySection title="The intervention-layer hierarchy">
+        <p>
+          Four layers tested, three findings, one consistent story:
+        </p>
+        <ul className="mt-4 space-y-3">
+          <Bullet>
+            <strong>Server aggregation (RQ2):</strong> +2.8% gap closed.
+            Reweighting fails because the signals (fault counts, val-F1,
+            losses) are nearly uniform across clients.
+          </Bullet>
+          <Bullet>
+            <strong>Client optimisation (FedProx):</strong> +6.0%.
+            Drift-control buys some balanced behaviour but ceilings at
+            RMSE 17.7. The remaining ~4 RMSE is structural.
+          </Bullet>
+          <Bullet>
+            <strong>Client architecture, per-client heads (FedRep):</strong>
+            +73%. The actual fix. RMSE 14.91, near-centralized on FD001,
+            substantial improvement on FD003.
+          </Bullet>
+          <Bullet>
+            <strong>Client architecture, clustered heads (FedCCFA):</strong>
+            +71%. Adds nothing on this dataset because the heads can't
+            differentiate themselves enough to cluster meaningfully.
+          </Bullet>
+        </ul>
+        <p className="mt-4">
+          The empirical hierarchy is:
+        </p>
+        <FormulaBlock>
+          {"aggregation  <  drift-control  <  per-client architecture"}
+        </FormulaBlock>
+        <p>
+          For structural Non-IID PHM, <strong>the architectural layer is
+          where the actual money is</strong>. Server tricks and local-
+          optimisation tweaks help on the margins; restructuring what
+          gets federated changes the answer.
+        </p>
+        <p className="mt-4 text-text-dim text-sm">
+          See <a href="/results" className="text-accent">→ Results /
+          rq2_fedrep</a> and <a href="/results" className="text-accent">→
+          Results / rq2_fedccfa</a> for full per-round trajectories,
+          cluster evolution heatmaps, and per-engine breakdowns.
+        </p>
+      </StorySection>
+    </>
+  );
+}
+
+// ===========================================================================
+// Architectural comparison table — all four interventions side by side.
+// ===========================================================================
+function ArchitecturalComparisonTable() {
+  type Row = {
+    label: string;
+    rmse: string;
+    fd001: string;
+    fd003: string;
+    gap: string;
+    gapTone: "good" | "bad" | "neutral";
+    highlight?: boolean;
+  };
+  const rows: Row[] = [
+    {
+      label: "Centralized (P6, upper bound)",
+      rmse: "13.77", fd001: "14.80", fd003: "12.70",
+      gap: "—", gapTone: "neutral",
+    },
+    {
+      label: "Vanilla FedAvg (control)",
+      rmse: "17.95", fd001: "17.00", fd003: "18.86",
+      gap: "+0.0%", gapTone: "neutral",
+    },
+    {
+      label: "FedProx best (μ=0.1)",
+      rmse: "17.70", fd001: "17.97", fd003: "17.42",
+      gap: "+6.0%", gapTone: "neutral",
+    },
+    {
+      label: "FedRep (per-client heads)",
+      rmse: "14.91", fd001: "14.34", fd003: "15.48",
+      gap: "+73.0%", gapTone: "good",
+      highlight: true,
+    },
+    {
+      label: "FedCCFA (clustered heads)",
+      rmse: "15.00", fd001: "14.60", fd003: "15.40",
+      gap: "+71.0%", gapTone: "good",
+    },
+  ];
+  return (
+    <div className="overflow-x-auto rounded-md border border-border bg-bg">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border bg-bg-subtle/40 text-text-dim">
+            <th className="text-left px-4 py-2 font-medium">Method</th>
+            <th className="text-right px-4 py-2 font-medium">RMSE</th>
+            <th className="text-right px-4 py-2 font-medium">FD001 RMSE</th>
+            <th className="text-right px-4 py-2 font-medium">FD003 RMSE</th>
+            <th className="text-right px-4 py-2 font-medium">Gap closed</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {rows.map((r) => (
+            <tr
+              key={r.label}
+              className={
+                r.highlight
+                  ? "bg-good/5"
+                  : r.label.startsWith("Centralized")
+                    ? "bg-bg-subtle/30 text-text-dim italic"
+                    : ""
+              }
+            >
+              <td className="px-4 py-2">{r.label}</td>
+              <td className="px-4 py-2 text-right font-mono-num">{r.rmse}</td>
+              <td className="px-4 py-2 text-right font-mono-num">{r.fd001}</td>
+              <td className="px-4 py-2 text-right font-mono-num">{r.fd003}</td>
+              <td
+                className={`px-4 py-2 text-right font-mono-num ${
+                  r.gapTone === "good"
+                    ? "text-good"
+                    : r.gapTone === "bad"
+                      ? "text-bad"
+                      : "text-text-dim"
+                }`}
+              >
+                {r.gap}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
