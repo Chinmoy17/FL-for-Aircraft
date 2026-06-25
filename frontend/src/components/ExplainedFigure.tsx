@@ -51,7 +51,7 @@ export function ExplainedFigure({
   const [hasError, setHasError] = useState(false);
 
   const figure = (
-    <figure className={compact ? "" : "max-w-4xl"}>
+    <figure className={compact ? "" : "w-full"}>
       {hasError ? (
         <FigurePlaceholder artifactPath={artifactPath} />
       ) : (
@@ -75,24 +75,35 @@ export function ExplainedFigure({
           />
         </a>
       )}
-      <figcaption className="mt-3 text-[13px] text-text-muted font-mono-num">
+      <figcaption className="mt-2.5 text-[12px] text-text-muted font-mono-num">
         {artifactPath}
       </figcaption>
     </figure>
   );
 
   const explanationBlock = (
-    <div>
-      {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
-      <h3 className="font-display text-2xl leading-snug text-text mb-4">
+    <div className="max-w-[68ch]">
+      {eyebrow && (
+        <div className="text-[10.5px] font-semibold tracking-[0.16em] uppercase text-accent mb-2.5">
+          {eyebrow}
+        </div>
+      )}
+      <h3
+        className="
+          font-display text-text
+          text-[26px] sm:text-[30px] lg:text-[34px]
+          leading-[1.15] tracking-tight
+          mb-5
+        "
+      >
         {caption}
       </h3>
       {takeaway && (
         <div
           className="
-            mb-5 border-l-2 border-accent
-            pl-4 py-1
-            text-[15.5px] text-text italic leading-relaxed
+            my-5 border-l-[3px] border-accent
+            pl-5 py-1
+            text-[18px] text-text italic leading-[1.55]
           "
         >
           {takeaway}
@@ -100,8 +111,8 @@ export function ExplainedFigure({
       )}
       <div
         className="
-          text-[15px] leading-[1.7] text-text-dim
-          space-y-3 [&>p]:m-0
+          text-[17px] leading-[1.7] text-text-dim
+          space-y-4 [&>p]:m-0
         "
       >
         {explanation}
@@ -109,14 +120,16 @@ export function ExplainedFigure({
     </div>
   );
 
-  // Default: stacked vertical (paper style) — image on top with caption
-  // immediately under, then the explanation block below at a comfortable
-  // reading width. No height-mismatch dead space.
+  // Default: stacked vertical (Distill / paper style). Image fills the
+  // section content width so 3D plots + multi-panel matplotlib exports
+  // render at a usable size. Explanation block sits below in a focused
+  // 68ch reading column - left-aligned, no centering, so the eye moves
+  // naturally from wide figure to focused prose without dead space.
   if (!compact) {
     return (
-      <section className="my-12">
+      <section className="my-16">
         {figure}
-        <div className="mt-8 max-w-[78ch]">{explanationBlock}</div>
+        <div className="mt-8">{explanationBlock}</div>
       </section>
     );
   }
