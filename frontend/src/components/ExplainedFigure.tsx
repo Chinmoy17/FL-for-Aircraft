@@ -12,31 +12,34 @@ import { figureUrl } from "../api";
  * pages effectively as image dumps. The new contract says: if you want
  * to show a figure, you commit to explaining it.
  *
- * Layout: image on left (~60% width on lg), explanation block on right
- * (~40%), stacked on smaller viewports. Click image to open full-size
- * in new tab. If the image fails to load (e.g. backend not running),
- * we render a clear inline placeholder instead of the browser's broken-
- * image icon — so the explanation is still readable.
+ * Layout: figure renders FULL-WIDTH on top (big, sharp — fills the
+ * section's available width so multi-panel matplotlib exports stay
+ * legible on extended displays). The findings block sits BELOW the
+ * image, left-aligned, capped at a generous reading width (max-w-4xl
+ * ≈ 896 px) so prose lines stay readable without floating in a
+ * narrow centered column. The structure inside a page section is:
+ *
+ *     Section heading  →  WHAT WE NEED TO KNOW (question + why)
+ *     Image (full-width, sharp, click for full-size)
+ *     Findings block   →  WHAT WE FOUND (eyebrow + title + takeaway + body)
+ *
+ * Click image to open full-size in new tab. If the image fails to
+ * load (e.g. backend not running), we render a clear inline
+ * placeholder instead of the browser's broken-image icon — so the
+ * explanation is still readable.
  */
 export type ExplainedFigureProps = {
   /** Path relative to the repo's results/ directory, OR a full
    *  results/ path. Identical to the contract of <Figure>. */
   artifactPath: string;
-  /** Short technical label rendered as the figure title. */
+  /** Short technical label rendered as the findings title. */
   caption: string;
-  /** Long-form explanation. Use plain text or JSX (one or more <p> elements). */
+  /** Long-form findings. Use plain text or JSX (one or more <p> elements). */
   explanation: ReactNode;
-  /** Optional eyebrow above the figure title (e.g. "Figure 03"). */
+  /** Optional eyebrow above the findings title (e.g. "Figure 03"). */
   eyebrow?: string;
-  /** Optional pull-out takeaways — one or two phrases shown prominently. */
+  /** Optional pull-out takeaway — one sentence shown prominently. */
   takeaway?: string;
-  /**
-   * When true, render image and explanation side-by-side in a 3:2 grid.
-   * Default false (image on top at max-w-4xl, text below at 78ch). Only
-   * use compact for small chart figures where the heights happen to be
-   * close.
-   */
-  compact?: boolean;
 };
 
 export function ExplainedFigure({
@@ -45,13 +48,12 @@ export function ExplainedFigure({
   explanation,
   eyebrow,
   takeaway,
-  compact = false,
 }: ExplainedFigureProps) {
   const url = figureUrl(artifactPath);
   const [hasError, setHasError] = useState(false);
 
   const figure = (
-    <figure className={compact ? "" : "w-full"}>
+    <figure className="w-full">
       {hasError ? (
         <FigurePlaceholder artifactPath={artifactPath} />
       ) : (
@@ -81,11 +83,13 @@ export function ExplainedFigure({
     </figure>
   );
 
-  // Explanation block — eyebrow + big serif title + accent pull-quote + prose.
-  // Stays LEFT-ALIGNED at full available column width — the side-by-side
-  // layout below sits it next to the figure, not centered under it.
-  const explanationBlock = (
-    <div>
+  // Findings block — sits BELOW the image. Eyebrow + big serif title
+  // + accent pull-quote + prose. Left-aligned, capped at max-w-4xl so
+  // line lengths stay readable on wide displays. Never centered with
+  // mx-auto — the block hugs the section's left edge so the eye
+  // continues naturally from the image above to the findings below.
+  const findingsBlock = (
+    <div className="max-w-4xl">
       {eyebrow && (
         <div className="text-[10.5px] font-semibold tracking-[0.16em] uppercase text-accent mb-2.5">
           {eyebrow}
@@ -123,27 +127,10 @@ export function ExplainedFigure({
     </div>
   );
 
-  // Default: side-by-side row layout (academic / Distill pattern).
-  // Image left ~58 %, explanation right ~42 %, top-aligned. Starts from
-  // the left edge of the section, never centered — extends to fill the
-  // full content area. Only kicks in at xl breakpoint (1280 px) — below
-  // that the text column gets too narrow to read comfortably, so we
-  // stack image-on-top.
-  if (!compact) {
-    return (
-      <section className="my-16 grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-8 xl:gap-12 items-start">
-        {figure}
-        {explanationBlock}
-      </section>
-    );
-  }
-
-  // Opt-in compact layout: image on top + explanation below for small
-  // chart-style figures where pairing them horizontally feels cramped.
   return (
     <section className="my-12">
       {figure}
-      <div className="mt-8 max-w-[68ch]">{explanationBlock}</div>
+      <div className="mt-8">{findingsBlock}</div>
     </section>
   );
 }
