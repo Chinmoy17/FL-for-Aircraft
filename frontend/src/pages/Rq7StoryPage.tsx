@@ -393,8 +393,13 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         </p>
         <p className="mt-4">
           Full details:{" "}
-          <a href="/results" className="text-accent">
-            → Results / rq7_poisoning
+          <a
+            href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq7_poisoning"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent"
+          >
+            → GitHub: results / rq7_poisoning
           </a>{" "}
           shows the per-round trajectories, per-cell metrics, and
           per-subset breakdowns.

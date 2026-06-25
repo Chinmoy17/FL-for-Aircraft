@@ -494,8 +494,13 @@ function FedProxFollowup() {
         </p>
         <p className="mt-4">
           Full details:{" "}
-          <a href="/results" className="text-accent">
-            → Results / rq2_fedprox
+          <a
+            href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq2_fedprox"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent"
+          >
+            → GitHub: results / rq2_fedprox
           </a>{" "}
           shows the per-round trajectories, headline plot, and per-engine
           breakdown.
@@ -690,9 +695,17 @@ function ArchitecturalCoda() {
           gets federated changes the answer.
         </p>
         <p className="mt-4 text-text-dim text-sm">
-          See <a href="/results" className="text-accent">→ Results /
-          rq2_fedrep</a> and <a href="/results" className="text-accent">→
-          Results / rq2_fedccfa</a> for full per-round trajectories,
+          See <a
+            href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq2_fedrep"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent"
+          >→ GitHub: results / rq2_fedrep</a> and <a
+            href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq2_fedccfa"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent"
+          >→ GitHub: results / rq2_fedccfa</a> for full per-round trajectories,
           cluster evolution heatmaps, and per-engine breakdowns.
         </p>
       </StorySection>

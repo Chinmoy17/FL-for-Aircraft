@@ -86,7 +86,6 @@ const TITLES: Array<[RegExp, string]> = [
   [/^\/rq2-followups\/fedrep$/, "FedRep · RQ2 follow-up"],
   [/^\/rq2-followups\/fedccfa$/, "FedCCFA · RQ2 follow-up"],
   [/^\/demo$/, "Live demo"],
-  [/^\/results$/, "Results browser"],
   [/^\/reports$/, "Technical reports"],
 ];
 const APP_NAME = "FL Aircraft PHM";
@@ -194,7 +193,6 @@ const SECTIONS: NavSection[] = [
     eyebrow: "Artifacts",
     items: [
       { kind: "internal", label: "Live demo", to: "/demo" },
-      { kind: "internal", label: "Results browser", to: "/results" },
       { kind: "internal", label: "Technical reports", to: "/reports" },
       {
         kind: "external",

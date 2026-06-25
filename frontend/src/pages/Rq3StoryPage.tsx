@@ -303,8 +303,13 @@ function Rq3Article({ phase }: { phase: PhaseMetrics }) {
             Integrated Gradients and the rendered explanation.
           </Bullet>
           <Bullet>
-            <a href="/results" className="text-accent">
-              Results / rq3_explanations
+            <a
+              href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq3_explanations"
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent"
+            >
+              GitHub: results / rq3_explanations
             </a>{" "}
             — the 12 pre-rendered explanations from{" "}
             <span className="font-mono-num">scripts/run_rq3.py</span>, with

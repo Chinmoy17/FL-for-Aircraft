@@ -1,5 +1,6 @@
 import { NavLink, Route, BrowserRouter, Routes } from "react-router-dom";
 import { AppShell } from "./components/AppShell";
+import { ScrollToTop } from "./components/ScrollToTop";
 import { AbstractPage } from "./pages/AbstractPage";
 import { CoverPage } from "./pages/CoverPage";
 import { ExperimentCentralizedPage } from "./pages/ExperimentCentralizedPage";
@@ -11,7 +12,6 @@ import { ExperimentNonIidPage } from "./pages/ExperimentNonIidPage";
 import { ExperimentSmokePage } from "./pages/ExperimentSmokePage";
 import { LiveDemoPage } from "./pages/LiveDemoPage";
 import { ReportsPage } from "./pages/ReportsPage";
-import { ResultsPage } from "./pages/ResultsPage";
 import { Rq2StoryPage } from "./pages/Rq2StoryPage";
 import { Rq3StoryPage } from "./pages/Rq3StoryPage";
 import { Rq45SynthesisPage } from "./pages/Rq45SynthesisPage";
@@ -32,6 +32,7 @@ import { RqFedRepPage } from "./pages/RqFedRepPage";
 export function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
         <Route element={<AppShell />}>
           <Route path="/" element={<CoverPage />} />
@@ -44,7 +45,6 @@ export function App() {
           <Route path="/experiments/05-fedavg" element={<ExperimentFedavgPage />} />
           <Route path="/experiments/06-non-iid" element={<ExperimentNonIidPage />} />
           <Route path="/demo" element={<LiveDemoPage />} />
-          <Route path="/results" element={<ResultsPage />} />
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/rq2-story" element={<Rq2StoryPage />} />
           <Route path="/rq3-story" element={<Rq3StoryPage />} />

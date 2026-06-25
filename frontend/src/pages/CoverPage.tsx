@@ -447,9 +447,19 @@ function ResearchQuestions() {
           </thead>
           <tbody className="divide-y divide-border">
             {RQS.map((r) => {
+              // Clickable rows get group/cursor/hover treatment so the
+              // affordance is obvious. The eye picks up the accent-coloured
+              // topic + the trailing chevron together and reads them as
+              // "this row is a link to the story".
+              const isClickable = !!r.to;
               const baseCls =
-                "align-top transition-colors " +
-                (r.to ? "hover:bg-bg-subtle/40 cursor-pointer" : "");
+                "group align-top transition-colors " +
+                (isClickable
+                  ? "hover:bg-accent/[0.04] cursor-pointer"
+                  : "");
+              const topicCls =
+                "px-4 py-4 text-text transition-colors " +
+                (isClickable ? "group-hover:text-accent" : "");
               return (
                 <tr
                   key={r.id}
@@ -471,7 +481,11 @@ function ResearchQuestions() {
                   <td className="px-4 py-4 text-text-dim text-sm">
                     {r.side}
                   </td>
-                  <td className="px-4 py-4 text-text">{r.topic}</td>
+                  <td className={topicCls}>
+                    <span className={isClickable ? "group-hover:underline" : ""}>
+                      {r.topic}
+                    </span>
+                  </td>
                   <td className="px-4 py-4 text-text-dim leading-relaxed">
                     {r.oneLine}
                   </td>
@@ -480,10 +494,16 @@ function ResearchQuestions() {
                       <NavLink
                         to={r.to}
                         data-rqrow={r.id}
-                        className="inline-flex items-center gap-2"
+                        className="inline-flex items-center gap-2 group/pill"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <VerdictPill verdict={r.verdict} />
+                        <span
+                          aria-hidden
+                          className="text-text-muted text-base leading-none transition-transform group-hover:translate-x-1 group-hover:text-accent"
+                        >
+                          →
+                        </span>
                       </NavLink>
                     ) : (
                       <VerdictPill verdict={r.verdict} />
