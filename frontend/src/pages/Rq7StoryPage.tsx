@@ -82,7 +82,7 @@ export function Rq7StoryPage() {
 
 function Rq7Article({ phase }: { phase: PhaseMetrics }) {
   return (
-    <article className="py-10 max-w-7xl">
+    <article className="py-10 max-w-5xl">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Security finding · RQ7"

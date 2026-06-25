@@ -18,10 +18,14 @@
 import { figureUrl } from "../api";
 
 // ---------------------------------------------------------------------------
-// Section — academic-shell-aligned section block. The content is
-// constrained to a comfortable reading width but the surrounding
-// padding matches the full-width shell, so sections don't visually
-// disconnect from the page header.
+// Section — academic-shell-aligned section block. The content fills the
+// section's available width (no inner max-w cap on body text) so the
+// right edge of paragraphs lines up with the right edge of figures /
+// anchor-stat rows above and below. Readability stays acceptable because
+// the parent article caps at max-w-5xl (1024 px) and the section's
+// horizontal padding (96 px each side) trims the inner content to
+// roughly 832 px on a wide display — about 100 chars at the body type
+// size, which is the wide end of typeset academic columns.
 // ---------------------------------------------------------------------------
 export function StorySection({
   title,
@@ -32,10 +36,10 @@ export function StorySection({
 }) {
   return (
     <section className="px-10 md:px-16 lg:px-24 mt-16">
-      <h2 className="font-display text-2xl md:text-3xl tracking-tight text-text mb-4 max-w-[44ch]">
+      <h2 className="font-display text-2xl md:text-3xl tracking-tight text-text mb-4">
         {title}
       </h2>
-      <div className="space-y-4 text-[16px] leading-[1.7] text-text max-w-[78ch]">
+      <div className="space-y-4 text-[16px] leading-[1.7] text-text">
         {children}
       </div>
     </section>
@@ -65,7 +69,7 @@ export function StoryFollowupHeader({
       <h2 className="mt-3 font-display text-[34px] sm:text-[42px] lg:text-[48px] leading-[1.08] tracking-tight text-text max-w-[26ch]">
         {children}
       </h2>
-      <p className="mt-5 text-lg text-text-dim leading-relaxed max-w-[68ch]">
+      <p className="mt-5 text-lg text-text-dim leading-relaxed">
         {lead}
       </p>
     </header>
@@ -213,7 +217,7 @@ export function SmokingGunFigure({
   return (
     <section className="px-10 md:px-16 lg:px-24 mt-16">
       <p className="eyebrow">{eyebrow}</p>
-      <h2 className="mt-3 font-display text-2xl md:text-3xl tracking-tight text-text mb-6 max-w-[40ch]">
+      <h2 className="mt-3 font-display text-2xl md:text-3xl tracking-tight text-text mb-6">
         {title}
       </h2>
       <figure>
@@ -225,7 +229,7 @@ export function SmokingGunFigure({
         >
           <img src={url} alt={alt} className="w-full h-auto" />
         </a>
-        <figcaption className="mt-4 text-sm text-text-dim leading-relaxed max-w-[78ch]">
+        <figcaption className="mt-4 text-sm text-text-dim leading-relaxed">
           {caption}
         </figcaption>
       </figure>
@@ -254,7 +258,7 @@ export function StoryHero({
       <h1 className="font-display text-[44px] sm:text-[52px] lg:text-[60px] leading-[1.05] tracking-tight text-text mt-4 max-w-[22ch]">
         {children}
       </h1>
-      <p className="mt-6 text-lg text-text-dim leading-relaxed max-w-[68ch]">
+      <p className="mt-6 text-lg text-text-dim leading-relaxed">
         {lead}
       </p>
     </header>
