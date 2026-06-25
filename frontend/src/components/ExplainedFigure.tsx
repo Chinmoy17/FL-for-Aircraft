@@ -83,11 +83,18 @@ export function ExplainedFigure({
     </figure>
   );
 
-  // Findings block — sits BELOW the image. Eyebrow + big serif title
+  // Findings block — sits BELOW the image. Eyebrow + findings title
   // + accent pull-quote + prose. Left-aligned, capped at max-w-4xl so
   // line lengths stay readable on wide displays. Never centered with
   // mx-auto — the block hugs the section's left edge so the eye
   // continues naturally from the image above to the findings below.
+  //
+  // TYPOGRAPHY CONTRAST WITH THE QUESTION HEADING:
+  // The page's question heading uses Instrument Serif (font-display)
+  // — formal, paper-like. The findings title uses Inter (font-ui)
+  // semibold — a precise sans-serif "empirical statement" voice. The
+  // serif/sans split makes the question-vs-answer roles visually
+  // unambiguous without relying on extra borders or pills.
   const findingsBlock = (
     <div className="max-w-4xl">
       {eyebrow && (
@@ -97,9 +104,9 @@ export function ExplainedFigure({
       )}
       <h3
         className="
-          font-display text-text
-          text-[26px] sm:text-[30px] lg:text-[34px]
-          leading-[1.15] tracking-tight
+          font-ui font-semibold text-text
+          text-[22px] sm:text-[24px] lg:text-[26px]
+          leading-[1.25] tracking-[-0.01em]
           mb-5
         "
       >
@@ -110,7 +117,7 @@ export function ExplainedFigure({
           className="
             my-5 border-l-[3px] border-accent
             pl-5 py-1
-            text-[18px] text-text italic leading-[1.55]
+            text-[18px] text-text italic leading-[1.55] font-display
           "
         >
           {takeaway}
