@@ -34,7 +34,7 @@ export function PhaseDetail({ phase }: { phase: PhaseMetrics }) {
       </header>
 
       {phase.interpretation && (
-        <p className="text-[15px] leading-relaxed text-text max-w-4xl">
+        <p className="text-[15px] leading-relaxed text-text">
           {phase.interpretation}
         </p>
       )}

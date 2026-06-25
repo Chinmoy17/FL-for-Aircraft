@@ -95,7 +95,7 @@ export function Rq45SynthesisPage() {
           </>
         }
       >
-        <ol className="list-decimal list-inside space-y-6 mt-6 max-w-[78ch]">
+        <ol className="list-decimal list-inside space-y-6 mt-6">
           <li>
             <strong>P6 baseline per-subset table.</strong>{" "}
             Centralized: FD003 (RMSE 12.7) is <em>easier</em> than FD001
@@ -141,7 +141,7 @@ export function Rq45SynthesisPage() {
           </li>
         </ol>
 
-        <div className="mt-10 rounded-lg border border-good/40 bg-good/5 p-6 max-w-[78ch]">
+        <div className="mt-10 rounded-lg border border-good/40 bg-good/5 p-6">
           <div className="eyebrow !text-good mb-2">RQ5 conclusion</div>
           <p className="text-[15.5px] text-text leading-relaxed">
             Five independent phases, each surface a different aspect of
@@ -281,7 +281,7 @@ export function Rq45SynthesisPage() {
           </div>
         </div>
 
-        <div className="mt-10 rounded-lg border border-accent/40 bg-accent-subtle p-6 max-w-[78ch]">
+        <div className="mt-10 rounded-lg border border-accent/40 bg-accent-subtle p-6">
           <div className="eyebrow !text-accent mb-2">RQ4 conclusion</div>
           <p className="text-[15.5px] text-text leading-relaxed">
             <strong>Honest framing</strong>: we have training-side drift

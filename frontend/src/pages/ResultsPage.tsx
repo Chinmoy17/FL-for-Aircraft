@@ -101,7 +101,7 @@ export function ResultsPage() {
     orderedPhases[0];
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
+    <div className="w-full px-6 py-8">
       <header className="mb-6">
         <h1 className="text-2xl font-semibold tracking-tight text-text">
           Results

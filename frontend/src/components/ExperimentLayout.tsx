@@ -38,7 +38,7 @@ export function ExperimentLayout({
         <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[26ch]">
           {title}
         </h1>
-        <p className="mt-6 text-lg text-text-dim max-w-[68ch]">{lede}</p>
+        <p className="mt-6 text-lg text-text-dim">{lede}</p>
         {metaRow && (
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
             {metaRow}
@@ -98,7 +98,7 @@ export function ExperimentSection({
         </h2>
       )}
       {intro && (
-        <div className="text-text-dim text-[16px] leading-[1.7] max-w-[82ch] mb-6 space-y-3 [&>p]:m-0">
+        <div className="text-text-dim text-[16px] leading-[1.7] mb-6 space-y-3 [&>p]:m-0">
           {intro}
         </div>
       )}

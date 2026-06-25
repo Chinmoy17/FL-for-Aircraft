@@ -53,7 +53,7 @@ function PageHeader() {
         Abstract <em className="not-italic text-accent">&amp;</em>{" "}
         contributions
       </h1>
-      <p className="mt-6 text-lg text-text-dim max-w-[68ch]">
+      <p className="mt-6 text-lg text-text-dim">
         Long-form framing of the project: why the question is hard, what was
         built, what was found, what was synthesized, what is honestly still
         open. For reviewers reading at depth before clicking into the
@@ -202,7 +202,7 @@ function ExperimentalFlow() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[40ch]">
         The empirical flow — from raw CMAPSS files to the RQ work.
       </h2>
-      <p className="text-text-dim max-w-[78ch] mb-10">
+      <p className="text-text-dim mb-10">
         Each row below is one experimental phase. Phases 03–06 also report
         the bound or gap they establish; that&apos;s the line of evidence
         the research questions later try to move. The Non-IID failure at
@@ -217,7 +217,7 @@ function ExperimentalFlow() {
         ))}
       </ol>
 
-      <div className="mt-10 max-w-[78ch] rounded-lg border border-accent/40 bg-accent-subtle px-5 py-4">
+      <div className="mt-10 rounded-lg border border-accent/40 bg-accent-subtle px-5 py-4">
         <div className="eyebrow !text-accent mb-1">What happens after Phase 06</div>
         <p className="text-[15px] text-text leading-relaxed">
           The 4-RMSE gap from Phase 06 (FedAvg 17.95 vs centralized 13.77)
@@ -349,7 +349,7 @@ function Contributions() {
               <h3 className="font-display text-[22px] leading-snug text-text mb-2">
                 {c.title}
               </h3>
-              <p className="text-[15.5px] text-text-dim leading-relaxed max-w-[78ch]">
+              <p className="text-[15.5px] text-text-dim leading-relaxed">
                 {c.blurb}
               </p>
             </div>
@@ -441,7 +441,7 @@ function RqVerdictMatrix() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[36ch]">
         Seven questions, three verdicts.
       </h2>
-      <p className="text-text-dim mb-10 max-w-[68ch]">
+      <p className="text-text-dim mb-10">
         The original project brief listed seven research questions. Three
         are answered directly with new experiments; two are synthesised
         from cross-cutting evidence in existing phases; two are explicit
@@ -589,7 +589,7 @@ function RelatedWorkDelta() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[36ch]">
         How this project sits next to the canonical references.
       </h2>
-      <p className="text-text-dim mb-10 max-w-[68ch]">
+      <p className="text-text-dim mb-10">
         Six rows. Each one names a paper from the project brief or the
         adjacent FL literature, summarises what they did, and states the
         specific delta this project adds.

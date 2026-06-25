@@ -84,10 +84,9 @@ export function ExplainedFigure({
   );
 
   // Findings block — sits BELOW the image. Eyebrow + findings title
-  // + accent pull-quote + prose. Left-aligned, capped at max-w-4xl so
-  // line lengths stay readable on wide displays. Never centered with
-  // mx-auto — the block hugs the section's left edge so the eye
-  // continues naturally from the image above to the findings below.
+  // + accent pull-quote + prose. Left-aligned, fills the section
+  // content area so the body / takeaway / title share the same right
+  // edge as the figure above. Never centered with mx-auto.
   //
   // TYPOGRAPHY CONTRAST WITH THE QUESTION HEADING:
   // The page's question heading uses Instrument Serif (font-display)
@@ -96,7 +95,7 @@ export function ExplainedFigure({
   // serif/sans split makes the question-vs-answer roles visually
   // unambiguous without relying on extra borders or pills.
   const findingsBlock = (
-    <div className="max-w-4xl">
+    <div>
       {eyebrow && (
         <div className="text-[10.5px] font-semibold tracking-[0.16em] uppercase text-accent mb-2.5">
           {eyebrow}

@@ -113,7 +113,7 @@ export function LiveDemoPage() {
           Live <em className="not-italic text-accent">prediction</em> +
           attribution
         </h1>
-        <p className="mt-6 text-lg text-text-dim max-w-[68ch]">
+        <p className="mt-6 text-lg text-text-dim">
           Pick a trained checkpoint and a test engine. The backend runs
           Integrated Gradients on demand and returns a sensor-level
           explanation grounded in the project&apos;s 17-entry maintenance

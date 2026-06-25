@@ -151,7 +151,7 @@ function TheProblem() {
         Predict when a jet engine will fail. Across multiple airlines.
         Without sharing their data.
       </h2>
-      <p className="text-text-dim max-w-[78ch] mb-10">
+      <p className="text-text-dim mb-10">
         Imagine you are the chief engineer at an airline. Every engine
         produces millions of sensor readings per flight. Your job is to
         predict, from those readings, when each engine will need
@@ -241,7 +241,7 @@ function TasksExecuted() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[36ch]">
         Three tasks. Eleven experimental phases. Three RQ reports.
       </h2>
-      <p className="text-text-dim max-w-[78ch] mb-10">
+      <p className="text-text-dim mb-10">
         The project brief asks for three deliverables: a federated baseline
         end-to-end, depth on at least one research question, and an honest
         look at where the work goes next. Each task below maps to its
@@ -418,7 +418,7 @@ function ResearchQuestions() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[40ch]">
         The full project brief — answered, synthesised, or scoped as open.
       </h2>
-      <p className="text-text-dim max-w-[78ch] mb-8">
+      <p className="text-text-dim mb-8">
         The brief listed seven open research questions split between the
         machine-learning side (RQ1–5) and the security side (RQ6–7). The
         table below covers all seven, with verdict pills that match what
@@ -496,7 +496,7 @@ function ResearchQuestions() {
         </table>
       </div>
 
-      <p className="mt-6 text-sm text-text-muted max-w-[78ch]">
+      <p className="mt-6 text-sm text-text-muted">
         Three RQs are answered directly with dedicated experiments. Two
         more (RQ4, RQ5) are synthesised from cross-cutting evidence
         already produced by the answered ones. Two (RQ1, RQ6) are framed
@@ -584,7 +584,7 @@ function ThreeFindings() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[40ch]">
         What the three answered research questions actually say.
       </h2>
-      <p className="text-text-dim max-w-[78ch] mb-10">
+      <p className="text-text-dim mb-10">
         Each card below is the headline result from one of the three
         answered RQs. The accompanying long-form story page expands the
         argument with mechanism, mathematical bounds, and figures; the
