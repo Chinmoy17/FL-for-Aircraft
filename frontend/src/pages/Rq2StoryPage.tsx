@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import {
   AnchorStat,
+  AnchorStatRow,
   Bullet,
   FormulaBlock,
   HypothesisCard,
   SmokingGunFigure,
+  StoryFollowupHeader,
   StoryHero,
   StorySection,
 } from "../components/story";
@@ -76,7 +78,7 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
   const schemes = parseSchemes(phase);
 
   return (
-    <article className="mx-auto px-6 py-10">
+    <article className="py-10">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Research finding · RQ2"
@@ -94,7 +96,7 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
       </StoryHero>
 
       {/* ANCHOR NUMBER -------------------------------------------------- */}
-      <div className="max-w-3xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <AnchorStatRow className="mt-12">
         <AnchorStat
           tone="bad"
           value="+2.8%"
@@ -112,7 +114,7 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
           label="Where the data points next"
           sub="Drift control during local epochs, not aggregation weights."
         />
-      </div>
+      </AnchorStatRow>
 
       {/* THE QUESTION --------------------------------------------------- */}
       <StorySection title="The question">
@@ -354,26 +356,25 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
 function FedProxFollowup() {
   return (
     <>
-      <div className="max-w-3xl mx-auto mt-24 pt-12 border-t border-border">
-        <p className="text-center text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
-          Follow-up · FedProx μ-sweep
-        </p>
-        <h2
-          style={{ fontFamily: "var(--font-display)" }}
-          className="mt-3 text-4xl md:text-5xl leading-[1.1] tracking-tight text-text text-center"
-        >
-          Did it work?{" "}
-          <em className="text-accent not-italic">Sort of.</em>
-        </h2>
-        <p className="mt-5 text-center text-base text-text-dim leading-relaxed">
-          We swept <span className="font-mono-num text-text">μ ∈ {"{0, 0.001, 0.01, 0.1}"}</span>{" "}
-          on the same Non-IID partition, same seed, same rounds. The headline
-          RMSE moved a little. The per-subset story moved a lot.
-        </p>
-      </div>
+      <StoryFollowupHeader
+        eyebrow="Follow-up · FedProx μ-sweep"
+        lead={
+          <>
+            We swept{" "}
+            <span className="font-mono-num text-text">
+              μ ∈ {"{0, 0.001, 0.01, 0.1}"}
+            </span>{" "}
+            on the same Non-IID partition, same seed, same rounds. The
+            headline RMSE moved a little. The per-subset story moved a lot.
+          </>
+        }
+      >
+        Did it work?{" "}
+        <em className="text-accent not-italic">Sort of.</em>
+      </StoryFollowupHeader>
 
       {/* Anchor stats */}
-      <div className="max-w-3xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <AnchorStatRow>
         <AnchorStat
           tone="accent"
           value="+6.0%"
@@ -391,7 +392,7 @@ function FedProxFollowup() {
           label="Shared ceiling across both interventions"
           sub="RQ2 best 17.80, FedProx best 17.70 — within 0.1 RMSE."
         />
-      </div>
+      </AnchorStatRow>
 
       <StorySection title="What FedProx did">
         <p>
@@ -515,26 +516,23 @@ function FedProxFollowup() {
 function ArchitecturalCoda() {
   return (
     <>
-      <div className="max-w-3xl mx-auto mt-24 pt-12 border-t border-border">
-        <p className="text-center text-xs uppercase tracking-[0.18em] text-text-dim font-medium">
-          Third follow-up · the architectural layer
-        </p>
-        <h2
-          style={{ fontFamily: "var(--font-display)" }}
-          className="mt-3 text-4xl md:text-5xl leading-[1.1] tracking-tight text-text text-center"
-        >
-          Federate the encoder.{" "}
-          <em className="text-accent not-italic">Personalise the head.</em>
-        </h2>
-        <p className="mt-5 text-center text-base text-text-dim leading-relaxed">
-          Both prior layers shared <em>one</em> classifier across all clients.
-          What if the structural Non-IID problem isn't about how to average it
-          — it's that you shouldn't have one in the first place?
-        </p>
-      </div>
+      <StoryFollowupHeader
+        eyebrow="Third follow-up · the architectural layer"
+        lead={
+          <>
+            Both prior layers shared <em>one</em> classifier across all
+            clients. What if the structural Non-IID problem isn&apos;t
+            about how to average it — it&apos;s that you shouldn&apos;t
+            have one in the first place?
+          </>
+        }
+      >
+        Federate the encoder.{" "}
+        <em className="text-accent not-italic">Personalise the head.</em>
+      </StoryFollowupHeader>
 
       {/* Anchor stats */}
-      <div className="max-w-3xl mx-auto mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <AnchorStatRow>
         <AnchorStat
           tone="good"
           value="+73%"
@@ -552,7 +550,7 @@ function ArchitecturalCoda() {
           label="FedCCFA — same as FedRep"
           sub="Heads collapsed to one cluster. Clustering can't help when there's nothing to cluster."
         />
-      </div>
+      </AnchorStatRow>
 
       <StorySection title="What FedRep did">
         <p>

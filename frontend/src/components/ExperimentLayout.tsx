@@ -56,6 +56,15 @@ export function ExperimentLayout({
 /**
  * One labelled section inside an experiment page. Matches the
  * eyebrow + Instrument Serif heading rhythm used everywhere.
+ *
+ * Q/A visual separation: any section whose eyebrow starts with
+ * "Question " is treated as a query, and its children (figure,
+ * findings, inline tables, callouts — i.e. the answer) render
+ * inside a left-indented wrapper. The question stem (eyebrow +
+ * title + intro / "What we need to know:") stays at the section's
+ * left edge as the prompt; the answer reads as content nested
+ * under it. The indent collapses to zero on small viewports so
+ * mobile layouts stay readable.
  */
 export function ExperimentSection({
   eyebrow,
@@ -68,6 +77,9 @@ export function ExperimentSection({
   intro?: ReactNode;
   children: ReactNode;
 }) {
+  const isAnswerable =
+    typeof eyebrow === "string" && /^Question\s/i.test(eyebrow);
+
   return (
     <section className="mb-16 first:mt-0">
       {/*
@@ -76,7 +88,8 @@ export function ExperimentSection({
         max-widths (no centering) so the line lengths stay readable
         without making the content feel like an isolated centered card.
         Children (figures, headline-number grids, custom content)
-        render at full section width below.
+        render below — indented when this section is a "Question N"
+        so the figure / findings sit visually inside the prompt.
       */}
       {eyebrow && <div className="eyebrow">{eyebrow}</div>}
       {title && (
@@ -89,7 +102,9 @@ export function ExperimentSection({
           {intro}
         </div>
       )}
-      {children}
+      <div className={isAnswerable ? "md:pl-10 lg:pl-12" : ""}>
+        {children}
+      </div>
     </section>
   );
 }

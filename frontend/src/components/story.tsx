@@ -32,7 +32,7 @@ export function StorySection({
 }) {
   return (
     <section className="px-10 md:px-16 lg:px-24 mt-16">
-      <h2 className="font-display text-2xl md:text-3xl tracking-tight text-text mb-4 max-w-[36ch]">
+      <h2 className="font-display text-2xl md:text-3xl tracking-tight text-text mb-4 max-w-[44ch]">
         {title}
       </h2>
       <div className="space-y-4 text-[16px] leading-[1.7] text-text max-w-[78ch]">
@@ -43,8 +43,40 @@ export function StorySection({
 }
 
 // ---------------------------------------------------------------------------
-// AnchorStat — the three big numbers under each hero. Anchoring Bias says
-// the first number a reader sees calibrates their judgement of the rest.
+// StoryFollowupHeader — the in-page transition used to open a coda
+// (e.g. the FedProx and FedRep + FedCCFA follow-ups inside /rq2-story).
+// Replaces the previous max-w-3xl mx-auto + text-center pattern with
+// the same shell-aligned, left-justified rhythm the rest of the page
+// uses — no dead space on the right, no centered narrow column.
+// ---------------------------------------------------------------------------
+export function StoryFollowupHeader({
+  eyebrow,
+  children,
+  lead,
+}: {
+  eyebrow: string;
+  /** Headline content — fragment so callers control the accent placement. */
+  children: React.ReactNode;
+  lead: React.ReactNode;
+}) {
+  return (
+    <header className="px-10 md:px-16 lg:px-24 mt-24 pt-12 border-t border-border">
+      <div className="eyebrow">{eyebrow}</div>
+      <h2 className="mt-3 font-display text-[34px] sm:text-[42px] lg:text-[48px] leading-[1.08] tracking-tight text-text max-w-[26ch]">
+        {children}
+      </h2>
+      <p className="mt-5 text-lg text-text-dim leading-relaxed max-w-[68ch]">
+        {lead}
+      </p>
+    </header>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AnchorStat — one big number used in the 3-up anchor row that follows the
+// hero / follow-up headers. Left-aligned text (not centered) so it sits
+// in the same visual rhythm as the rest of the page — no dead space on
+// the right of wide displays, consistent edge with section headings.
 // ---------------------------------------------------------------------------
 type StatTone = "neutral" | "good" | "bad" | "accent";
 
@@ -67,16 +99,39 @@ export function AnchorStat({
   tone?: StatTone;
 }) {
   return (
-    <div className="rounded-md border border-border bg-bg-subtle p-4 text-center">
+    <div className="rounded-md border border-border bg-bg-subtle p-5">
       <div
-        className={`text-3xl font-semibold font-mono-num ${statToneClass[tone]}`}
+        className={`font-display text-[32px] leading-none font-mono-num tracking-tight ${statToneClass[tone]}`}
       >
         {value}
       </div>
-      <div className="mt-2 text-xs uppercase tracking-wider text-text-dim font-medium">
+      <div className="mt-3 text-[11.5px] uppercase tracking-[0.12em] text-text-dim font-semibold">
         {label}
       </div>
-      <div className="mt-2 text-xs text-text-muted leading-snug">{sub}</div>
+      <div className="mt-2 text-[13px] text-text-muted leading-snug">{sub}</div>
+    </div>
+  );
+}
+
+/**
+ * Standard wrapper for a 3-up anchor-stat row. Sits at the section's
+ * left padding edge (same px as StorySection / StoryHero / SmokingGunFigure)
+ * so the three cards line up with the page's content edge instead of
+ * floating in a narrow centered column. Pass spacing via `className` if
+ * the default mt-10 doesn't suit.
+ */
+export function AnchorStatRow({
+  children,
+  className = "mt-10",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`px-10 md:px-16 lg:px-24 ${className} grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-6xl`}
+    >
+      {children}
     </div>
   );
 }
