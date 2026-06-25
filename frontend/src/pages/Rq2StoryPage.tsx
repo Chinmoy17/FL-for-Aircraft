@@ -78,7 +78,7 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
   const schemes = parseSchemes(phase);
 
   return (
-    <article className="py-10">
+    <article className="py-10 max-w-7xl">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Research finding · RQ2"

@@ -76,7 +76,7 @@ export function Rq3StoryPage() {
 
 function Rq3Article({ phase }: { phase: PhaseMetrics }) {
   return (
-    <article className="py-10">
+    <article className="py-10 max-w-7xl">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Research finding · RQ3"

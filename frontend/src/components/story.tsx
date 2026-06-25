@@ -117,8 +117,11 @@ export function AnchorStat({
  * Standard wrapper for a 3-up anchor-stat row. Sits at the section's
  * left padding edge (same px as StorySection / StoryHero / SmokingGunFigure)
  * so the three cards line up with the page's content edge instead of
- * floating in a narrow centered column. Pass spacing via `className` if
- * the default mt-10 doesn't suit.
+ * floating in a narrow centered column. No internal max-w cap — the
+ * row fills whatever its parent container allows, so the right edge of
+ * the anchor row matches the right edge of headings / figures / captions
+ * on the same article (the article-level cap is the one place that
+ * decides where the article visually ends).
  */
 export function AnchorStatRow({
   children,
@@ -129,7 +132,7 @@ export function AnchorStatRow({
 }) {
   return (
     <div
-      className={`px-10 md:px-16 lg:px-24 ${className} grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-6xl`}
+      className={`px-10 md:px-16 lg:px-24 ${className} grid grid-cols-1 sm:grid-cols-3 gap-4`}
     >
       {children}
     </div>
