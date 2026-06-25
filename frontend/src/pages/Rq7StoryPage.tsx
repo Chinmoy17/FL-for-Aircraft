@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import {
   AnchorStat,
+  AnchorStatRow,
   Bullet,
   FormulaBlock,
   HypothesisCard,
@@ -81,7 +82,7 @@ export function Rq7StoryPage() {
 
 function Rq7Article({ phase }: { phase: PhaseMetrics }) {
   return (
-    <article className="mx-auto px-6 py-10">
+    <article className="py-10">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Security finding · RQ7"
@@ -99,7 +100,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
       </StoryHero>
 
       {/* ANCHOR NUMBERS ------------------------------------------------- */}
-      <div className="max-w-3xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <AnchorStatRow className="mt-12">
         <AnchorStat
           tone="bad"
           value="4.7×"
@@ -117,7 +118,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
           label="Cells in the attack × defense matrix"
           sub="3 baselines + 2 undefended attacks + 6 defended attacks."
         />
-      </div>
+      </AnchorStatRow>
 
       {/* THE THREAT ----------------------------------------------------- */}
       <StorySection title="The threat model">
