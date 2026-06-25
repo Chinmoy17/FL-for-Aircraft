@@ -70,17 +70,27 @@ export function ExperimentSection({
 }) {
   return (
     <section className="mb-16 first:mt-0">
-      {eyebrow && <div className="eyebrow">{eyebrow}</div>}
-      {title && (
-        <h2 className="font-display text-3xl text-text mt-3 mb-4 max-w-[36ch]">
-          {title}
-        </h2>
-      )}
-      {intro && (
-        <div className="text-text-dim text-[16px] leading-[1.7] max-w-[78ch] mb-6 space-y-3 [&>p]:m-0">
-          {intro}
-        </div>
-      )}
+      {/*
+        Heading block (eyebrow + title + intro) is centered as a column
+        so on extended-display setups it doesn't hug the left edge with
+        empty space on the right. Text inside stays left-aligned for
+        readability — only the block is centered. Children (figures,
+        headline-number grids, custom content) render full-section
+        width below.
+      */}
+      <div className="max-w-[78ch] mx-auto">
+        {eyebrow && <div className="eyebrow">{eyebrow}</div>}
+        {title && (
+          <h2 className="font-display text-3xl text-text mt-3 mb-4 max-w-[36ch]">
+            {title}
+          </h2>
+        )}
+        {intro && (
+          <div className="text-text-dim text-[16px] leading-[1.7] mb-6 space-y-3 [&>p]:m-0">
+            {intro}
+          </div>
+        )}
+      </div>
       {children}
     </section>
   );

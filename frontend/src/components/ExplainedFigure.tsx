@@ -81,8 +81,13 @@ export function ExplainedFigure({
     </figure>
   );
 
+  // Explanation block — eyebrow + big serif title + accent pull-quote + prose.
+  // Centered horizontally (mx-auto) so it sits under the wide figure as a
+  // balanced reading column on extended-display setups, instead of hugging
+  // the left edge with empty space on the right. Text inside stays left-
+  // aligned for readability — only the block is centered.
   const explanationBlock = (
-    <div className="max-w-[68ch]">
+    <div className="max-w-[68ch] mx-auto">
       {eyebrow && (
         <div className="text-[10.5px] font-semibold tracking-[0.16em] uppercase text-accent mb-2.5">
           {eyebrow}
