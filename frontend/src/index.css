@@ -47,31 +47,37 @@
 }
 
 /* Page-level resets — Tailwind v4 doesn't ship the heavyweight preflight
-   we want for a research app, so keep this small. */
-html,
-body,
-#root {
-  height: 100%;
-}
+   we want for a research app, so keep this small. Wrapped in @layer base
+   so that any Tailwind utility (e.g. `text-[#fafaf7]` on a button) wins
+   the cascade against the global `a { color: ... }` rule. Without the
+   layer wrapper, unlayered rules beat layered utilities regardless of
+   selector specificity. */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 
-body {
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-a {
-  color: var(--color-accent);
-  text-decoration: none;
-}
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
 
-a:hover {
-  text-decoration: underline;
+  a:hover {
+    text-decoration: underline;
+  }
 }
 
 /* Reusable utility for code-shaped numbers (figures, tables, metric grids). */

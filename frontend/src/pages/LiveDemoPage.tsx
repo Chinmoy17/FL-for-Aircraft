@@ -245,7 +245,7 @@ function ControlsPanel(props: ControlsPanelProps) {
             onClick={props.onPredict}
             disabled={!props.canPredict}
             type="button"
-            className="bg-accent text-bg font-semibold rounded-md px-4 py-2 text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-subtle transition"
+            className="bg-accent text-[#fafaf7] font-semibold rounded-md px-4 py-2 text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-subtle transition"
           >
             {props.isPredicting ? "Predicting…" : "Predict + Explain"}
           </button>

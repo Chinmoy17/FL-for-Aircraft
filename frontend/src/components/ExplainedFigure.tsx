@@ -30,8 +30,13 @@ export type ExplainedFigureProps = {
   eyebrow?: string;
   /** Optional pull-out takeaways — one or two phrases shown prominently. */
   takeaway?: string;
-  /** When true, the image takes full width; explanation appears underneath. */
-  fullWidth?: boolean;
+  /**
+   * When true, render image and explanation side-by-side in a 3:2 grid.
+   * Default false (image on top at max-w-4xl, text below at 78ch). Only
+   * use compact for small chart figures where the heights happen to be
+   * close.
+   */
+  compact?: boolean;
 };
 
 export function ExplainedFigure({
@@ -40,13 +45,13 @@ export function ExplainedFigure({
   explanation,
   eyebrow,
   takeaway,
-  fullWidth = false,
+  compact = false,
 }: ExplainedFigureProps) {
   const url = figureUrl(artifactPath);
   const [hasError, setHasError] = useState(false);
 
   const figure = (
-    <figure>
+    <figure className={compact ? "" : "max-w-4xl"}>
       {hasError ? (
         <FigurePlaceholder artifactPath={artifactPath} />
       ) : (
@@ -104,15 +109,19 @@ export function ExplainedFigure({
     </div>
   );
 
-  if (fullWidth) {
+  // Default: stacked vertical (paper style) — image on top with caption
+  // immediately under, then the explanation block below at a comfortable
+  // reading width. No height-mismatch dead space.
+  if (!compact) {
     return (
       <section className="my-12">
         {figure}
-        <div className="mt-6 max-w-[78ch]">{explanationBlock}</div>
+        <div className="mt-8 max-w-[78ch]">{explanationBlock}</div>
       </section>
     );
   }
 
+  // Opt-in compact layout: side-by-side for small marginalia figures.
   return (
     <section className="my-14 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-10 items-start">
       {figure}

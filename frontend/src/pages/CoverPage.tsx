@@ -83,7 +83,7 @@ function Hero() {
           to="/abstract"
           className="
             inline-flex items-center gap-2 px-4 py-2.5 rounded-md
-            bg-accent text-white font-medium text-sm
+            bg-accent text-[#fafaf7] font-semibold text-sm
             hover:brightness-110 transition
             focus-visible:outline-none focus-visible:ring-2
             focus-visible:ring-accent/40 focus-visible:ring-offset-2

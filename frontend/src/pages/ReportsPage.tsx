@@ -192,7 +192,7 @@ function ReportCard({ report }: { report: ReportInfo }) {
             className="
               inline-flex items-center justify-between gap-3
               px-4 py-2.5 rounded-md
-              bg-accent text-white font-medium text-sm
+              bg-accent text-[#fafaf7] font-semibold text-sm
               hover:brightness-110 transition no-underline
             "
           >

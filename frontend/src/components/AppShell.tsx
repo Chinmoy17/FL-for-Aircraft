@@ -73,6 +73,9 @@ const TITLES: Array<[RegExp, string]> = [
   [/^\/rq3-story$/, "RQ3 · Interpretability"],
   [/^\/rq7-story$/, "RQ7 · Security"],
   [/^\/rq4-rq5-synthesis$/, "RQ4 / RQ5 · Synthesis"],
+  [/^\/rq2-followups\/fedprox$/, "FedProx · RQ2 follow-up"],
+  [/^\/rq2-followups\/fedrep$/, "FedRep · RQ2 follow-up"],
+  [/^\/rq2-followups\/fedccfa$/, "FedCCFA · RQ2 follow-up"],
   [/^\/demo$/, "Live demo"],
   [/^\/results$/, "Results browser"],
   [/^\/reports$/, "Technical reports"],
@@ -173,9 +176,9 @@ const SECTIONS: NavSection[] = [
   {
     eyebrow: "RQ2 follow-ups",
     items: [
-      { kind: "soon", label: "FedProx" },
-      { kind: "soon", label: "FedRep" },
-      { kind: "soon", label: "FedCCFA" },
+      { kind: "internal", label: "FedProx", to: "/rq2-followups/fedprox", badge: "positive" },
+      { kind: "internal", label: "FedRep", to: "/rq2-followups/fedrep", badge: "positive" },
+      { kind: "internal", label: "FedCCFA", to: "/rq2-followups/fedccfa", badge: "null" },
     ],
   },
   {
