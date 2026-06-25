@@ -36,10 +36,27 @@
   --color-bad: #b91c1c;
   --color-warn: #b45309;
 
-  /* Font roles. Inter + Instrument Serif + JetBrains Mono are loaded
-     via the Google Fonts <link> in index.html. */
+  /* Font roles. Inter + Instrument Serif + Newsreader + JetBrains Mono
+     are loaded via the Google Fonts <link> in index.html.
+
+     The three-tier prose system:
+       --font-display  Instrument Serif  long-form headlines + editorial flourishes
+       --font-prose    Newsreader        paragraph body text in long-form pages
+       --font-ui       Inter             sidebar, buttons, tables, labels, captions
+       --font-mono     JetBrains Mono    numbers, code, IDs, file paths
+
+     Why Newsreader for prose: Instrument Serif is a high-contrast
+     editorial display face. Pairing it with a geometric sans (Inter)
+     creates a stark stylistic jump between headlines and paragraphs.
+     Newsreader is a serif body face designed for 14-18 px reading sizes
+     and shares the editorial family of design intent with Instrument
+     Serif, so the eye doesn't have to context-switch. The optical-size
+     axis (6..72) lets the browser pick the right grade for the
+     rendered size automatically. */
   --font-ui:
     "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --font-prose:
+    "Newsreader", "Source Serif 4", "Georgia", "Times New Roman", serif;
   --font-mono:
     "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
   --font-display:
@@ -77,6 +94,17 @@
 
   a:hover {
     text-decoration: underline;
+  }
+
+  /* Paragraph-level body text uses the prose serif (Newsreader) for
+     graceful pairing with Instrument Serif headlines. UI chrome
+     (sidebar, buttons, tables) stays on Inter via the body default.
+     Tighter optical sizing comes from Newsreader's variable axis. */
+  p {
+    font-family: var(--font-prose);
+    font-size: 16.5px;
+    line-height: 1.65;
+    font-feature-settings: "kern" 1, "liga" 1;
   }
 }
 
