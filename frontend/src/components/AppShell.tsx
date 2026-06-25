@@ -50,7 +50,16 @@ export function AppShell() {
       />
 
       <main className="flex-1 min-w-0 pt-12 md:pt-0">
-        <Outlet />
+        {/*
+          Content is capped at max-w-screen-2xl (1536 px) and centered.
+          This keeps line lengths comfortable on extended-display setups
+          (1920 / 2560 / 3440 px screens) without making things feel
+          cramped on standard laptops. The wrapper is INSIDE <main> so
+          the sidebar still sits flush against the left edge.
+        */}
+        <div className="max-w-screen-2xl mx-auto w-full">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
