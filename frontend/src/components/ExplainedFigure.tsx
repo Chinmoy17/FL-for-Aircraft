@@ -82,12 +82,10 @@ export function ExplainedFigure({
   );
 
   // Explanation block — eyebrow + big serif title + accent pull-quote + prose.
-  // Centered horizontally (mx-auto) so it sits under the wide figure as a
-  // balanced reading column on extended-display setups, instead of hugging
-  // the left edge with empty space on the right. Text inside stays left-
-  // aligned for readability — only the block is centered.
+  // Stays LEFT-ALIGNED at full available column width — the side-by-side
+  // layout below sits it next to the figure, not centered under it.
   const explanationBlock = (
-    <div className="max-w-[68ch] mx-auto">
+    <div>
       {eyebrow && (
         <div className="text-[10.5px] font-semibold tracking-[0.16em] uppercase text-accent mb-2.5">
           {eyebrow}
@@ -125,25 +123,27 @@ export function ExplainedFigure({
     </div>
   );
 
-  // Default: stacked vertical (Distill / paper style). Image fills the
-  // section content width so 3D plots + multi-panel matplotlib exports
-  // render at a usable size. Explanation block sits below in a focused
-  // 68ch reading column - left-aligned, no centering, so the eye moves
-  // naturally from wide figure to focused prose without dead space.
+  // Default: side-by-side row layout (academic / Distill pattern).
+  // Image left ~58 %, explanation right ~42 %, top-aligned. Starts from
+  // the left edge of the section, never centered — extends to fill the
+  // full content area. Only kicks in at xl breakpoint (1280 px) — below
+  // that the text column gets too narrow to read comfortably, so we
+  // stack image-on-top.
   if (!compact) {
     return (
-      <section className="my-16">
+      <section className="my-16 grid grid-cols-1 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-8 xl:gap-12 items-start">
         {figure}
-        <div className="mt-8">{explanationBlock}</div>
+        {explanationBlock}
       </section>
     );
   }
 
-  // Opt-in compact layout: side-by-side for small marginalia figures.
+  // Opt-in compact layout: image on top + explanation below for small
+  // chart-style figures where pairing them horizontally feels cramped.
   return (
-    <section className="my-14 grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-8 lg:gap-10 items-start">
+    <section className="my-12">
       {figure}
-      {explanationBlock}
+      <div className="mt-8 max-w-[68ch]">{explanationBlock}</div>
     </section>
   );
 }
