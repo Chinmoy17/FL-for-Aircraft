@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { figureUrl } from "../api";
 
 /**
@@ -14,7 +14,9 @@ import { figureUrl } from "../api";
  *
  * Layout: image on left (~60% width on lg), explanation block on right
  * (~40%), stacked on smaller viewports. Click image to open full-size
- * in new tab.
+ * in new tab. If the image fails to load (e.g. backend not running),
+ * we render a clear inline placeholder instead of the browser's broken-
+ * image icon — so the explanation is still readable.
  */
 export type ExplainedFigureProps = {
   /** Path relative to the repo's results/ directory, OR a full
@@ -41,27 +43,33 @@ export function ExplainedFigure({
   fullWidth = false,
 }: ExplainedFigureProps) {
   const url = figureUrl(artifactPath);
+  const [hasError, setHasError] = useState(false);
 
   const figure = (
     <figure>
-      <a
-        href={url}
-        target="_blank"
-        rel="noreferrer"
-        className="
-          block rounded-md overflow-hidden border border-border bg-white
-          hover:border-border-strong transition-colors
-          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40
-        "
-        title="Open full image in new tab"
-      >
-        <img
-          src={url}
-          alt={caption}
-          loading="lazy"
-          className="w-full h-auto"
-        />
-      </a>
+      {hasError ? (
+        <FigurePlaceholder artifactPath={artifactPath} />
+      ) : (
+        <a
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          className="
+            block rounded-md overflow-hidden border border-border bg-white
+            hover:border-border-strong transition-colors
+            focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40
+          "
+          title="Open full image in new tab"
+        >
+          <img
+            src={url}
+            alt={caption}
+            loading="lazy"
+            className="w-full h-auto"
+            onError={() => setHasError(true)}
+          />
+        </a>
+      )}
       <figcaption className="mt-3 text-[13px] text-text-muted font-mono-num">
         {artifactPath}
       </figcaption>
@@ -110,5 +118,51 @@ export function ExplainedFigure({
       {figure}
       {explanationBlock}
     </section>
+  );
+}
+
+/**
+ * Inline placeholder shown when a figure fails to load — typically because
+ * the backend is not running. Keeps the page readable instead of showing
+ * a broken-image icon.
+ */
+function FigurePlaceholder({ artifactPath }: { artifactPath: string }) {
+  return (
+    <div
+      role="img"
+      aria-label={`Figure unavailable: ${artifactPath}`}
+      className="
+        flex flex-col items-center justify-center gap-3
+        rounded-md border border-dashed border-border-strong bg-bg-subtle
+        px-6 py-12 text-center
+      "
+    >
+      <svg
+        width="28"
+        height="28"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="text-text-muted"
+        aria-hidden
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="9" cy="9" r="2" />
+        <path d="M21 15l-5-5L5 21" />
+      </svg>
+      <div className="text-sm text-text-dim font-medium">
+        Figure not available
+      </div>
+      <div className="text-[13px] text-text-muted max-w-[42ch] leading-snug">
+        The backend at <span className="font-mono-num">/api/figures</span> did
+        not respond. If you&apos;re running locally, start the API:
+      </div>
+      <pre className="font-mono-num text-[12.5px] text-text bg-bg border border-border rounded px-3 py-2 max-w-full overflow-x-auto">
+        python -m uvicorn backend.main:app --port 8000
+      </pre>
+    </div>
   );
 }

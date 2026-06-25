@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend import services
 from backend.schemas import (
@@ -159,3 +160,30 @@ def figure(rel_path: str) -> FileResponse:
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     return FileResponse(path)
+
+
+# ---------------------------------------------------------------------------
+# Production: serve the built React frontend
+# ---------------------------------------------------------------------------
+# In local dev the React app is served by Vite on :5173 which proxies /api to
+# this server on :8000. In production (Docker / Azure) the same uvicorn
+# process serves both — so when `frontend/dist/` exists we mount it at the
+# root with html=True so the SPA fallback returns index.html for any path
+# that doesn't match an existing static file (e.g. /abstract, /demo, etc.).
+#
+# The mount is added AFTER every @app.get("/api/...") route so the API
+# always wins the URL match — Starlette routes are matched in declaration
+# order.
+_FRONTEND_DIST = REPO_ROOT / "frontend" / "dist"
+if _FRONTEND_DIST.is_dir():
+    logger.info("Mounting built React frontend at / from %s", _FRONTEND_DIST)
+    app.mount(
+        "/",
+        StaticFiles(directory=str(_FRONTEND_DIST), html=True),
+        name="frontend",
+    )
+else:
+    logger.info(
+        "No frontend/dist/ build found — running in API-only mode. "
+        "Start Vite separately with `npm run dev` from frontend/."
+    )

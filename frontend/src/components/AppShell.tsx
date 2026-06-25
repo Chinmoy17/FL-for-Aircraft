@@ -1,9 +1,10 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 
 /**
  * AppShell — the global page chrome for the academic / paper-style frontend.
  *
- * Structure:
+ * Structure on desktop (≥ md):
  *
  *   ┌─────────────┬─────────────────────────────────────────┐
  *   │             │                                         │
@@ -14,28 +15,77 @@ import { NavLink, Outlet } from "react-router-dom";
  *   │             │                                         │
  *   └─────────────┴─────────────────────────────────────────┘
  *
- * The sidebar is the project's table of contents. It mirrors the
- * narrative arc of the work (overview → experiments → research
- * questions → follow-ups → artifacts) rather than a flat link list.
+ * On mobile (< md) the sidebar collapses into a slide-in drawer behind a
+ * hamburger button rendered in a thin top bar. Active sidebar items
+ * auto-scroll into the visible portion of the TOC so the reader's
+ * position is always discoverable.
  *
  * Routes that don't exist yet are rendered as "soon" placeholders so
  * the planned IA is visible from day one — readers can see what's
  * coming next without each link breaking on click.
- *
- * Below the md breakpoint the sidebar collapses out of view; the
- * content area takes full width. A mobile menu can be added later
- * if anyone actually views this on a phone (academic audience is
- * desktop-first).
  */
 export function AppShell() {
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const location = useLocation();
+
+  // Close drawer on route change (mobile UX).
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
+
   return (
     <div className="min-h-screen flex bg-bg text-text">
-      <Sidebar />
-      <main className="flex-1 min-w-0">
+      <RouteTitleManager />
+
+      {/* Desktop sidebar (md+) */}
+      <Sidebar className="hidden md:flex" />
+
+      {/* Mobile top bar (< md) */}
+      <MobileTopBar onOpenDrawer={() => setDrawerOpen(true)} />
+
+      {/* Mobile drawer (< md) */}
+      <MobileDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      />
+
+      <main className="flex-1 min-w-0 pt-12 md:pt-0">
         <Outlet />
       </main>
     </div>
   );
+}
+
+// ===========================================================================
+// Route → title map (drives document.title per page)
+// ===========================================================================
+const TITLES: Array<[RegExp, string]> = [
+  [/^\/$/, "Cover"],
+  [/^\/abstract$/, "Abstract & contributions"],
+  [/^\/experiments\/00-eda$/, "00 · EDA"],
+  [/^\/experiments\/01-data$/, "01 · Data pipeline"],
+  [/^\/experiments\/02-smoke$/, "02 · Smoke run"],
+  [/^\/experiments\/03-centralized$/, "03 · Centralized"],
+  [/^\/experiments\/04-local-only$/, "04 · Local-only"],
+  [/^\/experiments\/05-fedavg$/, "05 · FedAvg IID"],
+  [/^\/experiments\/06-non-iid$/, "06 · Non-IID baseline"],
+  [/^\/rq2-story$/, "RQ2 · Aggregation"],
+  [/^\/rq3-story$/, "RQ3 · Interpretability"],
+  [/^\/rq7-story$/, "RQ7 · Security"],
+  [/^\/rq4-rq5-synthesis$/, "RQ4 / RQ5 · Synthesis"],
+  [/^\/demo$/, "Live demo"],
+  [/^\/results$/, "Results browser"],
+  [/^\/reports$/, "Technical reports"],
+];
+const APP_NAME = "FL Aircraft PHM";
+
+function RouteTitleManager() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const match = TITLES.find(([rx]) => rx.test(pathname));
+    document.title = match ? `${match[1]} · ${APP_NAME}` : APP_NAME;
+  }, [pathname]);
+  return null;
 }
 
 // ===========================================================================
@@ -144,29 +194,157 @@ const SECTIONS: NavSection[] = [
 ];
 
 // ===========================================================================
-// Sidebar
+// Sidebar (desktop) — sticky left rail
 // ===========================================================================
-function Sidebar() {
+function Sidebar({ className = "" }: { className?: string }) {
   return (
     <aside
-      className="
-        hidden md:flex flex-col
+      className={`
+        ${className}
+        flex-col
         w-64 shrink-0
         sticky top-0 h-screen
         border-r border-border
         bg-bg-subtle
         overflow-y-auto
-      "
+      `}
       aria-label="Project navigation"
     >
+      <SidebarContent />
+    </aside>
+  );
+}
+
+// Shared inner content used by both desktop sidebar and mobile drawer.
+function SidebarContent() {
+  const navRef = useRef<HTMLElement>(null);
+  const { pathname } = useLocation();
+
+  // Auto-scroll the active item into view inside the TOC. Important once
+  // the Experiments section has 7+ entries and the active link might
+  // start below the visible viewport.
+  useEffect(() => {
+    const active = navRef.current?.querySelector<HTMLElement>(
+      'a[aria-current="page"]',
+    );
+    if (active) {
+      active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [pathname]);
+
+  return (
+    <>
       <SidebarHeader />
-      <nav className="flex-1 px-3 py-4 space-y-6">
+      <nav
+        ref={navRef}
+        className="flex-1 px-3 py-4 space-y-6"
+      >
         {SECTIONS.map((section) => (
           <SidebarSection key={section.eyebrow} section={section} />
         ))}
       </nav>
       <SidebarFooter />
-    </aside>
+    </>
+  );
+}
+
+// ===========================================================================
+// Mobile top bar + drawer (< md)
+// ===========================================================================
+function MobileTopBar({ onOpenDrawer }: { onOpenDrawer: () => void }) {
+  return (
+    <div
+      className="
+        md:hidden fixed top-0 inset-x-0 z-30
+        h-12 flex items-center gap-3 px-4
+        border-b border-border bg-bg/95 backdrop-blur
+      "
+    >
+      <button
+        type="button"
+        onClick={onOpenDrawer}
+        aria-label="Open navigation"
+        className="
+          inline-flex items-center justify-center
+          w-9 h-9 rounded-md
+          text-text hover:bg-bg-subtle
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40
+        "
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </button>
+      <span className="font-display text-base text-text leading-none">
+        FL Aircraft PHM
+      </span>
+    </div>
+  );
+}
+
+function MobileDrawer({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  // Lock body scroll while the drawer is open. Restore on close.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // Close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [open, onClose]);
+
+  if (!open) return null;
+  return (
+    <div className="md:hidden fixed inset-0 z-40">
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close navigation"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/30 backdrop-blur-[1px] cursor-default"
+      />
+      {/* Drawer panel — fixed full-height, no stickiness needed */}
+      <aside
+        className="
+          absolute inset-y-0 left-0
+          w-72 max-w-[85vw]
+          flex flex-col
+          bg-bg-subtle border-r border-border shadow-xl
+          overflow-y-auto
+        "
+        aria-label="Project navigation"
+      >
+        <SidebarContent />
+      </aside>
+    </div>
   );
 }
 
