@@ -109,11 +109,11 @@ export function LiveDemoPage() {
     <article className="w-full">
       <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
         <div className="eyebrow">Interactive · ~5 seconds per prediction</div>
-        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[24ch]">
+        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[24ch]">
           Live <em className="not-italic text-accent">prediction</em> +
           attribution
         </h1>
-        <p className="mt-6 text-lg text-text-dim max-w-[68ch]">
+        <p className="mt-6 text-lg text-text-dim">
           Pick a trained checkpoint and a test engine. The backend runs
           Integrated Gradients on demand and returns a sensor-level
           explanation grounded in the project&apos;s 17-entry maintenance
@@ -245,7 +245,7 @@ function ControlsPanel(props: ControlsPanelProps) {
             onClick={props.onPredict}
             disabled={!props.canPredict}
             type="button"
-            className="bg-accent text-bg font-semibold rounded-md px-4 py-2 text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-subtle transition"
+            className="bg-accent text-[#fafaf7] font-semibold rounded-md px-4 py-2 text-sm hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-subtle transition"
           >
             {props.isPredicting ? "Predicting…" : "Predict + Explain"}
           </button>

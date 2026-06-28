@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import {
   AnchorStat,
+  AnchorStatRow,
   Bullet,
   FormulaBlock,
   HypothesisCard,
@@ -75,7 +76,7 @@ export function Rq3StoryPage() {
 
 function Rq3Article({ phase }: { phase: PhaseMetrics }) {
   return (
-    <article className="mx-auto px-6 py-10">
+    <article className="py-10 w-full">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Research finding · RQ3"
@@ -92,7 +93,7 @@ function Rq3Article({ phase }: { phase: PhaseMetrics }) {
       </StoryHero>
 
       {/* ANCHOR NUMBERS ------------------------------------------------- */}
-      <div className="max-w-3xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <AnchorStatRow className="mt-12">
         <AnchorStat
           tone="bad"
           value="2 / 6"
@@ -110,7 +111,7 @@ function Rq3Article({ phase }: { phase: PhaseMetrics }) {
           label="Where this points"
           sub="Same direction as RQ2 — control client drift, not aggregation weights."
         />
-      </div>
+      </AnchorStatRow>
 
       {/* THE QUESTION --------------------------------------------------- */}
       <StorySection title="The question">
@@ -295,15 +296,20 @@ function Rq3Article({ phase }: { phase: PhaseMetrics }) {
         </p>
         <ul className="mt-4 space-y-2 text-text">
           <Bullet>
-            <a href="/" className="text-accent">
+            <a href="/demo" className="text-accent">
               Live demo
             </a>{" "}
             — interactive picker for checkpoint + engine, with on-demand
             Integrated Gradients and the rendered explanation.
           </Bullet>
           <Bullet>
-            <a href="/results" className="text-accent">
-              Results / rq3_explanations
+            <a
+              href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq3_explanations"
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent"
+            >
+              GitHub: results / rq3_explanations
             </a>{" "}
             — the 12 pre-rendered explanations from{" "}
             <span className="font-mono-num">scripts/run_rq3.py</span>, with

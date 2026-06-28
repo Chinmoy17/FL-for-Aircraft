@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api";
 import {
   AnchorStat,
+  AnchorStatRow,
   Bullet,
   FormulaBlock,
   HypothesisCard,
@@ -81,7 +82,7 @@ export function Rq7StoryPage() {
 
 function Rq7Article({ phase }: { phase: PhaseMetrics }) {
   return (
-    <article className="mx-auto px-6 py-10">
+    <article className="py-10 w-full">
       {/* HERO ----------------------------------------------------------- */}
       <StoryHero
         eyebrow="Security finding · RQ7"
@@ -99,7 +100,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
       </StoryHero>
 
       {/* ANCHOR NUMBERS ------------------------------------------------- */}
-      <div className="max-w-3xl mx-auto mt-12 grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <AnchorStatRow className="mt-12">
         <AnchorStat
           tone="bad"
           value="4.7×"
@@ -117,18 +118,18 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
           label="Cells in the attack × defense matrix"
           sub="3 baselines + 2 undefended attacks + 6 defended attacks."
         />
-      </div>
+      </AnchorStatRow>
 
       {/* THE THREAT ----------------------------------------------------- */}
       <StorySection title="The threat model">
         <p>
-          The brief frames the attacker as <em>"a malicious airline operator
-          could deliberately send corrupted weight updates to the server,
-          pushing the global model to predict healthier-than-real RUL for a
-          competitor's engine type"</em>. We instantiate this concretely on
-          our 4-client P6 partition: <strong>client_3</strong> operates
-          FD003 engines and wants the global model to under-predict failures
-          on FD001 engines (their competitor's fleet).
+          We model a malicious airline operator that deliberately sends
+          corrupted weight updates to the server, pushing the global
+          model to predict healthier-than-real RUL for a competitor&apos;s
+          engine type. Instantiated concretely on our 4-client P6
+          partition: <strong>client_3</strong> operates FD003 engines and
+          wants the global model to under-predict failures on FD001
+          engines (their competitor&apos;s fleet).
         </p>
         <p>
           The server has no way to distinguish honest updates from poisoned
@@ -206,7 +207,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         title="Gradient-scaling is catastrophic; Krum restores order"
         artifactPath={
           phase.artifacts?.["headline_comparison_png"] ??
-          "results/rq7_poisoning/headline_comparison_fd001+fd003.png"
+          "results/rq7_poisoning/headline_comparison_fd001_fd003.png"
         }
         alt="Bar chart of best-round RMSE across 11 cells. Vanilla under gradient-scale attack reaches 84.03; Krum keeps RMSE around 19.80 under both attacks."
         caption={
@@ -234,7 +235,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         title="The attacker isn't hiding — their update is 10× larger every round"
         artifactPath={
           phase.artifacts?.["attack_diagnostic_png"] ??
-          "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png"
+          "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png"
         }
         alt="Log-scale line plot of per-client weight update L2 norms across 50 rounds. Client_3's red line sits an order of magnitude above the three honest gray lines for the entire training."
         caption={
@@ -275,7 +276,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         title="All three defenses help; Krum recovers fully"
         artifactPath={
           phase.artifacts?.["defense_recovery_png"] ??
-          "results/rq7_poisoning/defense_recovery_fd001+fd003.png"
+          "results/rq7_poisoning/defense_recovery_fd001_fd003.png"
         }
         alt="Paired bars: red 'undefended' and green 'defended' for each attack-defense combination. Krum's green bars are the lowest."
         caption={
@@ -332,9 +333,9 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
       {/* WHY THIS EXTENDS LANDAU ---------------------------------------- */}
       <StorySection title="Extending Landau et al. (2026)">
         <p>
-          Reference [10] in the project brief (Landau et al., 2026) was the
-          closest existing work — they introduced robust aggregation for the
-          PHM federated-learning setting, but their threat model was{" "}
+          Landau et al. (2026) is the closest existing PHM
+          federated-learning work — they introduced robust aggregation
+          for this exact setting, but their threat model was{" "}
           <em>accidental</em> noise (sensors malfunctioning, accidentally
           bad updates):
         </p>
@@ -392,8 +393,13 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         </p>
         <p className="mt-4">
           Full details:{" "}
-          <a href="/results" className="text-accent">
-            → Results / rq7_poisoning
+          <a
+            href="https://github.com/Chinmoy17/FL-for-Aircraft/tree/dev/results/rq7_poisoning"
+            target="_blank"
+            rel="noreferrer"
+            className="text-accent"
+          >
+            → GitHub: results / rq7_poisoning
           </a>{" "}
           shows the per-round trajectories, per-cell metrics, and
           per-subset breakdowns.

@@ -555,11 +555,11 @@ needed, and that is the RQ2/RQ5 territory.
 
 | Topic | Figure |
 | --- | --- |
-| **3-way comparison** — the headline image | [`results/06_non_iid/three_way_non_iid_fd001+fd003.png`](results/06_non_iid/three_way_non_iid_fd001+fd003.png) |
-| **Per-subset cross-evaluation** — reveals the FD001-trained vs FD003-trained asymmetry | [`results/06_non_iid/per_subset_breakdown_fd001+fd003.png`](results/06_non_iid/per_subset_breakdown_fd001+fd003.png) |
-| Centralized training curves on the combined set | [`results/06_non_iid/centralized_metrics_fd001+fd003.png`](results/06_non_iid/centralized_metrics_fd001+fd003.png) |
-| Local-only per-client metric bars | [`results/06_non_iid/local_only_metrics_fd001+fd003.png`](results/06_non_iid/local_only_metrics_fd001+fd003.png) |
-| FedAvg global model metrics across rounds | [`results/06_non_iid/fedavg_metrics_fd001+fd003.png`](results/06_non_iid/fedavg_metrics_fd001+fd003.png) |
+| **3-way comparison** — the headline image | [`results/06_non_iid/three_way_non_iid_fd001_fd003.png`](results/06_non_iid/three_way_non_iid_fd001_fd003.png) |
+| **Per-subset cross-evaluation** — reveals the FD001-trained vs FD003-trained asymmetry | [`results/06_non_iid/per_subset_breakdown_fd001_fd003.png`](results/06_non_iid/per_subset_breakdown_fd001_fd003.png) |
+| Centralized training curves on the combined set | [`results/06_non_iid/centralized_metrics_fd001_fd003.png`](results/06_non_iid/centralized_metrics_fd001_fd003.png) |
+| Local-only per-client metric bars | [`results/06_non_iid/local_only_metrics_fd001_fd003.png`](results/06_non_iid/local_only_metrics_fd001_fd003.png) |
+| FedAvg global model metrics across rounds | [`results/06_non_iid/fedavg_metrics_fd001_fd003.png`](results/06_non_iid/fedavg_metrics_fd001_fd003.png) |
 
 ---
 
@@ -605,7 +605,7 @@ Total wall-clock for all 4 schemes: **1,257 s (~21 min)**.
 
 ### Headline figure
 
-![Four-way comparison](results/rq2_imbalance_aware/four_way_comparison_fd001+fd003.png)
+![Four-way comparison](results/rq2_imbalance_aware/four_way_comparison_fd001_fd003.png)
 
 The bars for the four FL schemes are visually indistinguishable on the RMSE
 and AUPRC panels — **the finding is that reweighting does not move the
@@ -615,7 +615,7 @@ still small compared to the centralized↔local-only gap.
 
 ### Per-round trajectories
 
-![Per-round RMSE](results/rq2_imbalance_aware/per_round_rmse_fd001+fd003.png)
+![Per-round RMSE](results/rq2_imbalance_aware/per_round_rmse_fd001_fd003.png)
 
 All four schemes follow essentially the same trajectory after round ~10.
 They converge to a similar plateau just above the local-only mean (17.92,
@@ -623,7 +623,7 @@ dotted) and remain ~4 RMSE above centralized (13.77, dashed).
 
 ### The smoking-gun figure: Scheme B's weights barely move
 
-![Weight evolution for Scheme B](results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png)
+![Weight evolution for Scheme B](results/rq2_imbalance_aware/weight_evolution_fd001_fd003.png)
 
 **This is the most informative figure in the entire RQ2 experiment.** The
 softmax-of-validation-F1 weights for the 4 clients stay clustered between
@@ -639,7 +639,7 @@ same distribution).
 
 ### Per-subset breakdown — where Scheme B *does* win
 
-![Per-subset breakdown](results/rq2_imbalance_aware/per_subset_breakdown_fd001+fd003.png)
+![Per-subset breakdown](results/rq2_imbalance_aware/per_subset_breakdown_fd001_fd003.png)
 
 Broken down by which test subset each engine belongs to:
 
@@ -697,10 +697,10 @@ to better recall on imminent failures.
 
 | Topic | Figure |
 | --- | --- |
-| **Four-way comparison** — the headline | [`results/rq2_imbalance_aware/four_way_comparison_fd001+fd003.png`](results/rq2_imbalance_aware/four_way_comparison_fd001+fd003.png) |
-| Per-round RMSE for all 4 schemes vs P6 references | [`results/rq2_imbalance_aware/per_round_rmse_fd001+fd003.png`](results/rq2_imbalance_aware/per_round_rmse_fd001+fd003.png) |
-| **Weight evolution for Scheme B** — the smoking-gun figure | [`results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png`](results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png) |
-| Per-subset breakdown across schemes | [`results/rq2_imbalance_aware/per_subset_breakdown_fd001+fd003.png`](results/rq2_imbalance_aware/per_subset_breakdown_fd001+fd003.png) |
+| **Four-way comparison** — the headline | [`results/rq2_imbalance_aware/four_way_comparison_fd001_fd003.png`](results/rq2_imbalance_aware/four_way_comparison_fd001_fd003.png) |
+| Per-round RMSE for all 4 schemes vs P6 references | [`results/rq2_imbalance_aware/per_round_rmse_fd001_fd003.png`](results/rq2_imbalance_aware/per_round_rmse_fd001_fd003.png) |
+| **Weight evolution for Scheme B** — the smoking-gun figure | [`results/rq2_imbalance_aware/weight_evolution_fd001_fd003.png`](results/rq2_imbalance_aware/weight_evolution_fd001_fd003.png) |
+| Per-subset breakdown across schemes | [`results/rq2_imbalance_aware/per_subset_breakdown_fd001_fd003.png`](results/rq2_imbalance_aware/per_subset_breakdown_fd001_fd003.png) |
 
 ### What this implies for the next steps
 
@@ -906,9 +906,9 @@ remaining gap is structural and points at the architectural layer
 
 | Topic | Figure |
 | --- | --- |
-| Headline comparison (all 4 � values + references) | [`results/rq2_fedprox/headline_comparison_fd001+fd003.png`](results/rq2_fedprox/headline_comparison_fd001+fd003.png) |
-| Per-round RMSE trajectories | [`results/rq2_fedprox/per_round_rmse_fd001+fd003.png`](results/rq2_fedprox/per_round_rmse_fd001+fd003.png) |
-| **Smoking-gun: per-subset RMSE balancing** | [`results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png`](results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png) |
+| Headline comparison (all 4 � values + references) | [`results/rq2_fedprox/headline_comparison_fd001_fd003.png`](results/rq2_fedprox/headline_comparison_fd001_fd003.png) |
+| Per-round RMSE trajectories | [`results/rq2_fedprox/per_round_rmse_fd001_fd003.png`](results/rq2_fedprox/per_round_rmse_fd001_fd003.png) |
+| **Smoking-gun: per-subset RMSE balancing** | [`results/rq2_fedprox/per_subset_breakdown_fd001_fd003.png`](results/rq2_fedprox/per_subset_breakdown_fd001_fd003.png) |
 
 ### Reproducing
 
@@ -987,9 +987,9 @@ captures most of the federated-vs-centralized gap.
 
 | Topic | Figure |
 | --- | --- |
-| Headline comparison (FedRep vs vanilla, FedProx, centralized) | [`results/rq2_fedrep/headline_comparison_fd001+fd003.png`](results/rq2_fedrep/headline_comparison_fd001+fd003.png) |
-| **Smoking-gun: per-subset FedRep vs centralized** | [`results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png`](results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png) |
-| Per-client RMSE trajectories | [`results/rq2_fedrep/per_client_rmse_fd001+fd003.png`](results/rq2_fedrep/per_client_rmse_fd001+fd003.png) |
+| Headline comparison (FedRep vs vanilla, FedProx, centralized) | [`results/rq2_fedrep/headline_comparison_fd001_fd003.png`](results/rq2_fedrep/headline_comparison_fd001_fd003.png) |
+| **Smoking-gun: per-subset FedRep vs centralized** | [`results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png`](results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png) |
+| Per-client RMSE trajectories | [`results/rq2_fedrep/per_client_rmse_fd001_fd003.png`](results/rq2_fedrep/per_client_rmse_fd001_fd003.png) |
 
 ### Reproducing
 
@@ -1078,9 +1078,9 @@ FedCCFA refinement story properly.
 
 | Topic | Figure |
 | --- | --- |
-| Headline comparison (FedCCFA vs every prior phase) | [`results/rq2_fedccfa/headline_comparison_fd001+fd003.png`](results/rq2_fedccfa/headline_comparison_fd001+fd003.png) |
-| **Smoking-gun: cluster evolution heatmap** | [`results/rq2_fedccfa/cluster_evolution_fd001+fd003.png`](results/rq2_fedccfa/cluster_evolution_fd001+fd003.png) |
-| Per-subset RMSE vs centralized | [`results/rq2_fedccfa/per_subset_breakdown_fd001+fd003.png`](results/rq2_fedccfa/per_subset_breakdown_fd001+fd003.png) |
+| Headline comparison (FedCCFA vs every prior phase) | [`results/rq2_fedccfa/headline_comparison_fd001_fd003.png`](results/rq2_fedccfa/headline_comparison_fd001_fd003.png) |
+| **Smoking-gun: cluster evolution heatmap** | [`results/rq2_fedccfa/cluster_evolution_fd001_fd003.png`](results/rq2_fedccfa/cluster_evolution_fd001_fd003.png) |
+| Per-subset RMSE vs centralized | [`results/rq2_fedccfa/per_subset_breakdown_fd001_fd003.png`](results/rq2_fedccfa/per_subset_breakdown_fd001_fd003.png) |
 
 ### Reproducing
 

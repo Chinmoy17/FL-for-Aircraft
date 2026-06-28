@@ -32,10 +32,10 @@ Total: 12 runs at ~3 min each on CPU = ~35-40 min wall-clock.
 Outputs land in ``results/rq7_poisoning/``:
   metrics.json                                 structured for the frontend
   per_round_<cell_key>.csv                     12 trajectories
-  headline_comparison_fd001+fd003.png          all 12 cells side by side
+  headline_comparison_fd001_fd003.png          all 12 cells side by side
   attack_diagnostic_delta_norms.png            the attacker's |delta| vs honest
-  defense_recovery_fd001+fd003.png             "broken→recovered" pairs
-  per_subset_breakdown_fd001+fd003.png         FD001 vs FD003 per cell
+  defense_recovery_fd001_fd003.png             "broken→recovered" pairs
+  per_subset_breakdown_fd001_fd003.png         FD001 vs FD003 per cell
 """
 from __future__ import annotations
 

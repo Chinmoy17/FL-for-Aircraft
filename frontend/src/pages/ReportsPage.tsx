@@ -32,11 +32,11 @@ function Header() {
   return (
     <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
       <div className="eyebrow">Long-form · 60 min read</div>
-      <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[28ch]">
+      <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[28ch]">
         Technical{" "}
         <em className="not-italic text-accent">reports</em>
       </h1>
-      <p className="mt-6 text-lg text-text-dim max-w-[68ch]">
+      <p className="mt-6 text-lg text-text-dim">
         Three long-form markdown reports — one per answered research
         question. Each follows the same 8-section template (problem,
         previous work, dataset, methods, experiment, mechanism, future
@@ -192,7 +192,7 @@ function ReportCard({ report }: { report: ReportInfo }) {
             className="
               inline-flex items-center justify-between gap-3
               px-4 py-2.5 rounded-md
-              bg-accent text-white font-medium text-sm
+              bg-accent text-[#fafaf7] font-semibold text-sm
               hover:brightness-110 transition no-underline
             "
           >
@@ -229,7 +229,7 @@ function ReportCard({ report }: { report: ReportInfo }) {
 
       {/* Right column: blurb + section breakdown */}
       <div>
-        <p className="text-[15.5px] text-text leading-relaxed mb-6 max-w-[70ch]">
+        <p className="text-[15.5px] text-text leading-relaxed mb-6">
           {report.blurb}
         </p>
 
@@ -260,7 +260,7 @@ function Methodology() {
       <h2 className="font-display text-3xl text-text mt-3 mb-4 max-w-[36ch]">
         Every report follows the same 8-section structure.
       </h2>
-      <p className="text-text-dim mb-8 max-w-[78ch]">
+      <p className="text-text-dim mb-8">
         Standardising the report shape means a reviewer can move between
         them without re-learning the layout each time. The sections are
         ordered to mirror how the research itself happened — start with
@@ -293,7 +293,7 @@ function Methodology() {
         ))}
       </ol>
 
-      <p className="mt-10 text-sm text-text-muted max-w-[78ch]">
+      <p className="mt-10 text-sm text-text-muted">
         Each report also includes a 10-bullet TL;DR section and an artifact-
         pointer appendix linking back to the specific source files, plots,
         and per-round CSVs the report describes. The combined web

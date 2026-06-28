@@ -3,10 +3,10 @@
   "phase_name": "RQ7 \u2014 Model poisoning attacks + Byzantine-robust aggregation",
   "interpretation": "RQ7 ran 11 attack \u00d7 aggregator cells on the FD001+FD003 Non-IID partition. Baseline (clean + vanilla FedAvg) was RMSE 17.9479. Under attack with no defense the global model degraded to RMSE 84.03 (worst). The best Byzantine-robust aggregator recovered RMSE to 19.80 (within ~1 cycle of the clean baseline). This validates the Yin/Blanchard family of robust aggregators against the two canonical PHM-relevant attacks (label flip + boosted gradient scaling).",
   "artifacts": {
-    "headline_comparison_png": "results/rq7_poisoning/headline_comparison_fd001+fd003.png",
-    "attack_diagnostic_png": "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png",
-    "defense_recovery_png": "results/rq7_poisoning/defense_recovery_fd001+fd003.png",
-    "per_subset_breakdown_png": "results/rq7_poisoning/per_subset_breakdown_fd001+fd003.png"
+    "headline_comparison_png": "results/rq7_poisoning/headline_comparison_fd001_fd003.png",
+    "attack_diagnostic_png": "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png",
+    "defense_recovery_png": "results/rq7_poisoning/defense_recovery_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png"
   },
   "subset": "FD001+FD003",
   "config": {

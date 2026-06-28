@@ -33,12 +33,12 @@ export function ExperimentLayout({
 }) {
   return (
     <article className="w-full">
-      <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
+      <header className="px-10 md:px-16 lg:px-24 pt-20 pb-14 border-b border-border">
         <div className="eyebrow font-mono-num">{phaseId}</div>
-        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[26ch]">
+        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[26ch]">
           {title}
         </h1>
-        <p className="mt-6 text-lg text-text-dim max-w-[68ch]">{lede}</p>
+        <p className="mt-8 text-lg text-text-dim">{lede}</p>
         {metaRow && (
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
             {metaRow}
@@ -56,32 +56,64 @@ export function ExperimentLayout({
 /**
  * One labelled section inside an experiment page. Matches the
  * eyebrow + Instrument Serif heading rhythm used everywhere.
+ *
+ * Q/A visual separation: any section whose eyebrow starts with
+ * "Question " is treated as a query, and its children (figure,
+ * findings, inline tables, callouts — i.e. the answer) render
+ * inside a left-indented wrapper. The question stem (eyebrow +
+ * title + intro / "What we need to know:") stays at the section's
+ * left edge as the prompt; the answer reads as content nested
+ * under it. The indent collapses to zero on small viewports so
+ * mobile layouts stay readable.
+ *
+ * Pages that use bespoke eyebrows (e.g. "The headline figure",
+ * "Per-subset story") can opt into the same indent by passing
+ * ``indent={true}`` explicitly. Passing ``indent={false}`` also
+ * overrides the auto-detection in the rare case a "Question"-prefixed
+ * section shouldn't indent.
  */
 export function ExperimentSection({
   eyebrow,
   title,
   intro,
   children,
+  indent,
 }: {
   eyebrow?: string;
   title?: string;
   intro?: ReactNode;
   children: ReactNode;
+  indent?: boolean;
 }) {
+  const autoIndent =
+    typeof eyebrow === "string" && /^Question\s/i.test(eyebrow);
+  const shouldIndent = indent ?? autoIndent;
+
   return (
     <section className="mb-16 first:mt-0">
+      {/*
+        Heading block (eyebrow + title + intro) is LEFT-ALIGNED at the
+        section's left padding edge. Title and intro have generous
+        max-widths (no centering) so the line lengths stay readable
+        without making the content feel like an isolated centered card.
+        Children (figures, headline-number grids, custom content)
+        render below — indented when shouldIndent is true so the
+        figure / findings sit visually inside the prompt.
+      */}
       {eyebrow && <div className="eyebrow">{eyebrow}</div>}
       {title && (
-        <h2 className="font-display text-3xl text-text mt-3 mb-4 max-w-[36ch]">
+        <h2 className="font-display text-3xl text-text mt-3 mb-4 max-w-[40ch]">
           {title}
         </h2>
       )}
       {intro && (
-        <div className="text-text-dim text-[16px] leading-[1.7] max-w-[78ch] mb-6 space-y-3 [&>p]:m-0">
+        <div className="text-text-dim text-[16px] leading-[1.7] mb-6 space-y-3 [&>p]:m-0">
           {intro}
         </div>
       )}
-      {children}
+      <div className={shouldIndent ? "md:pl-10 lg:pl-12" : ""}>
+        {children}
+      </div>
     </section>
   );
 }

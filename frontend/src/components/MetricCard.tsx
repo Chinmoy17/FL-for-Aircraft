@@ -1,5 +1,5 @@
 /**
- * Generic metric tile — used by both /results and /rq2-story pages.
+ * Generic metric tile — used by the long-form RQ story pages.
  *
  * Sits inside a `bg-bg-subtle` card (so it must be `bg-bg` per UI-craft's
  * "don't nest bg-surface in bg-surface" rule). Renders a label, a big

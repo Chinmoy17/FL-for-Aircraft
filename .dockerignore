@@ -1,0 +1,50 @@
+# .dockerignore — keep the build context lean.
+# Anything that the Dockerfile would COPY but doesn't need should be excluded.
+
+# Python venvs / caches
+.venv/
+.venv-*/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node — the frontend stage runs `npm ci` against package*.json + a fresh
+# COPY, so any local node_modules / dist would just bloat the context.
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+**/*.tsbuildinfo
+
+# Git + IDE
+.git/
+.github/
+.gitignore
+.gitattributes
+.vscode/
+.idea/
+*.code-workspace
+
+# Docs / report markdown — not needed at runtime
+*.md
+!README.md
+notebooks/
+docs/
+
+# Local-only artefacts
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Memory / scratch
+/memories/
+/scripts/__pycache__/
+
+# Dataset PDF — readme.txt + the .txt train/test/RUL files are needed at
+# inference time (Normalizer.fit re-reads train data for z-scoring), but
+# the 424 KB CMAPSS reference PDF is not.
+Dataset/CMAPSS_NASA/*.pdf

@@ -85,13 +85,36 @@ def candidate_checkpoints(repo_root: Path) -> list[CheckpointSpec]:
         CheckpointSpec(
             key="p6_centralized_combined",
             display_name="P6 Centralized (FD001+FD003)",
-            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_centralized_fd001+fd003.pt",
+            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_centralized_fd001_fd003.pt",
             bundle_kind="multi", subsets=("FD001", "FD003"),
         ),
         CheckpointSpec(
             key="p6_fedavg_non_iid",
             display_name="P6 FedAvg Non-IID (FD001+FD003)",
-            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_fedavg_fd001+fd003.pt",
+            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_fedavg_fd001_fd003.pt",
+            bundle_kind="multi", subsets=("FD001", "FD003"),
+        ),
+        # ---- RQ2 follow-up: FedProx μ-sweep (Non-IID FD001+FD003) ----
+        # μ=0.0 is omitted because it is bit-equivalent to vanilla FedAvg
+        # (the P6 FedAvg row above). Exposing all three non-zero μ values
+        # lets a reviewer compare how drift-control changes the attribution
+        # of the same engine across the sweep.
+        CheckpointSpec(
+            key="rq2_fedprox_mu0_001",
+            display_name="FedProx μ=0.001 (FD001+FD003)",
+            checkpoint_path=repo_root / "results" / "rq2_fedprox" / "best_fedprox_state_mu_0.001.pt",
+            bundle_kind="multi", subsets=("FD001", "FD003"),
+        ),
+        CheckpointSpec(
+            key="rq2_fedprox_mu0_01",
+            display_name="FedProx μ=0.01 (FD001+FD003)",
+            checkpoint_path=repo_root / "results" / "rq2_fedprox" / "best_fedprox_state_mu_0.01.pt",
+            bundle_kind="multi", subsets=("FD001", "FD003"),
+        ),
+        CheckpointSpec(
+            key="rq2_fedprox_mu0_1",
+            display_name="FedProx μ=0.1 (FD001+FD003)",
+            checkpoint_path=repo_root / "results" / "rq2_fedprox" / "best_fedprox_state_mu_0.1.pt",
             bundle_kind="multi", subsets=("FD001", "FD003"),
         ),
     ]

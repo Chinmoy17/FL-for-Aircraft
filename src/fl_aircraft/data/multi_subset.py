@@ -98,7 +98,7 @@ class MultiSubsetConfig:
 
     @property
     def display_name(self) -> str:
-        return "+".join(self.subsets)
+        return "_".join(self.subsets)
 
 
 def load_multi_subset_bundle(config: MultiSubsetConfig) -> TrainTestBundle:

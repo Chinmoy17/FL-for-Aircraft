@@ -3,15 +3,15 @@
   "phase_name": "Phase 6 \u2014 Non-IID baseline (FD001 + FD003)",
   "interpretation": "Non-IID baseline on FD001+FD003: 4 clients (2 per subset). Centralized RMSE=13.77, local-only mean RMSE=17.92\u00b11.52, FedAvg RMSE=17.95. FedAvg closed -0.7% of the local-only \u2192 centralized RMSE gap while sharing only model weights. The per-subset breakdown reveals the asymmetry inherent to Non-IID training: local-only clients trained on one fault-mode family struggle on the other.",
   "artifacts": {
-    "centralized_per_epoch_csv": "results/06_non_iid/per_epoch_centralized_fd001+fd003.csv",
-    "local_only_per_client_csv": "results/06_non_iid/per_client_local_fd001+fd003.csv",
-    "fedavg_per_round_csv": "results/06_non_iid/per_round_fedavg_fd001+fd003.csv",
-    "fedavg_per_client_loss_csv": "results/06_non_iid/per_client_loss_fedavg_fd001+fd003.csv",
-    "centralized_metrics_png": "results/06_non_iid/centralized_metrics_fd001+fd003.png",
-    "local_only_metrics_png": "results/06_non_iid/local_only_metrics_fd001+fd003.png",
-    "fedavg_metrics_png": "results/06_non_iid/fedavg_metrics_fd001+fd003.png",
-    "three_way_non_iid_png": "results/06_non_iid/three_way_non_iid_fd001+fd003.png",
-    "per_subset_breakdown_png": "results/06_non_iid/per_subset_breakdown_fd001+fd003.png"
+    "centralized_per_epoch_csv": "results/06_non_iid/per_epoch_centralized_fd001_fd003.csv",
+    "local_only_per_client_csv": "results/06_non_iid/per_client_local_fd001_fd003.csv",
+    "fedavg_per_round_csv": "results/06_non_iid/per_round_fedavg_fd001_fd003.csv",
+    "fedavg_per_client_loss_csv": "results/06_non_iid/per_client_loss_fedavg_fd001_fd003.csv",
+    "centralized_metrics_png": "results/06_non_iid/centralized_metrics_fd001_fd003.png",
+    "local_only_metrics_png": "results/06_non_iid/local_only_metrics_fd001_fd003.png",
+    "fedavg_metrics_png": "results/06_non_iid/fedavg_metrics_fd001_fd003.png",
+    "three_way_non_iid_png": "results/06_non_iid/three_way_non_iid_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/06_non_iid/per_subset_breakdown_fd001_fd003.png"
   },
   "subset": "FD001+FD003",
   "config": {

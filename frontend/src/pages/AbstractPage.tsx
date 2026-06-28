@@ -31,6 +31,7 @@ export function AbstractPage() {
     <article className="w-full">
       <PageHeader />
       <ProjectFraming />
+      <ExperimentalFlow />
       <Contributions />
       <RqVerdictMatrix />
       <RelatedWorkDelta />
@@ -48,11 +49,11 @@ function PageHeader() {
   return (
     <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
       <div className="eyebrow">Overview · 10 min read</div>
-      <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[26ch]">
+      <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[26ch]">
         Abstract <em className="not-italic text-accent">&amp;</em>{" "}
         contributions
       </h1>
-      <p className="mt-6 text-lg text-text-dim max-w-[68ch]">
+      <p className="mt-6 text-lg text-text-dim">
         Long-form framing of the project: why the question is hard, what was
         built, what was found, what was synthesized, what is honestly still
         open. For reviewers reading at depth before clicking into the
@@ -118,7 +119,181 @@ function ProjectFraming() {
 }
 
 // ===========================================================================
-// 3. Contributions
+// 3. Experimental flow — how we got from raw data to the RQ work
+// ===========================================================================
+type FlowStep = {
+  phase: string;
+  title: string;
+  body: string;
+  result?: string;
+  resultLabel?: string;
+  tone?: "neutral" | "upper" | "lower" | "gap";
+  to?: string;
+};
+
+const FLOW: FlowStep[] = [
+  {
+    phase: "00",
+    title: "EDA",
+    body:
+      "Establish the six things any FL-PHM model has to know about C-MAPSS: engine lifetimes, label distribution, class imbalance, operating-regime split, sensor structure, and whether degradation is even detectable.",
+    to: "/experiments/00-eda",
+  },
+  {
+    phase: "01",
+    title: "Data pipeline",
+    body:
+      "Partition FD001 into 4 simulated airline clients (stratified-by-lifetime). Confirm window counts match the analytical formula and per-client fault rate stays balanced (<0.2 pp spread).",
+    to: "/experiments/01-data",
+  },
+  {
+    phase: "02",
+    title: "Smoke run",
+    body:
+      "One centralized epoch on FD001 to confirm the data → model → loss → metrics wiring is correct. AUPRC 0.85 after one epoch proves the architecture works; mis-calibrated fault head is expected.",
+    to: "/experiments/02-smoke",
+  },
+  {
+    phase: "03",
+    title: "Centralized baseline (FD001)",
+    body:
+      "50 epochs of cosine-annealed Adam on pooled FD001. This is the IID upper bound — the best a model could do without any federation constraints.",
+    result: "RMSE 14.02",
+    resultLabel: "Upper bound (FD001)",
+    tone: "upper",
+    to: "/experiments/03-centralized",
+  },
+  {
+    phase: "04",
+    title: "Local-only baseline",
+    body:
+      "Each client trains alone on its 25 engines, evaluated on the common test set. Mean of the four is the federation's lower bound — FedAvg must beat this to be worth the protocol.",
+    result: "RMSE 15.02",
+    resultLabel: "Lower bound (FD001)",
+    tone: "lower",
+    to: "/experiments/04-local-only",
+  },
+  {
+    phase: "05",
+    title: "FedAvg IID baseline",
+    body:
+      "Canonical FedAvg over 4 clients × 50 rounds × 2 local epochs. Closes 85.9% of the upper↔lower gap — federation works as expected on the easy case.",
+    result: "85.9 % gap closed",
+    resultLabel: "Federation wins on IID",
+    tone: "gap",
+    to: "/experiments/05-fedavg",
+  },
+  {
+    phase: "06",
+    title: "Non-IID baseline (FD001 + FD003)",
+    body:
+      "Structurally Non-IID partition: 2 clients carry FD001 (HPC only), 2 carry FD003 (HPC + Fan). Same protocol, very different result — vanilla FedAvg ties with local-only. This is the failure mode every later RQ addresses.",
+    result: "0 % gap closed",
+    resultLabel: "Federation fails on structural Non-IID",
+    tone: "lower",
+    to: "/experiments/06-non-iid",
+  },
+];
+
+function ExperimentalFlow() {
+  return (
+    <section className="px-10 md:px-16 lg:px-24 py-16 border-t border-border">
+      <div className="eyebrow">How we got there</div>
+      <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[40ch]">
+        The empirical flow — from raw CMAPSS files to the RQ work.
+      </h2>
+      <p className="text-text-dim mb-10">
+        Each row below is one experimental phase. Phases 03–06 also report
+        the bound or gap they establish; that&apos;s the line of evidence
+        the research questions later try to move. The Non-IID failure at
+        Phase 06 is what makes RQ2, RQ3, and RQ7 meaningful — not because
+        the federation broke, but because it broke in exactly the way the
+        brief predicted.
+      </p>
+
+      <ol className="space-y-3">
+        {FLOW.map((step, i) => (
+          <FlowRow key={step.phase} step={step} isLast={i === FLOW.length - 1} />
+        ))}
+      </ol>
+
+      <div className="mt-10 rounded-lg border border-accent/40 bg-accent-subtle px-5 py-4">
+        <div className="eyebrow !text-accent mb-1">What happens after Phase 06</div>
+        <p className="text-[15px] text-text leading-relaxed">
+          The 4-RMSE gap from Phase 06 (FedAvg 17.95 vs centralized 13.77)
+          becomes the target territory for the research questions. RQ2
+          tests whether aggregation-layer reweighting can close it
+          (negative). The RQ2 follow-up trilogy (FedProx, FedRep,
+          FedCCFA) tests client-optimisation and architectural fixes —
+          FedRep closes +73 %. RQ3 explains <em>why</em> the gap is hard
+          to close. RQ7 protects the model from a different kind of
+          failure entirely.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function FlowRow({ step, isLast }: { step: FlowStep; isLast: boolean }) {
+  const toneCls =
+    step.tone === "upper"
+      ? "text-good border-good/40 bg-good/10"
+      : step.tone === "lower"
+      ? "text-bad border-bad/40 bg-bad/10"
+      : step.tone === "gap"
+      ? "text-accent border-accent/40 bg-accent-subtle"
+      : "text-text-muted border-border bg-bg-subtle";
+
+  const body = (
+    <article className="rounded-lg border border-border bg-bg p-5 hover:border-border-strong transition-colors">
+      {/* Header row: phase label + title left, result chip right (when present) */}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-2 mb-3">
+        <span className="font-mono-num font-display text-xl text-accent leading-none">
+          Phase {step.phase}
+        </span>
+        <h3 className="font-display text-lg text-text leading-snug flex-1 min-w-0">
+          {step.title}
+        </h3>
+        {step.result && (
+          <span
+            className={`inline-flex flex-col items-end rounded-md border px-3 py-1.5 leading-tight ${toneCls}`}
+          >
+            <span className="font-mono-num font-semibold text-[14px]">
+              {step.result}
+            </span>
+            {step.resultLabel && (
+              <span className="text-[10px] uppercase tracking-wider opacity-80 mt-0.5">
+                {step.resultLabel}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+      <p className="text-[14.5px] text-text-dim leading-relaxed">{step.body}</p>
+    </article>
+  );
+
+  return (
+    <li className="relative">
+      {step.to ? (
+        <NavLink to={step.to} className="block no-underline">
+          {body}
+        </NavLink>
+      ) : (
+        body
+      )}
+      {!isLast && (
+        <div
+          aria-hidden
+          className="ml-6 h-3 border-l-2 border-dashed border-border my-0.5"
+        />
+      )}
+    </li>
+  );
+}
+
+// ===========================================================================
+// 4. Contributions
 // ===========================================================================
 const CONTRIBUTIONS = [
   {
@@ -174,7 +349,7 @@ function Contributions() {
               <h3 className="font-display text-[22px] leading-snug text-text mb-2">
                 {c.title}
               </h3>
-              <p className="text-[15.5px] text-text-dim leading-relaxed max-w-[78ch]">
+              <p className="text-[15.5px] text-text-dim leading-relaxed">
                 {c.blurb}
               </p>
             </div>
@@ -266,11 +441,11 @@ function RqVerdictMatrix() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[36ch]">
         Seven questions, three verdicts.
       </h2>
-      <p className="text-text-dim mb-10 max-w-[68ch]">
-        The original project brief listed seven research questions. Three
-        are answered directly with new experiments; two are synthesised
-        from cross-cutting evidence in existing phases; two are explicit
-        open follow-ups. All seven are framed below.
+      <p className="text-text-dim mb-10">
+        Seven research questions ground this project. Three are answered
+        directly with new experiments; two are synthesised from
+        cross-cutting evidence in existing phases; two are explicit open
+        follow-ups. All seven are framed below.
       </p>
 
       <div className="overflow-x-auto -mx-2">
@@ -414,10 +589,10 @@ function RelatedWorkDelta() {
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[36ch]">
         How this project sits next to the canonical references.
       </h2>
-      <p className="text-text-dim mb-10 max-w-[68ch]">
-        Six rows. Each one names a paper from the project brief or the
-        adjacent FL literature, summarises what they did, and states the
-        specific delta this project adds.
+      <p className="text-text-dim mb-10">
+        Six rows. Each one names a canonical paper from the FL or PHM
+        literature, summarises what they did, and states the specific
+        delta this project adds.
       </p>
 
       <div className="space-y-3">

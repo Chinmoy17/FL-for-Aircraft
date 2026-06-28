@@ -36,42 +36,80 @@
   --color-bad: #b91c1c;
   --color-warn: #b45309;
 
-  /* Font roles. Inter + Instrument Serif + JetBrains Mono are loaded
-     via the Google Fonts <link> in index.html. */
+  /* Font roles. Inter + Instrument Serif + Newsreader + JetBrains Mono
+     are loaded via the Google Fonts <link> in index.html.
+
+     The three-tier prose system:
+       --font-display  Spectral          long-form headlines (academic-journal serif)
+       --font-prose    Newsreader        paragraph body text in long-form pages
+       --font-ui       Inter             sidebar, buttons, tables, labels, captions
+       --font-mono     JetBrains Mono    numbers, code, IDs, file paths
+
+     Why Spectral for display: it's an academic-journal serif explicitly
+     designed for editorial + long-form contexts (think NYT / Pudding /
+     mainstream peer-reviewed PDFs). Compared to a high-contrast display
+     face like Instrument Serif, Spectral reads as 'the headline on a
+     paper' rather than 'the headline on a fashion magazine' — the
+     right register for a PhD research site.
+
+     Why Newsreader for prose: it's a serif body face designed for
+     14-18 px reading sizes and shares the editorial design intent with
+     Spectral, so the eye doesn't have to context-switch between heading
+     and body. The optical-size axis (6..72) lets the browser pick the
+     right grade for the rendered size automatically. */
   --font-ui:
     "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
+  --font-prose:
+    "Newsreader", "Source Serif 4", "Georgia", "Times New Roman", serif;
   --font-mono:
     "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
   --font-display:
-    "Instrument Serif", "Georgia", "Times New Roman", serif;
+    "Spectral", "Source Serif 4", "Georgia", "Times New Roman", serif;
 }
 
 /* Page-level resets — Tailwind v4 doesn't ship the heavyweight preflight
-   we want for a research app, so keep this small. */
-html,
-body,
-#root {
-  height: 100%;
-}
+   we want for a research app, so keep this small. Wrapped in @layer base
+   so that any Tailwind utility (e.g. `text-[#fafaf7]` on a button) wins
+   the cascade against the global `a { color: ... }` rule. Without the
+   layer wrapper, unlayered rules beat layered utilities regardless of
+   selector specificity. */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
 
-body {
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-ui);
-  font-size: 15px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
 
-a {
-  color: var(--color-accent);
-  text-decoration: none;
-}
+  a {
+    color: var(--color-accent);
+    text-decoration: none;
+  }
 
-a:hover {
-  text-decoration: underline;
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* Paragraph-level body text uses the prose serif (Newsreader) for
+     graceful pairing with Instrument Serif headlines. UI chrome
+     (sidebar, buttons, tables) stays on Inter via the body default.
+     Tighter optical sizing comes from Newsreader's variable axis. */
+  p {
+    font-family: var(--font-prose);
+    font-size: 16.5px;
+    line-height: 1.65;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
 }
 
 /* Reusable utility for code-shaped numbers (figures, tables, metric grids). */

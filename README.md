@@ -17,7 +17,7 @@
 
 ## Headline findings
 
-Of the seven research questions in the project brief:
+Of the seven research questions this project addresses:
 
 | RQ | Topic | Verdict | Headline |
 | --- | --- | --- | --- |
@@ -101,10 +101,10 @@ cosine, GroupNorm, 50 rounds × 2 local epochs).
 | **Per-RQ technical reports** (closest to a chapter draft) | [`rq2_report.md`](rq2_report.md) · [`rq3_report.md`](rq3_report.md) · [`rq7_report.md`](rq7_report.md) |
 | **Per-phase narrative** (numbers + interpretation) | [`results.md`](results.md) |
 | **Engineering history** (decisions, challenges, what was built) | [`progress.md`](progress.md) |
-| **Original brief** | [`Project for PhD Applicants.pdf`](Project%20for%20PhD%20Applicants.pdf) · [`explanation.txt`](explanation.txt) |
+| **Original requirements** | [`Project for PhD Applicants.pdf`](Project%20for%20PhD%20Applicants.pdf) · [`explanation.txt`](explanation.txt) |
 | **EDA notebook** (rendered on GitHub) | [`notebooks/01_eda_cmapss.ipynb`](notebooks/01_eda_cmapss.ipynb) |
 | **Machine-readable phase metrics** | [`results/summary.json`](results/summary.json) and individual `results/<phase>/metrics.json` |
-| **Interactive academic frontend** | See the `p7_demo` branch — `frontend/` Vite + React 19 app with sidebar TOC, per-phase explanations, interactive demo, and the three RQ story pages. |
+| **Interactive academic frontend** | [`frontend/`](frontend/) — Vite + React 19 + Tailwind v4 app. Sidebar TOC, per-phase pages with explained figures, three RQ story pages, RQ4/RQ5 synthesis, live `/demo` route backed by FastAPI. Run locally with `npm run dev` (see below) or open the deployed site. |
 
 ### The three technical reports
 
@@ -157,11 +157,64 @@ FL-for-Aircraft/
 
 | Branch | What's on it |
 | --- | --- |
-| `main` | Stable releases (PRs from `dev`). |
-| `dev` | Integration branch. All science + reports + tests live here. **You are reading this README from `dev`.** |
-| `p7_demo` | Interactive academic frontend (Vite + React 19 + Tailwind v4). Light slate-blue theme, full sidebar TOC, per-phase pages with explained figures, three RQ story pages, RQ4/RQ5 synthesis, live `/demo` route backed by FastAPI. |
+| `main` | Stable releases. Includes the full science stack + reports + tests + the React/FastAPI frontend. |
+| `dev` | Integration branch. PR target for new work before promoting to `main`. |
+| `p7_demo` | Original feature branch where the frontend was built. Merged into `dev` → `main`. Kept for archaeology. |
 | `rq2`, `rq3`, `rq7` | Per-RQ feature branches — merged to `dev`, kept for archaeology. |
 | `fedprox`, `fedrep`, `fedccfa` | RQ2 follow-up branches — merged to `dev`, kept for archaeology. |
+
+---
+
+## Run the demo locally (FastAPI + React)
+
+Two terminals from the repo root:
+
+```powershell
+# Terminal 1 — FastAPI backend on :8000
+.\.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --port 8000
+
+# Terminal 2 — Vite dev server on :5173 (proxies /api → :8000)
+cd frontend
+npm install     # first time only
+npm run dev
+```
+
+Then open `http://localhost:5173`. The Vite dev server proxies every
+`/api/*` call to the FastAPI server, so the figures, summary, and live
+predict endpoints work transparently.
+
+---
+
+## Containerised demo (Docker + Azure App Service)
+
+A multi-stage [`Dockerfile`](Dockerfile) bundles the React build and the
+FastAPI backend into a single image:
+
+```powershell
+# Build (~5 min on first run, ~30 s on rebuilds)
+docker build -t fl-aircraft-phm .
+
+# Run locally
+docker run --rm -p 8000:8000 fl-aircraft-phm
+# open http://localhost:8000
+```
+
+The image is sized for **Azure App Service for Containers free tier
+(F1, 1 GB RAM)**:
+
+- CPU-only torch wheel (declared in `pyproject.toml` via `tool.uv.sources`)
+  keeps the runtime layer small.
+- Single `uvicorn` process serves both the API and the built React app
+  — no nginx, no supervisor.
+- Container listens on `$PORT` (Azure sets `WEBSITES_PORT=8000`).
+- Healthcheck endpoint at `/api/health`.
+- Total image footprint ~700 MB (most of which is torch + numpy).
+
+For deployment, build the image, push to your preferred registry
+(GHCR / ACR / Docker Hub), and point an Azure Web App for Containers
+at it. See
+[Microsoft's Linux container quickstart](https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container)
+for the wiring.
 
 ---
 

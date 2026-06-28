@@ -95,7 +95,7 @@ export function Rq45SynthesisPage() {
           </>
         }
       >
-        <ol className="list-decimal list-inside space-y-6 mt-6 max-w-[78ch]">
+        <ol className="list-decimal list-inside space-y-6 mt-6">
           <li>
             <strong>P6 baseline per-subset table.</strong>{" "}
             Centralized: FD003 (RMSE 12.7) is <em>easier</em> than FD001
@@ -141,7 +141,7 @@ export function Rq45SynthesisPage() {
           </li>
         </ol>
 
-        <div className="mt-10 rounded-lg border border-good/40 bg-good/5 p-6 max-w-[78ch]">
+        <div className="mt-10 rounded-lg border border-good/40 bg-good/5 p-6">
           <div className="eyebrow !text-good mb-2">RQ5 conclusion</div>
           <p className="text-[15.5px] text-text leading-relaxed">
             Five independent phases, each surface a different aspect of
@@ -161,7 +161,7 @@ export function Rq45SynthesisPage() {
         title="The figure that makes RQ5's substantial answer visually obvious."
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/per_subset_breakdown_fd001+fd003.png"
+          artifactPath="results/06_non_iid/per_subset_breakdown_fd001_fd003.png"
           caption="P6 per-subset breakdown — the visual that motivated RQ5's framing"
           takeaway="Local models excel on their own subset and fail on the other. FedAvg is the only model that doesn't catastrophically fail on either — but is best on neither."
           explanation={
@@ -281,7 +281,7 @@ export function Rq45SynthesisPage() {
           </div>
         </div>
 
-        <div className="mt-10 rounded-lg border border-accent/40 bg-accent-subtle p-6 max-w-[78ch]">
+        <div className="mt-10 rounded-lg border border-accent/40 bg-accent-subtle p-6">
           <div className="eyebrow !text-accent mb-2">RQ4 conclusion</div>
           <p className="text-[15.5px] text-text leading-relaxed">
             <strong>Honest framing</strong>: we have training-side drift
@@ -301,22 +301,22 @@ export function Rq45SynthesisPage() {
         intro={
           <>
             <p>
-              The original project brief listed seven research questions.
-              The temptation when wrapping up is to claim more than was
-              actually done. The opposite move — committing transparently
-              to which RQs are answered, which are synthesised, which are
-              open — produces a stronger thesis defence than the
-              alternative.
+              Seven research questions ground this project. The
+              temptation when wrapping up is to claim more than was
+              actually done. The opposite move — committing
+              transparently to which RQs are answered, which are
+              synthesised, which are open — produces a stronger thesis
+              defence than the alternative.
             </p>
             <p>
-              For the writeup, the framing is:{" "}
+              The framing is:{" "}
               <em>
                 &quot;Three RQs answered directly (RQ2, RQ3, RQ7), two
                 synthesised from cross-cutting evidence (RQ4 partially,
                 RQ5 substantially), two scoped as open follow-ups
                 (RQ1 sensor heterogeneity, RQ6 privacy).&quot;
               </em>{" "}
-              That covers all seven questions in the brief without
+              That covers all seven research questions without
               over-claiming any of them.
             </p>
           </>

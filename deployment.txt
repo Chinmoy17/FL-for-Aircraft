@@ -1,0 +1,254 @@
+=============================================================================
+  FL Aircraft PHM - Deployment & Operations
+=============================================================================
+
+  Image registry  : bdticacrbm.azurecr.io
+  Resource group  : bdticbm
+  Image name      : fl-aircraft-phm
+  Current version : 1.0.0
+
+  Convention: bump the patch version on every push to ACR. Update the
+  "Current version" line above so the team always knows what is live.
+
+  All commands below are PowerShell, run from the repo root unless a
+  different working directory is explicitly noted.
+
+
+-----------------------------------------------------------------------------
+  1. LOCAL DEVELOPMENT  (two terminals)
+-----------------------------------------------------------------------------
+
+  ---- Terminal 1 ---- FastAPI backend ----------------------------------
+
+  # Run from REPO ROOT (NOT from backend/) so Python can resolve
+  # `from backend import services` correctly.
+
+  cd "C:\Program Files\Project\AirCraft\FL-for-Aircraft"
+  .\.venv\Scripts\Activate.ps1
+  python -m uvicorn backend.main:app --reload --port 8000
+
+  # Verify: http://localhost:8000/api/health  ->  {"status":"ok",...}
+
+  ---- Terminal 2 ---- Vite dev server ----------------------------------
+
+  # Run from frontend/. Vite proxies /api/* to :8000 automatically.
+
+  cd "C:\Program Files\Project\AirCraft\FL-for-Aircraft\frontend"
+  npm install                # first time only
+  npm run dev
+
+  # Open: http://localhost:5173/
+
+
+  ---- Other useful local commands --------------------------------------
+
+  # Full test suite (from repo root)
+  cd "C:\Program Files\Project\AirCraft\FL-for-Aircraft"
+  pytest
+
+  # Refresh the aggregate manifest the frontend reads
+  python scripts/build_results_summary.py
+
+  # Re-run a specific experiment phase
+  python scripts/run_centralized.py
+  python scripts/run_fedavg.py
+  python scripts/run_rq7.py
+  # (see README.md for the full list of 14 scripts/ entrypoints)
+
+  # Production-mode preview WITHOUT Docker - one process serves both
+  cd frontend
+  npm run build
+  cd ..
+  python -m uvicorn backend.main:app --port 8000
+  # http://localhost:8000  serves the built React app + the /api routes
+
+
+-----------------------------------------------------------------------------
+  2. DOCKER - BUILD LOCALLY
+-----------------------------------------------------------------------------
+
+  # Always build from the REPO ROOT (the Dockerfile is there).
+  cd "C:\Program Files\Project\AirCraft\FL-for-Aircraft"
+
+  # Cached rebuild (fast, iterates on Python / frontend changes)
+  docker build -t bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.2 .
+
+  # Clean rebuild (use after pyproject.toml or uv.lock changes)
+  docker build --no-cache -t bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0 .
+
+  # Run locally to verify the image works before pushing
+  docker run --rm -p 8000:8000 bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0
+
+  # In another terminal, sanity-check:
+  curl http://localhost:8000/api/health
+  # Open: http://localhost:8000/
+
+
+-----------------------------------------------------------------------------
+  3. PUSH TO AZURE CONTAINER REGISTRY
+-----------------------------------------------------------------------------
+
+  # Login to the ACR (uses your existing `az login` credentials)
+  az acr login --name bdticacrbm
+
+  # Push the tagged image
+  docker push bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.2
+
+  # Verify the tag landed
+  az acr repository show-tags `
+    --name bdticacrbm `
+    --repository fl-aircraft-phm `
+    --output table
+
+
+-----------------------------------------------------------------------------
+  4. UPDATE & RESTART THE AZURE WEB APP
+-----------------------------------------------------------------------------
+
+  # Replace <webapp-name> with the actual App Service name
+  # (you set this on first-time setup - section 5).
+
+  # Tell the Web App to pull the new image tag
+  az webapp config container set `
+    --name <webapp-name> `
+    --resource-group bdticbm `
+    --container-image-name bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0
+
+  # Restart so the new image takes effect immediately
+  az webapp restart --name <webapp-name> --resource-group bdticbm
+
+  # Tail the container log during cold start (~30-90 s on free tier)
+  az webapp log tail --name <webapp-name> --resource-group bdticbm
+
+  # When the log shows "Application startup complete" - open the URL.
+  start "https://<webapp-name>.azurewebsites.net/"
+
+
+-----------------------------------------------------------------------------
+  5. FIRST-TIME WEB APP SETUP  (one-time, per environment)
+-----------------------------------------------------------------------------
+
+  # Required: tell Azure which port our container binds to. Without this
+  # the platform pings :80 and times out (our Dockerfile binds to $PORT,
+  # default 8000).
+  az webapp config appsettings set `
+    --name <webapp-name> `
+    --resource-group bdticbm `
+    --settings WEBSITES_PORT=8000 PORT=8000
+
+  # Recommended: increase container startup timeout. First cold start
+  # downloads the ~700 MB image from ACR which can exceed the 230 s
+  # default on the free tier.
+  az webapp config appsettings set `
+    --name <webapp-name> `
+    --resource-group bdticbm `
+    --settings WEBSITES_CONTAINER_START_TIME_LIMIT=900
+
+  # Recommended: HTTPS-only (Azure-managed cert is included on free tier)
+  az webapp update --name <webapp-name> --resource-group bdticbm --https-only true
+
+  # Recommended: enable container logging so `az webapp log tail` works
+  az webapp log config `
+    --name <webapp-name> `
+    --resource-group bdticbm `
+    --docker-container-logging filesystem
+
+
+-----------------------------------------------------------------------------
+  6. VERSION BUMP CHECKLIST  (before tagging a new image)
+-----------------------------------------------------------------------------
+
+  [ ] git checkout dev ; git pull
+  [ ] pytest                                    # 216/216 passing
+  [ ] cd frontend ; npm run build               # zero TS errors
+  [ ] cd .. ; docker build -t ...:NEW_TAG .     # builds clean
+  [ ] docker run locally ; manual smoke test
+  [ ] Bump the "Current version" line at the top of this file
+  [ ] Optional: git tag v1.0.X ; git push --tags
+  [ ] git commit -am "deploy: v1.0.X" ; git push
+
+
+-----------------------------------------------------------------------------
+  7. ROLLBACK
+-----------------------------------------------------------------------------
+
+  # All previous tags stay in ACR until you explicitly delete them.
+  # To roll back, just point the Web App at the older tag and restart.
+
+  az webapp config container set `
+    --name <webapp-name> `
+    --resource-group bdticbm `
+    --container-image-name bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0
+
+  az webapp restart --name <webapp-name> --resource-group bdticbm
+
+  # See which tag is currently live
+  az webapp config container show `
+    --name <webapp-name> `
+    --resource-group bdticbm `
+    --query "{image:linuxFxVersion}"
+
+
+-----------------------------------------------------------------------------
+  8. TROUBLESHOOTING
+-----------------------------------------------------------------------------
+
+  --- The container won't start ---
+
+  az webapp log tail --name <webapp-name> --resource-group bdticbm
+
+  Common causes:
+    * Missing WEBSITES_PORT app setting  -> section 5
+    * Image too large for free tier      -> check storage quota in portal
+    * Cold-start timeout                 -> raise WEBSITES_CONTAINER_START_TIME_LIMIT
+
+  --- Figures don't load ---
+
+  # Confirm the CMAPSS .txt files made it into the image
+  docker run --rm bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0 `
+    ls /app/Dataset/CMAPSS_NASA
+
+  # Confirm the trained checkpoints are present
+  docker run --rm bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0 `
+    sh -c "find /app/results -name '*.pt'"
+
+  # Confirm the built frontend is present
+  docker run --rm bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0 `
+    ls /app/frontend/dist
+
+  --- /api/predict returns 503 ---
+
+  # Backend logs "warm_cache failed" on startup if a checkpoint is missing.
+  # Check the .pt files in results/ are tracked by git AND survived the
+  # COPY into the Docker image (.dockerignore should NOT exclude *.pt).
+
+  --- Browser console shows CORS errors ---
+
+  # In production the frontend and backend share the same origin
+  # (https://<webapp>.azurewebsites.net) so CORS shouldn't trigger.
+  # If you ever expose the API to a different origin, extend the
+  # CORS allow-list in backend/main.py and rebuild.
+
+
+-----------------------------------------------------------------------------
+  9. APPENDIX - WHAT'S IN THE IMAGE
+-----------------------------------------------------------------------------
+
+  Base image      : python:3.12-slim                                  ~120 MB
+  Frontend build  : node:20-alpine (stage 1, discarded)               -
+  Python deps     : torch CPU + numpy + pandas + scikit + captum      ~500 MB
+                    + fastapi + uvicorn + httpx2
+  App code        : src/fl_aircraft/, backend/                        ~1 MB
+  Built frontend  : frontend/dist/                                    ~5 MB
+  Data            : Dataset/CMAPSS_NASA/*.txt (PDF excluded)          ~44 MB
+  Trained models  : results/03_centralized/best_model_fd001.pt
+                    results/05_fedavg/best_global_model_fd001.pt
+                    results/06_non_iid/best_centralized_fd001+fd003.pt
+                    results/06_non_iid/best_fedavg_fd001+fd003.pt
+  Figures + CSVs  : results/*/*.png, *.csv, *.json                    ~few MB
+  --------------------------------------------------------------------------
+  Approximate total                                                   ~700 MB
+
+  Free-tier headroom: Azure App Service F1 allows 1 GB of container
+  storage, so we have ~30% margin. Keep an eye on this if torch or
+  the CMAPSS dataset ever grow.
