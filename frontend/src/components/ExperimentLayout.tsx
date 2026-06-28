@@ -65,20 +65,29 @@ export function ExperimentLayout({
  * left edge as the prompt; the answer reads as content nested
  * under it. The indent collapses to zero on small viewports so
  * mobile layouts stay readable.
+ *
+ * Pages that use bespoke eyebrows (e.g. "The headline figure",
+ * "Per-subset story") can opt into the same indent by passing
+ * ``indent={true}`` explicitly. Passing ``indent={false}`` also
+ * overrides the auto-detection in the rare case a "Question"-prefixed
+ * section shouldn't indent.
  */
 export function ExperimentSection({
   eyebrow,
   title,
   intro,
   children,
+  indent,
 }: {
   eyebrow?: string;
   title?: string;
   intro?: ReactNode;
   children: ReactNode;
+  indent?: boolean;
 }) {
-  const isAnswerable =
+  const autoIndent =
     typeof eyebrow === "string" && /^Question\s/i.test(eyebrow);
+  const shouldIndent = indent ?? autoIndent;
 
   return (
     <section className="mb-16 first:mt-0">
@@ -88,8 +97,8 @@ export function ExperimentSection({
         max-widths (no centering) so the line lengths stay readable
         without making the content feel like an isolated centered card.
         Children (figures, headline-number grids, custom content)
-        render below — indented when this section is a "Question N"
-        so the figure / findings sit visually inside the prompt.
+        render below — indented when shouldIndent is true so the
+        figure / findings sit visually inside the prompt.
       */}
       {eyebrow && <div className="eyebrow">{eyebrow}</div>}
       {title && (
@@ -102,7 +111,7 @@ export function ExperimentSection({
           {intro}
         </div>
       )}
-      <div className={isAnswerable ? "md:pl-10 lg:pl-12" : ""}>
+      <div className={shouldIndent ? "md:pl-10 lg:pl-12" : ""}>
         {children}
       </div>
     </section>

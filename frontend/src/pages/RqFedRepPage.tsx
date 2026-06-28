@@ -84,6 +84,7 @@ export function RqFedRepPage() {
       <ExperimentSection
         eyebrow="The headline figure"
         title="FedRep is the only method that closes most of the structural Non-IID gap."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedrep/headline_comparison_fd001_fd003.png"
@@ -115,6 +116,7 @@ export function RqFedRepPage() {
       <ExperimentSection
         eyebrow="Per-client RMSE"
         title="Each client converges to its own near-optimal solution."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedrep/per_client_rmse_fd001_fd003.png"
@@ -148,6 +150,7 @@ export function RqFedRepPage() {
       <ExperimentSection
         eyebrow="Per-subset story"
         title="FD001 actually beats centralized."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png"

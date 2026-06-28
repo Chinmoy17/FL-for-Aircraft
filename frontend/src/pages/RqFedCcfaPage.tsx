@@ -82,6 +82,7 @@ export function RqFedCcfaPage() {
       <ExperimentSection
         eyebrow="The headline figure"
         title="FedCCFA RMSE is statistically tied with FedRep."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedccfa/headline_comparison_fd001_fd003.png"
@@ -112,6 +113,7 @@ export function RqFedCcfaPage() {
       <ExperimentSection
         eyebrow="The smoking gun"
         title="Cluster evolution heatmap — solid blue from round 2 onward."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedccfa/cluster_evolution_fd001_fd003.png"

@@ -296,7 +296,7 @@ function Rq3Article({ phase }: { phase: PhaseMetrics }) {
         </p>
         <ul className="mt-4 space-y-2 text-text">
           <Bullet>
-            <a href="/" className="text-accent">
+            <a href="/demo" className="text-accent">
               Live demo
             </a>{" "}
             — interactive picker for checkpoint + engine, with on-demand

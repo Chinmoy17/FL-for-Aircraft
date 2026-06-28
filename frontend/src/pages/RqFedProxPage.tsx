@@ -74,6 +74,7 @@ export function RqFedProxPage() {
       <ExperimentSection
         eyebrow="The headline figure"
         title="μ = 0.1 wins on combined RMSE, but the story is per-subset."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedprox/headline_comparison_fd001_fd003.png"
@@ -105,6 +106,7 @@ export function RqFedProxPage() {
       <ExperimentSection
         eyebrow="The per-subset story"
         title="FedProx rebalances the per-subset profile."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedprox/per_subset_breakdown_fd001_fd003.png"
@@ -136,6 +138,7 @@ export function RqFedProxPage() {
       <ExperimentSection
         eyebrow="Per-round dynamics"
         title="Convergence is smoother — drift control working as advertised."
+        indent
       >
         <ExplainedFigure
           artifactPath="results/rq2_fedprox/per_round_rmse_fd001_fd003.png"
