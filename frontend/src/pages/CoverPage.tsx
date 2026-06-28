@@ -11,7 +11,7 @@ import { NavLink } from "react-router-dom";
  *                            section knowing exactly what we're
  *                            trying to do and why it's non-trivial.
  *   3. Tasks executed     — Task 1 / Task 2 / Task 3 from the
- *                            project brief, mapped to what shipped.
+ *                            project's research questions, mapped to what shipped.
  *   4. Seven research     — the full 7-RQ list as a table with
  *      questions            verdict pills (answered / synthesised /
  *                            open). At-a-glance project scope.
@@ -52,8 +52,8 @@ function Hero() {
         className="
           font-display text-text
           text-[44px] sm:text-[56px] lg:text-[68px]
-          leading-[1.2] tracking-tight
-          mt-6 max-w-[16ch]
+          leading-[1.15] tracking-tight
+          mt-6 max-w-[24ch]
         "
       >
         Federated Learning for{" "}
@@ -242,9 +242,9 @@ function TasksExecuted() {
         Three tasks. Eleven experimental phases. Three RQ reports.
       </h2>
       <p className="text-text-dim mb-10">
-        The project brief asks for three deliverables: a federated baseline
-        end-to-end, depth on at least one research question, and an honest
-        look at where the work goes next. Each task below maps to its
+        This project ships three deliverables: a federated baseline
+        end-to-end, depth on three research questions, and an honest
+        scope of the work that remains. Each task below maps to its
         artifacts in the repo.
       </p>
 
@@ -416,14 +416,14 @@ function ResearchQuestions() {
     >
       <div className="eyebrow">Seven research questions</div>
       <h2 className="font-display text-3xl text-text mt-3 mb-3 max-w-[40ch]">
-        The full project brief — answered, synthesised, or scoped as open.
+        All seven research questions — answered, synthesised, or scoped as open.
       </h2>
       <p className="text-text-dim mb-8">
-        The brief listed seven open research questions split between the
-        machine-learning side (RQ1–5) and the security side (RQ6–7). The
-        table below covers all seven, with verdict pills that match what
-        the project actually delivered. Click any answered or synthesised
-        row to jump into its story.
+        Seven open research questions span both the machine-learning
+        side (RQ1–5) and the security side (RQ6–7). The table below
+        covers all seven, with verdict pills that match what the project
+        actually delivered. Click any answered or synthesised row to
+        jump into its story.
       </p>
 
       <div className="overflow-x-auto rounded-lg border border-border bg-bg">

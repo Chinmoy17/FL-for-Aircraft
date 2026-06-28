@@ -17,7 +17,7 @@
 
 ## Headline findings
 
-Of the seven research questions in the project brief:
+Of the seven research questions this project addresses:
 
 | RQ | Topic | Verdict | Headline |
 | --- | --- | --- | --- |
@@ -101,10 +101,10 @@ cosine, GroupNorm, 50 rounds × 2 local epochs).
 | **Per-RQ technical reports** (closest to a chapter draft) | [`rq2_report.md`](rq2_report.md) · [`rq3_report.md`](rq3_report.md) · [`rq7_report.md`](rq7_report.md) |
 | **Per-phase narrative** (numbers + interpretation) | [`results.md`](results.md) |
 | **Engineering history** (decisions, challenges, what was built) | [`progress.md`](progress.md) |
-| **Original brief** | [`Project for PhD Applicants.pdf`](Project%20for%20PhD%20Applicants.pdf) · [`explanation.txt`](explanation.txt) |
+| **Original requirements** | [`Project for PhD Applicants.pdf`](Project%20for%20PhD%20Applicants.pdf) · [`explanation.txt`](explanation.txt) |
 | **EDA notebook** (rendered on GitHub) | [`notebooks/01_eda_cmapss.ipynb`](notebooks/01_eda_cmapss.ipynb) |
 | **Machine-readable phase metrics** | [`results/summary.json`](results/summary.json) and individual `results/<phase>/metrics.json` |
-| **Interactive academic frontend** | See the `p7_demo` branch — `frontend/` Vite + React 19 app with sidebar TOC, per-phase explanations, interactive demo, and the three RQ story pages. |
+| **Interactive academic frontend** | [`frontend/`](frontend/) — Vite + React 19 + Tailwind v4 app. Sidebar TOC, per-phase pages with explained figures, three RQ story pages, RQ4/RQ5 synthesis, live `/demo` route backed by FastAPI. Run locally with `npm run dev` (see below) or open the deployed site. |
 
 ### The three technical reports
 
@@ -157,9 +157,9 @@ FL-for-Aircraft/
 
 | Branch | What's on it |
 | --- | --- |
-| `main` | Stable releases (PRs from `dev`). |
-| `dev` | Integration branch. All science + reports + tests live here. **You are reading this README from `dev`.** |
-| `p7_demo` | Interactive academic frontend (Vite + React 19 + Tailwind v4). Light slate-blue theme, full sidebar TOC, per-phase pages with explained figures, three RQ story pages, RQ4/RQ5 synthesis, live `/demo` route backed by FastAPI. |
+| `main` | Stable releases. Includes the full science stack + reports + tests + the React/FastAPI frontend. |
+| `dev` | Integration branch. PR target for new work before promoting to `main`. |
+| `p7_demo` | Original feature branch where the frontend was built. Merged into `dev` → `main`. Kept for archaeology. |
 | `rq2`, `rq3`, `rq7` | Per-RQ feature branches — merged to `dev`, kept for archaeology. |
 | `fedprox`, `fedrep`, `fedccfa` | RQ2 follow-up branches — merged to `dev`, kept for archaeology. |
 

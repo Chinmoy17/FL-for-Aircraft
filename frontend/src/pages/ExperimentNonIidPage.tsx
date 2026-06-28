@@ -103,7 +103,7 @@ export function ExperimentNonIidPage() {
               starting point of the project&apos;s research arc.
             </p>
             <p>
-              Worth noting:{" "}
+              The RMSE story isn&apos;t the only story.{" "}
               <em>
                 FedAvg is still operationally valuable here even with
                 no RMSE improvement

@@ -311,21 +311,17 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
         </p>
       </StorySection>
 
-      {/* WHY THIS COUNTS AS A POSITIVE -------------------------------- */}
-      <StorySection title="Why a negative result is a research contribution">
-        <blockquote className="border-l-2 border-accent/70 pl-4 italic text-text-dim my-4">
-          "Any failed attempt is valuable research finding, it tells the
-          community which directions are not worth pursuing."
-          <footer className="not-italic text-xs mt-2 text-text-muted">
-            — from the assignment brief
-          </footer>
-        </blockquote>
+      {/* THE CONTRIBUTION ----------------------------------------------- */}
+      <StorySection title="What this negative result contributes">
         <p>
           The three weighting schemes RQ2 ruled out — fault-count,
-          validation-F1, inverse-loss — are the three most obvious knobs to
-          turn before reaching for a more invasive change like FedProx. By
-          showing all three move the needle by less than 1 RMSE point, RQ2
-          isolates the intervention layer the next experiment should target.
+          validation-F1, inverse-loss — are the three most obvious knobs
+          to reach for before attempting a more invasive change like
+          FedProx or FedRep. Showing that all three move RMSE by less
+          than one cycle is itself the contribution: it isolates the
+          intervention layer the next experiment should actually target,
+          and saves anyone working on structural-Non-IID PHM from
+          re-running the same dead-end sweep.
         </p>
         <p className="mt-4">
           For deeper detail, see{" "}

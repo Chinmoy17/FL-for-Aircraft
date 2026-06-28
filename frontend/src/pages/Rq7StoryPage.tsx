@@ -123,13 +123,13 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
       {/* THE THREAT ----------------------------------------------------- */}
       <StorySection title="The threat model">
         <p>
-          The brief frames the attacker as <em>"a malicious airline operator
-          could deliberately send corrupted weight updates to the server,
-          pushing the global model to predict healthier-than-real RUL for a
-          competitor's engine type"</em>. We instantiate this concretely on
-          our 4-client P6 partition: <strong>client_3</strong> operates
-          FD003 engines and wants the global model to under-predict failures
-          on FD001 engines (their competitor's fleet).
+          We model a malicious airline operator that deliberately sends
+          corrupted weight updates to the server, pushing the global
+          model to predict healthier-than-real RUL for a competitor&apos;s
+          engine type. Instantiated concretely on our 4-client P6
+          partition: <strong>client_3</strong> operates FD003 engines and
+          wants the global model to under-predict failures on FD001
+          engines (their competitor&apos;s fleet).
         </p>
         <p>
           The server has no way to distinguish honest updates from poisoned
@@ -333,9 +333,9 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
       {/* WHY THIS EXTENDS LANDAU ---------------------------------------- */}
       <StorySection title="Extending Landau et al. (2026)">
         <p>
-          Reference [10] in the project brief (Landau et al., 2026) was the
-          closest existing work — they introduced robust aggregation for the
-          PHM federated-learning setting, but their threat model was{" "}
+          Landau et al. (2026) is the closest existing PHM
+          federated-learning work — they introduced robust aggregation
+          for this exact setting, but their threat model was{" "}
           <em>accidental</em> noise (sensors malfunctioning, accidentally
           bad updates):
         </p>

@@ -301,22 +301,22 @@ export function Rq45SynthesisPage() {
         intro={
           <>
             <p>
-              The original project brief listed seven research questions.
-              The temptation when wrapping up is to claim more than was
-              actually done. The opposite move — committing transparently
-              to which RQs are answered, which are synthesised, which are
-              open — produces a stronger thesis defence than the
-              alternative.
+              Seven research questions ground this project. The
+              temptation when wrapping up is to claim more than was
+              actually done. The opposite move — committing
+              transparently to which RQs are answered, which are
+              synthesised, which are open — produces a stronger thesis
+              defence than the alternative.
             </p>
             <p>
-              For the writeup, the framing is:{" "}
+              The framing is:{" "}
               <em>
                 &quot;Three RQs answered directly (RQ2, RQ3, RQ7), two
                 synthesised from cross-cutting evidence (RQ4 partially,
                 RQ5 substantially), two scoped as open follow-ups
                 (RQ1 sensor heterogeneity, RQ6 privacy).&quot;
               </em>{" "}
-              That covers all seven questions in the brief without
+              That covers all seven research questions without
               over-claiming any of them.
             </p>
           </>

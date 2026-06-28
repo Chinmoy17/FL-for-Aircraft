@@ -442,10 +442,10 @@ function RqVerdictMatrix() {
         Seven questions, three verdicts.
       </h2>
       <p className="text-text-dim mb-10">
-        The original project brief listed seven research questions. Three
-        are answered directly with new experiments; two are synthesised
-        from cross-cutting evidence in existing phases; two are explicit
-        open follow-ups. All seven are framed below.
+        Seven research questions ground this project. Three are answered
+        directly with new experiments; two are synthesised from
+        cross-cutting evidence in existing phases; two are explicit open
+        follow-ups. All seven are framed below.
       </p>
 
       <div className="overflow-x-auto -mx-2">
@@ -590,9 +590,9 @@ function RelatedWorkDelta() {
         How this project sits next to the canonical references.
       </h2>
       <p className="text-text-dim mb-10">
-        Six rows. Each one names a paper from the project brief or the
-        adjacent FL literature, summarises what they did, and states the
-        specific delta this project adds.
+        Six rows. Each one names a canonical paper from the FL or PHM
+        literature, summarises what they did, and states the specific
+        delta this project adds.
       </p>
 
       <div className="space-y-3">
