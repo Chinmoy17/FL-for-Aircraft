@@ -40,19 +40,23 @@
      are loaded via the Google Fonts <link> in index.html.
 
      The three-tier prose system:
-       --font-display  Instrument Serif  long-form headlines + editorial flourishes
+       --font-display  Spectral          long-form headlines (academic-journal serif)
        --font-prose    Newsreader        paragraph body text in long-form pages
        --font-ui       Inter             sidebar, buttons, tables, labels, captions
        --font-mono     JetBrains Mono    numbers, code, IDs, file paths
 
-     Why Newsreader for prose: Instrument Serif is a high-contrast
-     editorial display face. Pairing it with a geometric sans (Inter)
-     creates a stark stylistic jump between headlines and paragraphs.
-     Newsreader is a serif body face designed for 14-18 px reading sizes
-     and shares the editorial family of design intent with Instrument
-     Serif, so the eye doesn't have to context-switch. The optical-size
-     axis (6..72) lets the browser pick the right grade for the
-     rendered size automatically. */
+     Why Spectral for display: it's an academic-journal serif explicitly
+     designed for editorial + long-form contexts (think NYT / Pudding /
+     mainstream peer-reviewed PDFs). Compared to a high-contrast display
+     face like Instrument Serif, Spectral reads as 'the headline on a
+     paper' rather than 'the headline on a fashion magazine' — the
+     right register for a PhD research site.
+
+     Why Newsreader for prose: it's a serif body face designed for
+     14-18 px reading sizes and shares the editorial design intent with
+     Spectral, so the eye doesn't have to context-switch between heading
+     and body. The optical-size axis (6..72) lets the browser pick the
+     right grade for the rendered size automatically. */
   --font-ui:
     "Inter", "Segoe UI", "Helvetica Neue", system-ui, sans-serif;
   --font-prose:
@@ -60,7 +64,7 @@
   --font-mono:
     "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, monospace;
   --font-display:
-    "Instrument Serif", "Georgia", "Times New Roman", serif;
+    "Spectral", "Source Serif 4", "Georgia", "Times New Roman", serif;
 }
 
 /* Page-level resets — Tailwind v4 doesn't ship the heavyweight preflight

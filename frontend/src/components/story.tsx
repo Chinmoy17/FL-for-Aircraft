@@ -66,7 +66,7 @@ export function StoryFollowupHeader({
   return (
     <header className="px-10 md:px-16 lg:px-24 mt-24 pt-12 border-t border-border">
       <div className="eyebrow">{eyebrow}</div>
-      <h2 className="mt-3 font-display text-[34px] sm:text-[42px] lg:text-[48px] leading-[1.08] tracking-tight text-text max-w-[26ch]">
+      <h2 className="mt-4 font-display text-[34px] sm:text-[42px] lg:text-[48px] leading-[1.2] tracking-tight text-text max-w-[26ch]">
         {children}
       </h2>
       <p className="mt-5 text-lg text-text-dim leading-relaxed">
@@ -255,7 +255,7 @@ export function StoryHero({
   return (
     <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
       <div className="eyebrow">{eyebrow}</div>
-      <h1 className="font-display text-[44px] sm:text-[52px] lg:text-[60px] leading-[1.05] tracking-tight text-text mt-4 max-w-[22ch]">
+      <h1 className="font-display text-[44px] sm:text-[52px] lg:text-[60px] leading-[1.2] tracking-tight text-text mt-6 max-w-[22ch]">
         {children}
       </h1>
       <p className="mt-6 text-lg text-text-dim leading-relaxed">

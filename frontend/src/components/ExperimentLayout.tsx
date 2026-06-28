@@ -33,12 +33,12 @@ export function ExperimentLayout({
 }) {
   return (
     <article className="w-full">
-      <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
+      <header className="px-10 md:px-16 lg:px-24 pt-20 pb-14 border-b border-border">
         <div className="eyebrow font-mono-num">{phaseId}</div>
-        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[26ch]">
+        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[26ch]">
           {title}
         </h1>
-        <p className="mt-6 text-lg text-text-dim">{lede}</p>
+        <p className="mt-8 text-lg text-text-dim">{lede}</p>
         {metaRow && (
           <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
             {metaRow}

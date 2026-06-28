@@ -32,7 +32,7 @@ function Header() {
   return (
     <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
       <div className="eyebrow">Long-form · 60 min read</div>
-      <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[28ch]">
+      <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[28ch]">
         Technical{" "}
         <em className="not-italic text-accent">reports</em>
       </h1>

@@ -109,7 +109,7 @@ export function LiveDemoPage() {
     <article className="w-full">
       <header className="px-10 md:px-16 lg:px-24 pt-16 pb-10 border-b border-border">
         <div className="eyebrow">Interactive · ~5 seconds per prediction</div>
-        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.05] tracking-tight text-text mt-4 max-w-[24ch]">
+        <h1 className="font-display text-[44px] sm:text-[52px] leading-[1.2] tracking-tight text-text mt-6 max-w-[24ch]">
           Live <em className="not-italic text-accent">prediction</em> +
           attribution
         </h1>

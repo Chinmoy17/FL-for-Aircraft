@@ -45,22 +45,22 @@ export function CoverPage() {
 // ===========================================================================
 function Hero() {
   return (
-    <section className="px-10 md:px-16 lg:px-24 pt-16 pb-12 border-b border-border">
+    <section className="px-10 md:px-16 lg:px-24 pt-20 pb-16 border-b border-border">
       <div className="eyebrow">PhD research · 2026</div>
 
       <h1
         className="
           font-display text-text
           text-[44px] sm:text-[56px] lg:text-[68px]
-          leading-[1.05] tracking-tight
-          mt-4 max-w-[16ch]
+          leading-[1.2] tracking-tight
+          mt-6 max-w-[16ch]
         "
       >
         Federated Learning for{" "}
         <em className="not-italic text-accent">Aircraft Engine</em> PHM
       </h1>
 
-      <p className="mt-6 text-[19px] leading-relaxed text-text-dim max-w-[64ch]">
+      <p className="mt-8 text-[19px] leading-relaxed text-text-dim max-w-[64ch]">
         Predicting when a jet engine will fail — without the airlines
         that own the data ever sharing it. A PhD research project
         spanning three answered questions, two synthesised ones, and
