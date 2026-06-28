@@ -3,9 +3,9 @@
   "phase_name": "RQ2 follow-up \u2014 FedCCFA (clustered personalisation) on FD001 + FD003",
   "interpretation": "FedCCFA with similarity_threshold=0.5, warmup_rounds=3 achieved best macro test RMSE 15.00 at round 47. Best-round cluster structure: [['client_1', 'client_2', 'client_3', 'client_4']]. Per-subset: FD001 macro RMSE 14.60 (centralized ref 14.76). Per-subset: FD003 macro RMSE 15.40 (centralized ref 12.69). Implied combined-RMSE gap closed: +70.6%.",
   "artifacts": {
-    "headline_comparison_png": "results/rq2_fedccfa/headline_comparison_fd001+fd003.png",
-    "cluster_evolution_png": "results/rq2_fedccfa/cluster_evolution_fd001+fd003.png",
-    "per_subset_breakdown_png": "results/rq2_fedccfa/per_subset_breakdown_fd001+fd003.png"
+    "headline_comparison_png": "results/rq2_fedccfa/headline_comparison_fd001_fd003.png",
+    "cluster_evolution_png": "results/rq2_fedccfa/cluster_evolution_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq2_fedccfa/per_subset_breakdown_fd001_fd003.png"
   },
   "subset": "FD001+FD003",
   "config": {

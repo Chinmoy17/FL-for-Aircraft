@@ -869,12 +869,12 @@ is supposed to provide — even when its mean RMSE does not improve, its
 | `src/fl_aircraft/fl/simulation.py` (refactored) | `run_fedavg_from_bundle` + `build_federated_clients_from_bundle` (new) + legacy wrappers. |
 | `tests/test_multi_subset.py` | 22 tests (`MultiSubsetConfig` validation, bundle round-trip, unit-id offset, partition correctness, end-to-end smoke). |
 | `scripts/run_non_iid.py` | CLI: 3 sub-runs in series; CSVs (centralized epochs, local per-client, FedAvg rounds, FedAvg per-client losses); 5 PNGs (centralized / local-only / FedAvg / 3-way / per-subset breakdown); structured metrics.json. |
-| `results/06_non_iid/three_way_non_iid_fd001+fd003.png` | The headline image. |
-| `results/06_non_iid/per_subset_breakdown_fd001+fd003.png` | **The most informative figure**: FD001-trained vs FD003-trained per-subset asymmetry. |
-| `results/06_non_iid/{centralized,local_only,fedavg}_metrics_fd001+fd003.png` | Per-method detail figures. |
+| `results/06_non_iid/three_way_non_iid_fd001_fd003.png` | The headline image. |
+| `results/06_non_iid/per_subset_breakdown_fd001_fd003.png` | **The most informative figure**: FD001-trained vs FD003-trained per-subset asymmetry. |
+| `results/06_non_iid/{centralized,local_only,fedavg}_metrics_fd001_fd003.png` | Per-method detail figures. |
 | `results/06_non_iid/per_epoch_centralized_*.csv`, `per_client_local_*.csv`, `per_round_fedavg_*.csv`, `per_client_loss_fedavg_*.csv` | Full per-run logs. |
 | `results/06_non_iid/metrics.json` | Structured payload including all sub-runs, per-subset breakdowns, and the `rmse_gap_closed_pct = -0.7` headline number. |
-| `results/06_non_iid/best_{centralized,fedavg}_fd001+fd003.pt` | Best-state checkpoints (untracked: `.gitignore`). |
+| `results/06_non_iid/best_{centralized,fedavg}_fd001_fd003.pt` | Best-state checkpoints (untracked: `.gitignore`). |
 
 ### Open questions for RQ work (going into P7+)
 
@@ -951,7 +951,7 @@ local-only gap dwarfs the spread *within* the FL methods.
 
 ### Why all three schemes barely moved the needle: the smoking-gun figure
 
-![Weight evolution for Scheme B](results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png)
+![Weight evolution for Scheme B](results/rq2_imbalance_aware/weight_evolution_fd001_fd003.png)
 
 The per-round aggregation weights for Scheme B's softmax-of-val-F1 stay
 within **0.23–0.27** for the entire 50-round run. The weighting mechanism

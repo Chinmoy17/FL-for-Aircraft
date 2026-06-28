@@ -86,7 +86,7 @@ export function RqFedRepPage() {
         title="FedRep is the only method that closes most of the structural Non-IID gap."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedrep/headline_comparison_fd001+fd003.png"
+          artifactPath="results/rq2_fedrep/headline_comparison_fd001_fd003.png"
           caption="FedRep vs P6 references vs FedProx"
           eyebrow="Figure 01"
           takeaway="Centralized 13.77 → FedRep 14.91 → FedProx 17.70 → vanilla FedAvg 17.95 → local-only 17.92. FedRep is the visible jump."
@@ -117,7 +117,7 @@ export function RqFedRepPage() {
         title="Each client converges to its own near-optimal solution."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedrep/per_client_rmse_fd001+fd003.png"
+          artifactPath="results/rq2_fedrep/per_client_rmse_fd001_fd003.png"
           caption="Per-client test RMSE across rounds — each client evaluated on its own subset"
           eyebrow="Figure 02"
           takeaway="Each client's RMSE curve converges to a near-centralized number for ITS subset. The shared encoder doesn't hurt; the local head wins."
@@ -150,7 +150,7 @@ export function RqFedRepPage() {
         title="FD001 actually beats centralized."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png"
+          artifactPath="results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png"
           caption="Per-subset RMSE — FedRep vs centralized vs vanilla FedAvg"
           eyebrow="Figure 03"
           takeaway="On FD001 FedRep (14.34) edges out centralized (14.80). On FD003 it stays ~3 RMSE behind centralized but improves +3.5 over vanilla FedAvg."

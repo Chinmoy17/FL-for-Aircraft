@@ -207,7 +207,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         title="Gradient-scaling is catastrophic; Krum restores order"
         artifactPath={
           phase.artifacts?.["headline_comparison_png"] ??
-          "results/rq7_poisoning/headline_comparison_fd001+fd003.png"
+          "results/rq7_poisoning/headline_comparison_fd001_fd003.png"
         }
         alt="Bar chart of best-round RMSE across 11 cells. Vanilla under gradient-scale attack reaches 84.03; Krum keeps RMSE around 19.80 under both attacks."
         caption={
@@ -235,7 +235,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         title="The attacker isn't hiding — their update is 10× larger every round"
         artifactPath={
           phase.artifacts?.["attack_diagnostic_png"] ??
-          "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png"
+          "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png"
         }
         alt="Log-scale line plot of per-client weight update L2 norms across 50 rounds. Client_3's red line sits an order of magnitude above the three honest gray lines for the entire training."
         caption={
@@ -276,7 +276,7 @@ function Rq7Article({ phase }: { phase: PhaseMetrics }) {
         title="All three defenses help; Krum recovers fully"
         artifactPath={
           phase.artifacts?.["defense_recovery_png"] ??
-          "results/rq7_poisoning/defense_recovery_fd001+fd003.png"
+          "results/rq7_poisoning/defense_recovery_fd001_fd003.png"
         }
         alt="Paired bars: red 'undefended' and green 'defended' for each attack-defense combination. Krum's green bars are the lowest."
         caption={

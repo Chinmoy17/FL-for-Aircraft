@@ -14,9 +14,9 @@ Outputs land in ``results/rq2_fedrep/``:
 
     metrics.json                                structured for the frontend
     per_round.csv                               macro + per-client trajectories
-    headline_comparison_fd001+fd003.png         bars vs centralized / local / FedAvg / FedProx
-    per_client_rmse_fd001+fd003.png             per-client RMSE trajectory over rounds
-    per_subset_breakdown_fd001+fd003.png        FD001 vs FD003 macro RMSE per scheme
+    headline_comparison_fd001_fd003.png         bars vs centralized / local / FedAvg / FedProx
+    per_client_rmse_fd001_fd003.png             per-client RMSE trajectory over rounds
+    per_subset_breakdown_fd001_fd003.png        FD001 vs FD003 macro RMSE per scheme
 
 Run from the repo root inside the .venv::
 

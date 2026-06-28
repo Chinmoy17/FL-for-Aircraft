@@ -410,12 +410,12 @@ break the test metrics down by which subset each engine came from.
 **The headline image** — FedAvg is statistically tied with the local-only mean
 on RMSE, but substantially better on NASA score and AUPRC:
 
-![Three-way comparison Non-IID](results/06_non_iid/three_way_non_iid_fd001+fd003.png)
+![Three-way comparison Non-IID](results/06_non_iid/three_way_non_iid_fd001_fd003.png)
 
 **The most informative figure** — the per-subset cross-evaluation reveals the
 asymmetry that the combined RMSE hides:
 
-![Per-subset cross-evaluation breakdown](results/06_non_iid/per_subset_breakdown_fd001+fd003.png)
+![Per-subset cross-evaluation breakdown](results/06_non_iid/per_subset_breakdown_fd001_fd003.png)
 
 #### What the cross-evaluation actually shows
 

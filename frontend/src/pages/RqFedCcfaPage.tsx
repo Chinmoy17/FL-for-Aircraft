@@ -84,7 +84,7 @@ export function RqFedCcfaPage() {
         title="FedCCFA RMSE is statistically tied with FedRep."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedccfa/headline_comparison_fd001+fd003.png"
+          artifactPath="results/rq2_fedccfa/headline_comparison_fd001_fd003.png"
           caption="FedCCFA vs FedRep + references"
           eyebrow="Figure 01"
           takeaway="No daylight between FedCCFA and FedRep on combined RMSE. The clustering refinement adds nothing because there is nothing to refine."
@@ -114,7 +114,7 @@ export function RqFedCcfaPage() {
         title="Cluster evolution heatmap — solid blue from round 2 onward."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedccfa/cluster_evolution_fd001+fd003.png"
+          artifactPath="results/rq2_fedccfa/cluster_evolution_fd001_fd003.png"
           caption="Per-round cluster assignment heatmap"
           eyebrow="Figure 02"
           takeaway="After round 2, all 4 clients share one cluster ID for the next 48 rounds. The heads have nothing to distinguish themselves with."

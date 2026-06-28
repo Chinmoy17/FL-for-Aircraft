@@ -3,9 +3,9 @@
   "phase_name": "RQ2 follow-up \u2014 FedProx (\u03bc-sweep) on FD001 + FD003",
   "interpretation": "FedProx with \u03bc=0.1 achieved best combined RMSE 17.70 on the FD001+FD003 Non-IID partition. This closes +6.0% of the local\u2192centralized RMSE gap (headroom = 17.92 \u2212 13.77 cycles). The per-subset breakdown tells the real story: vs vanilla FedAvg the best FedProx run shifts +1.44 RMSE on FD003 (harder, HPC+Fan; F1 0.727 \u2192 0.800, a +0.073 F1 delta) at the cost of +0.98 RMSE on FD001 (easier, HPC-only). Combined with RQ2's finding (best reweighting scheme closed only +2.8% of the gap), two intervention layers \u2014 server-side weights and client-side drift control \u2014 both ceiling around RMSE 17.7 on this 4-client / 2-local-epoch setup. The remaining ~4 RMSE gap is consistent with the structural-Non-IID hypothesis that different fault modes need different decision boundaries (FedRep / FedCCFA architectural layer).",
   "artifacts": {
-    "headline_comparison_png": "results/rq2_fedprox/headline_comparison_fd001+fd003.png",
-    "per_round_rmse_png": "results/rq2_fedprox/per_round_rmse_fd001+fd003.png",
-    "per_subset_breakdown_png": "results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png"
+    "headline_comparison_png": "results/rq2_fedprox/headline_comparison_fd001_fd003.png",
+    "per_round_rmse_png": "results/rq2_fedprox/per_round_rmse_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq2_fedprox/per_subset_breakdown_fd001_fd003.png"
   },
   "subset": "FD001+FD003",
   "config": {

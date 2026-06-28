@@ -54,8 +54,8 @@ class TrainTestBundle:
         subsets: Tuple of CMAPSS subset names contributing rows; one element
             for the single-subset baselines, multiple for combined-subset
             experiments.
-        name: Optional friendly name (e.g. ``"FD001+FD003"``) used in plots
-            and logs. Defaults to ``"+".join(subsets)`` if not given.
+        name: Optional friendly name (e.g. ``"FD001_FD003"``) used in plots
+            and logs. Defaults to ``"_".join(subsets)`` if not given.
     """
 
     train_df: pd.DataFrame
@@ -75,7 +75,7 @@ class TrainTestBundle:
 
     @property
     def display_name(self) -> str:
-        return self.name or "+".join(self.subsets)
+        return self.name or "_".join(self.subsets)
 
 
 def bundle_from_config(config: CMAPSSConfig) -> TrainTestBundle:

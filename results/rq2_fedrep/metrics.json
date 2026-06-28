@@ -3,9 +3,9 @@
   "phase_name": "RQ2 follow-up \u2014 FedRep (personalised heads) on FD001 + FD003",
   "interpretation": "FedRep with head_epochs=1, encoder_epochs=1 achieved best macro test RMSE 14.91 at round 48. Per-subset: FD001 macro RMSE 14.34 (centralized ref 14.76). Per-subset: FD003 macro RMSE 15.47 (centralized ref 12.69). Implied combined-RMSE gap closed: +72.7% (treating macro RMSE as a stand-in; see note in summary). ",
   "artifacts": {
-    "headline_comparison_png": "results/rq2_fedrep/headline_comparison_fd001+fd003.png",
-    "per_client_rmse_png": "results/rq2_fedrep/per_client_rmse_fd001+fd003.png",
-    "per_subset_breakdown_png": "results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png"
+    "headline_comparison_png": "results/rq2_fedrep/headline_comparison_fd001_fd003.png",
+    "per_client_rmse_png": "results/rq2_fedrep/per_client_rmse_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png"
   },
   "subset": "FD001+FD003",
   "config": {

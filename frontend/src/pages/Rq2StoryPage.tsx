@@ -231,7 +231,7 @@ function Rq2Article({ phase }: { phase: PhaseMetrics }) {
         title="Scheme B's aggregation weights barely move"
         artifactPath={
           phase.artifacts?.["weight_evolution_png"] ??
-          "results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png"
+          "results/rq2_imbalance_aware/weight_evolution_fd001_fd003.png"
         }
         alt="Per-client aggregation weights stay near uniform 0.25 across all 50 rounds for Scheme B."
         caption={
@@ -419,7 +419,7 @@ function FedProxFollowup() {
       <SmokingGunFigure
         eyebrow="The smoking-gun figure (II)"
         title="FedProx fixes the per-subset imbalance, even when combined RMSE barely moves"
-        artifactPath="results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png"
+        artifactPath="results/rq2_fedprox/per_subset_breakdown_fd001_fd003.png"
         alt="Per-subset RMSE bars for μ ∈ {0.0, 0.001, 0.01, 0.1} on FD001 and FD003."
         caption={
           <>
@@ -586,7 +586,7 @@ function ArchitecturalCoda() {
       <SmokingGunFigure
         eyebrow="The smoking-gun figure (III)"
         title="FedRep dramatically closes the Non-IID gap on FD001, substantially on FD003"
-        artifactPath="results/rq2_fedrep/per_subset_breakdown_fd001+fd003.png"
+        artifactPath="results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png"
         alt="Per-subset RMSE bars: FedRep green bars vs Centralized P6 black bars on FD001 and FD003."
         caption={
           <>

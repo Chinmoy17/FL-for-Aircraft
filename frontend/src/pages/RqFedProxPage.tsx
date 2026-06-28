@@ -76,7 +76,7 @@ export function RqFedProxPage() {
         title="μ = 0.1 wins on combined RMSE, but the story is per-subset."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedprox/headline_comparison_fd001+fd003.png"
+          artifactPath="results/rq2_fedprox/headline_comparison_fd001_fd003.png"
           caption="Combined-test-set RMSE across μ values + P6 references"
           eyebrow="Figure 01"
           takeaway="Combined RMSE moves from 17.95 to 17.70. Small, but in the right direction — and consistent with the FedProx literature on similar Non-IID benchmarks."
@@ -107,7 +107,7 @@ export function RqFedProxPage() {
         title="FedProx rebalances the per-subset profile."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedprox/per_subset_breakdown_fd001+fd003.png"
+          artifactPath="results/rq2_fedprox/per_subset_breakdown_fd001_fd003.png"
           caption="Per-subset RMSE across the μ sweep"
           eyebrow="Figure 02"
           takeaway="Vanilla FedAvg biases toward FD001 (17.0 vs FD003's 18.9). FedProx flattens this — both subsets converge to ~17.7. Same combined number, much better distribution."
@@ -138,7 +138,7 @@ export function RqFedProxPage() {
         title="Convergence is smoother — drift control working as advertised."
       >
         <ExplainedFigure
-          artifactPath="results/rq2_fedprox/per_round_rmse_fd001+fd003.png"
+          artifactPath="results/rq2_fedprox/per_round_rmse_fd001_fd003.png"
           caption="Combined RMSE across 50 communication rounds, one curve per μ"
           eyebrow="Figure 03"
           takeaway="Higher μ produces a smoother trajectory with less round-to-round oscillation. The proximal term IS bounding drift, even when its effect on the final number is modest."

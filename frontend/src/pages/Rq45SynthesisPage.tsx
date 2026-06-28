@@ -161,7 +161,7 @@ export function Rq45SynthesisPage() {
         title="The figure that makes RQ5's substantial answer visually obvious."
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/per_subset_breakdown_fd001+fd003.png"
+          artifactPath="results/06_non_iid/per_subset_breakdown_fd001_fd003.png"
           caption="P6 per-subset breakdown — the visual that motivated RQ5's framing"
           takeaway="Local models excel on their own subset and fail on the other. FedAvg is the only model that doesn't catastrophically fail on either — but is best on neither."
           explanation={

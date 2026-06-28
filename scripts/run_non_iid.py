@@ -23,15 +23,15 @@ or only the one it was trained on.
 Outputs under ``results/06_non_iid/``:
 
     metrics.json                                       structured for the frontend
-    per_round_fedavg_fd001+fd003.csv
-    per_client_loss_fedavg_fd001+fd003.csv
-    per_client_local_fd001+fd003.csv
-    per_epoch_centralized_fd001+fd003.csv
-    centralized_metrics_fd001+fd003.png                centralized training curves
-    local_only_metrics_fd001+fd003.png                 per-client local-only bars
-    fedavg_metrics_fd001+fd003.png                     FedAvg per-round metrics
-    three_way_non_iid_fd001+fd003.png                  THE headline image
-    per_subset_breakdown_fd001+fd003.png               cross-evaluation FD001 vs FD003
+    per_round_fedavg_fd001_fd003.csv
+    per_client_loss_fedavg_fd001_fd003.csv
+    per_client_local_fd001_fd003.csv
+    per_epoch_centralized_fd001_fd003.csv
+    centralized_metrics_fd001_fd003.png                centralized training curves
+    local_only_metrics_fd001_fd003.png                 per-client local-only bars
+    fedavg_metrics_fd001_fd003.png                     FedAvg per-round metrics
+    three_way_non_iid_fd001_fd003.png                  THE headline image
+    per_subset_breakdown_fd001_fd003.png               cross-evaluation FD001 vs FD003
 
 Run from the repo root inside the .venv::
 

@@ -85,13 +85,13 @@ def candidate_checkpoints(repo_root: Path) -> list[CheckpointSpec]:
         CheckpointSpec(
             key="p6_centralized_combined",
             display_name="P6 Centralized (FD001+FD003)",
-            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_centralized_fd001+fd003.pt",
+            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_centralized_fd001_fd003.pt",
             bundle_kind="multi", subsets=("FD001", "FD003"),
         ),
         CheckpointSpec(
             key="p6_fedavg_non_iid",
             display_name="P6 FedAvg Non-IID (FD001+FD003)",
-            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_fedavg_fd001+fd003.pt",
+            checkpoint_path=repo_root / "results" / "06_non_iid" / "best_fedavg_fd001_fd003.pt",
             bundle_kind="multi", subsets=("FD001", "FD003"),
         ),
     ]

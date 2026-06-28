@@ -561,7 +561,7 @@ check is one principled way to look; other principled ways (median-norm
 clipping, percentile-rank filtering) would also work.
 
 The actual rendered version of this plot is at:
-[`results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png`](results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png).
+[`results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png`](results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png).
 
 ---
 
@@ -981,10 +981,10 @@ exactly the kind of layered understanding a thesis chapter benefits from.
 | Artifact | Path |
 |---|---|
 | Per-cell metrics | [`results/rq7_poisoning/metrics.json`](results/rq7_poisoning/metrics.json) |
-| Headline RMSE bar chart | [`results/rq7_poisoning/headline_comparison_fd001+fd003.png`](results/rq7_poisoning/headline_comparison_fd001+fd003.png) |
-| **Attack diagnostic (log-scale delta norms)** | [`results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png`](results/rq7_poisoning/attack_diagnostic_delta_norms_fd001+fd003.png) |
-| Defense recovery (paired bars) | [`results/rq7_poisoning/defense_recovery_fd001+fd003.png`](results/rq7_poisoning/defense_recovery_fd001+fd003.png) |
-| Per-subset breakdown | [`results/rq7_poisoning/per_subset_breakdown_fd001+fd003.png`](results/rq7_poisoning/per_subset_breakdown_fd001+fd003.png) |
+| Headline RMSE bar chart | [`results/rq7_poisoning/headline_comparison_fd001_fd003.png`](results/rq7_poisoning/headline_comparison_fd001_fd003.png) |
+| **Attack diagnostic (log-scale delta norms)** | [`results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png`](results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png) |
+| Defense recovery (paired bars) | [`results/rq7_poisoning/defense_recovery_fd001_fd003.png`](results/rq7_poisoning/defense_recovery_fd001_fd003.png) |
+| Per-subset breakdown | [`results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png`](results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png) |
 | Per-round trajectories (one CSV per cell) | `results/rq7_poisoning/per_round_*.csv` |
 | Attack wrappers | [`src/fl_aircraft/fl/poisoning.py`](src/fl_aircraft/fl/poisoning.py) |
 | Robust aggregators | [`src/fl_aircraft/fl/robust_aggregators.py`](src/fl_aircraft/fl/robust_aggregators.py) |

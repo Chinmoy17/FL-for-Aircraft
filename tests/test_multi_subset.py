@@ -43,7 +43,7 @@ def test_multi_subset_config_rejects_incompatible_sensor_sets(data_dir: Path) ->
 def test_multi_subset_config_accepts_fd001_fd003_pair(data_dir: Path) -> None:
     cfg = MultiSubsetConfig(subsets=("FD001", "FD003"), data_dir=data_dir)
     assert cfg.feature_cols == ["os_1", "os_2", "os_3"] + informative_sensors("FD001")
-    assert cfg.display_name == "FD001+FD003"
+    assert cfg.display_name == "FD001_FD003"
 
 
 # ---------------------------------------------------------------------------

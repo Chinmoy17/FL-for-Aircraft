@@ -144,7 +144,7 @@ export function ExperimentNonIidPage() {
         }
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/centralized_metrics_fd001+fd003.png"
+          artifactPath="results/06_non_iid/centralized_metrics_fd001_fd003.png"
           caption="Centralized 50-epoch curves on FD001 + FD003 combined"
           eyebrow="Figure 01 · Findings"
           takeaway="Centralized reaches RMSE 13.77 — better than P3's FD001-only 14.02 because the combined data is roughly 2× larger."
@@ -182,7 +182,7 @@ export function ExperimentNonIidPage() {
         }
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/fedavg_metrics_fd001+fd003.png"
+          artifactPath="results/06_non_iid/fedavg_metrics_fd001_fd003.png"
           caption="FedAvg test metrics over 50 communication rounds on the combined test set"
           eyebrow="Figure 02 · Findings"
           takeaway="The global model plateaus at RMSE ~18 within 10–15 rounds. Additional rounds don't help — the protocol can't recover what averaging biased updates loses."
@@ -226,7 +226,7 @@ export function ExperimentNonIidPage() {
         }
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/three_way_non_iid_fd001+fd003.png"
+          artifactPath="results/06_non_iid/three_way_non_iid_fd001_fd003.png"
           caption="Centralized vs FedAvg vs local-only mean on the combined FD001 + FD003 test set"
           eyebrow="Figure 03 · Findings"
           takeaway="FedAvg and local-only are tied on RMSE; both are 4 RMSE worse than centralized. But FedAvg wins NASA by 43 % and AUPRC by 0.03 — operationally useful, even when RMSE says otherwise."
@@ -272,7 +272,7 @@ export function ExperimentNonIidPage() {
         }
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/per_subset_breakdown_fd001+fd003.png"
+          artifactPath="results/06_non_iid/per_subset_breakdown_fd001_fd003.png"
           caption="Per-subset RMSE for each method (centralized, FedAvg, each local client)"
           eyebrow="Figure 04 · Findings"
           takeaway="FD001-trained clients excel on FD001 and fail on FD003. FD003-trained clients do the mirror. FedAvg is the only model not catastrophic on either subset."
@@ -323,7 +323,7 @@ export function ExperimentNonIidPage() {
         }
       >
         <ExplainedFigure
-          artifactPath="results/06_non_iid/local_only_metrics_fd001+fd003.png"
+          artifactPath="results/06_non_iid/local_only_metrics_fd001_fd003.png"
           caption="Best-epoch metrics per local-only client (combined test set)"
           eyebrow="Figure 05 · Findings"
           takeaway="Combined-test RMSE ranges from 15.5 (client_4) to 19.3 (client_3). Heterogeneity in data shows up as heterogeneity in local-model quality."
@@ -455,7 +455,7 @@ function WhyFedAvgFails() {
 /**
  * Per-client best-epoch numbers for the local-only training under
  * the Non-IID partition. Transcribed from
- * results/06_non_iid/per_client_local_fd001+fd003.csv. Subset column
+ * results/06_non_iid/per_client_local_fd001_fd003.csv. Subset column
  * makes the FD001 vs FD003 assignment auditable next to the metrics.
  */
 function PerClientNonIidTable() {

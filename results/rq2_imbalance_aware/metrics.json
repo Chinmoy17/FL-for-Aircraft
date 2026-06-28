@@ -3,10 +3,10 @@
   "phase_name": "RQ2 \u2014 Imbalance-aware aggregation (FD001 + FD003)",
   "interpretation": "RQ2 ran 4 aggregation schemes on the P6 Non-IID partition. Best scheme: Scheme B (val F1) with RMSE 17.80 (+2.8% of the local-only \u2192 centralized gap). Improvement over vanilla FedAvg in this rerun: \u0394RMSE = +0.14.",
   "artifacts": {
-    "four_way_comparison_png": "results/rq2_imbalance_aware/four_way_comparison_fd001+fd003.png",
-    "per_round_rmse_png": "results/rq2_imbalance_aware/per_round_rmse_fd001+fd003.png",
-    "per_subset_breakdown_png": "results/rq2_imbalance_aware/per_subset_breakdown_fd001+fd003.png",
-    "weight_evolution_png": "results/rq2_imbalance_aware/weight_evolution_fd001+fd003.png"
+    "four_way_comparison_png": "results/rq2_imbalance_aware/four_way_comparison_fd001_fd003.png",
+    "per_round_rmse_png": "results/rq2_imbalance_aware/per_round_rmse_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq2_imbalance_aware/per_subset_breakdown_fd001_fd003.png",
+    "weight_evolution_png": "results/rq2_imbalance_aware/weight_evolution_fd001_fd003.png"
   },
   "subset": "FD001+FD003",
   "config": {

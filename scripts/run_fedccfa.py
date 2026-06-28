@@ -13,9 +13,9 @@ Outputs land in ``results/rq2_fedccfa/``:
 
     metrics.json                                structured for the frontend
     per_round.csv                               macro + per-client + clusters
-    headline_comparison_fd001+fd003.png         bars vs every prior scheme
-    cluster_evolution_fd001+fd003.png           which clients clustered when
-    per_subset_breakdown_fd001+fd003.png        FD001 vs FD003 vs centralized
+    headline_comparison_fd001_fd003.png         bars vs every prior scheme
+    cluster_evolution_fd001_fd003.png           which clients clustered when
+    per_subset_breakdown_fd001_fd003.png        FD001 vs FD003 vs centralized
 """
 from __future__ import annotations
 

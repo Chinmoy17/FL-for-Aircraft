@@ -17,9 +17,9 @@ Outputs land in ``results/rq2_fedprox/`` (grouped with RQ2 narratively):
 
     metrics.json                            structured for the frontend
     per_round_mu_<mu>.csv                   per-scheme trajectory
-    headline_comparison_fd001+fd003.png     bar chart vs centralized / local / FedAvg
-    per_round_rmse_fd001+fd003.png          RMSE trajectories per mu vs references
-    per_subset_breakdown_fd001+fd003.png    FD001 vs FD003 per mu
+    headline_comparison_fd001_fd003.png     bar chart vs centralized / local / FedAvg
+    per_round_rmse_fd001_fd003.png          RMSE trajectories per mu vs references
+    per_subset_breakdown_fd001_fd003.png    FD001 vs FD003 per mu
     best_fedprox_state_mu_<mu>.pt           checkpoint (for the demo backend)
 """
 from __future__ import annotations
