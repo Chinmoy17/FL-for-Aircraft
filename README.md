@@ -185,38 +185,7 @@ predict endpoints work transparently.
 
 ---
 
-## Containerised demo (Docker + Azure App Service)
 
-A multi-stage [`Dockerfile`](Dockerfile) bundles the React build and the
-FastAPI backend into a single image:
-
-```powershell
-# Build (~5 min on first run, ~30 s on rebuilds)
-docker build -t fl-aircraft-phm .
-
-# Run locally
-docker run --rm -p 8000:8000 fl-aircraft-phm
-# open http://localhost:8000
-```
-
-The image is sized for **Azure App Service for Containers free tier
-(F1, 1 GB RAM)**:
-
-- CPU-only torch wheel (declared in `pyproject.toml` via `tool.uv.sources`)
-  keeps the runtime layer small.
-- Single `uvicorn` process serves both the API and the built React app
-  — no nginx, no supervisor.
-- Container listens on `$PORT` (Azure sets `WEBSITES_PORT=8000`).
-- Healthcheck endpoint at `/api/health`.
-- Total image footprint ~700 MB (most of which is torch + numpy).
-
-For deployment, build the image, push to your preferred registry
-(GHCR / ACR / Docker Hub), and point an Azure Web App for Containers
-at it. See
-[Microsoft's Linux container quickstart](https://learn.microsoft.com/en-us/azure/app-service/quickstart-custom-container)
-for the wiring.
-
----
 
 ## Key design decisions
 
