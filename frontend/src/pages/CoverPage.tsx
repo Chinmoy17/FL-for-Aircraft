@@ -46,14 +46,12 @@ export function CoverPage() {
 function Hero() {
   return (
     <section className="px-10 md:px-16 lg:px-24 pt-20 pb-16 border-b border-border">
-      <div className="eyebrow">PhD research · 2026</div>
-
       <h1
         className="
           font-display text-text
           text-[44px] sm:text-[56px] lg:text-[68px]
           leading-[1.15] tracking-tight
-          mt-6 max-w-[24ch]
+          max-w-[24ch]
         "
       >
         Federated Learning for{" "}
@@ -68,7 +66,7 @@ function Hero() {
       </p>
 
       <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-text-muted">
-        <span className="text-text">A PhD research project by Chinmoy Mitra</span>
+        <span className="text-text">A research project by Chinmoy Mitra</span>
         <Dot />
         <span>NASA C-MAPSS turbofan dataset</span>
         <Dot />
