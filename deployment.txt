@@ -71,7 +71,7 @@
   cd "C:\Program Files\Project\AirCraft\FL-for-Aircraft"
 
   # Cached rebuild (fast, iterates on Python / frontend changes)
-  docker build -t bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.2 .
+  docker build -t bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.4 .
 
   # Clean rebuild (use after pyproject.toml or uv.lock changes)
   docker build --no-cache -t bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.0 .
@@ -92,7 +92,7 @@
   az acr login --name bdticacrbm
 
   # Push the tagged image
-  docker push bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.2
+  docker push bdticacrbm.azurecr.io/fl-aircraft-phm:1.0.4
 
   # Verify the tag landed
   az acr repository show-tags `
@@ -127,31 +127,7 @@
 -----------------------------------------------------------------------------
   5. FIRST-TIME WEB APP SETUP  (one-time, per environment)
 -----------------------------------------------------------------------------
-
-  # Required: tell Azure which port our container binds to. Without this
-  # the platform pings :80 and times out (our Dockerfile binds to $PORT,
-  # default 8000).
-  az webapp config appsettings set `
-    --name <webapp-name> `
-    --resource-group bdticbm `
-    --settings WEBSITES_PORT=8000 PORT=8000
-
-  # Recommended: increase container startup timeout. First cold start
-  # downloads the ~700 MB image from ACR which can exceed the 230 s
-  # default on the free tier.
-  az webapp config appsettings set `
-    --name <webapp-name> `
-    --resource-group bdticbm `
-    --settings WEBSITES_CONTAINER_START_TIME_LIMIT=900
-
-  # Recommended: HTTPS-only (Azure-managed cert is included on free tier)
-  az webapp update --name <webapp-name> --resource-group bdticbm --https-only true
-
-  # Recommended: enable container logging so `az webapp log tail` works
-  az webapp log config `
-    --name <webapp-name> `
-    --resource-group bdticbm `
-    --docker-container-logging filesystem
+Not needed! 
 
 
 -----------------------------------------------------------------------------
