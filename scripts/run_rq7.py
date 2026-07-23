@@ -1,41 +1,66 @@
 """RQ7 — Model poisoning attacks + Byzantine-robust aggregation defenses.
 
-Runs the 11-cell experimental matrix (2 attacks × 4 aggregators - the
-attacker-free aggregator-only sanity rows) plus 1 bonus FedRep run on
-the FD001+FD003 Non-IID partition that all prior RQ2-family experiments
-used. Same seed, same rounds, same 4 clients (2 on FD001, 2 on FD003).
+Runs a 27-cell experimental matrix (baselines + 4 attack families ×
+4 aggregators, minus a few unused cross-cells) on the FD001+FD003 Non-IID
+partition that all prior RQ2-family experiments used. Same seed, same
+rounds, same 4 clients (2 on FD001, 2 on FD003).
 
 Cells run by default:
 
-  baselines (3 runs):
+  baselines (4 runs):
     B0  clean + vanilla FedAvg        (re-run of P6 / FedProx mu=0)
     B1  clean + trimmed mean          (sanity: should match B0 closely)
-    B2  clean + Krum                  (sanity: slight regression OK)
+    B2  clean + median                (sanity: slight regression OK)
+    B3  clean + Krum                  (sanity: slight regression OK)
 
-  attacks vs no defense (2 runs):
+  Attack family A — label flip (4 runs):
     AV1 label flip + vanilla          (one FD003 client lies)
-    AV2 gradient ×-10 + vanilla       (one FD003 client sends boosted-negative)
-
-  attacks vs defenses (6 runs):
     D11 label flip + trimmed mean
     D12 label flip + median
     D13 label flip + Krum
+
+  Attack family B — gradient scaling ×-10 (catastrophic, 4 runs):
+    AV2 grad ×-10 + vanilla           (one FD003 client sends boosted-negative)
     D21 grad ×-10 + trimmed mean
     D22 grad ×-10 + median
     D23 grad ×-10 + Krum
 
+  Attack family C — gradient scaling ×-2 (stealthy, 4 runs):
+    AV4 grad ×-2 + vanilla            (bounded-norm boosted-negative)
+    D41 grad ×-2 + trimmed mean
+    D42 grad ×-2 + median
+    D43 grad ×-2 + Krum
+
+  Attack family D — backdoor (stealthy, 4 runs):
+    AV3 backdoor + vanilla            (poison-only, honest gradient)
+    D31 backdoor + trimmed mean
+    D32 backdoor + median
+    D33 backdoor + Krum
+
+  Attack family E — coordinated Byzantine, 2 attackers × gradient ×-10 (5 runs):
+    AV5 coord ×-10 + vanilla          (both FD003 clients collude)
+    D51 coord ×-10 + trimmed mean
+    D52 coord ×-10 + median
+    D53 coord ×-10 + Krum (f=1)       (defence-broken: attackers exceed f)
+    D54 coord ×-10 + Krum (f=2)       (defence weakened: n≥2f+3 requires n≥7)
+
   bonus (1 run):
     F1  grad ×-10 + FedRep            (personalised heads as implicit defense)
 
-Total: 12 runs at ~3 min each on CPU = ~35-40 min wall-clock.
+Total: ~26 runs at ~3 min each on CPU = ~80 min wall-clock per seed.
 
-Outputs land in ``results/rq7_poisoning/``:
+Outputs land in ``--out-dir`` (default: ``results/rq7_poisoning/``):
   metrics.json                                 structured for the frontend
-  per_round_<cell_key>.csv                     12 trajectories
-  headline_comparison_fd001_fd003.png          all 12 cells side by side
+  per_round_<cell_key>.csv                     N trajectories
+  headline_comparison_fd001_fd003.png          all cells side by side
   attack_diagnostic_delta_norms.png            the attacker's |delta| vs honest
   defense_recovery_fd001_fd003.png             "broken→recovered" pairs
   per_subset_breakdown_fd001_fd003.png         FD001 vs FD003 per cell
+
+Multi-seed runs: use ``scripts/run_rq7_multiseed.py`` which invokes this
+script for a range of seeds, writing each seed to its own out-dir. Then
+``scripts/aggregate_rq7_seeds.py`` collates them into a single
+mean-±-std-with-95%-CI metrics.json for the paper.
 """
 from __future__ import annotations
 
@@ -43,7 +68,7 @@ import argparse
 import json
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -71,6 +96,7 @@ from fl_aircraft.eval import (  # noqa: E402
     compute_regression_metrics,
 )
 from fl_aircraft.fl import (  # noqa: E402
+    BackdoorAttacker,
     GradientScaleAttacker,
     LabelFlipAttacker,
     PoisonedHistory,
@@ -79,6 +105,13 @@ from fl_aircraft.fl import (  # noqa: E402
     make_median_aggregator,
     make_trimmed_mean_aggregator,
     run_fedavg_with_attackers,
+    stamp_trigger_on_windows,
+)
+from fl_aircraft.fl.poisoning import (  # noqa: E402
+    DEFAULT_TRIGGER_CYCLE_OFFSET,
+    DEFAULT_TRIGGER_FEATURE_IDX,
+    DEFAULT_TRIGGER_POISON_FRAC,
+    DEFAULT_TRIGGER_VALUE,
 )
 from fl_aircraft.models import MultiTaskCNN, MultiTaskCNNConfig  # noqa: E402
 from fl_aircraft.utils import PhaseMetrics, dump_phase_metrics  # noqa: E402
@@ -92,29 +125,76 @@ PHASE_NAME = "RQ7 — Model poisoning attacks + Byzantine-robust aggregation"
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class CellSpec:
-    """One row of the experimental matrix."""
+    """One row of the experimental matrix.
+
+    ``attacker_client_ids`` is normally ``None`` (single-attacker cell —
+    the CLI default ``--attacker-client-id`` is used). For coordinated-
+    attacker cells this is an explicit tuple of two or more client ids.
+    """
 
     key: str
     label: str
-    attacker_kind: str         # "none", "label_flip", "grad_scale_x10"
-    aggregator_name: str
+    attacker_kind: str         # "none" / "label_flip" / "grad_scale_x10" / "grad_scale_x2" / "backdoor"
+    aggregator_name: str       # "fedavg" / "trimmed_mean" / "median" / "krum_f1" / "krum_f2"
     group: str                 # "baseline", "attack", "defense", "bonus"
+    attacker_client_ids: tuple[str, ...] | None = None
 
 
 def all_cells() -> list[CellSpec]:
-    return [
+    # Baselines: no attacker; each aggregator on clean data.
+    baselines = [
         CellSpec("B0_clean_vanilla", "clean + vanilla FedAvg", "none", "fedavg", "baseline"),
         CellSpec("B1_clean_trimmed", "clean + trimmed mean", "none", "trimmed_mean", "baseline"),
-        CellSpec("B2_clean_krum", "clean + Krum (f=1)", "none", "krum_f1", "baseline"),
+        CellSpec("B2_clean_median", "clean + median", "none", "median", "baseline"),
+        CellSpec("B3_clean_krum", "clean + Krum (f=1)", "none", "krum_f1", "baseline"),
+    ]
+    # Family A — label flip (existing).
+    label_flip = [
         CellSpec("AV1_labelflip_vanilla", "label-flip + vanilla", "label_flip", "fedavg", "attack"),
-        CellSpec("AV2_gradscale_vanilla", "grad ×-10 + vanilla", "grad_scale_x10", "fedavg", "attack"),
         CellSpec("D11_labelflip_trimmed", "label-flip + trimmed mean", "label_flip", "trimmed_mean", "defense"),
         CellSpec("D12_labelflip_median", "label-flip + median", "label_flip", "median", "defense"),
         CellSpec("D13_labelflip_krum", "label-flip + Krum (f=1)", "label_flip", "krum_f1", "defense"),
+    ]
+    # Family B — catastrophic gradient scaling ×-10 (existing).
+    grad_x10 = [
+        CellSpec("AV2_gradscale_vanilla", "grad ×-10 + vanilla", "grad_scale_x10", "fedavg", "attack"),
         CellSpec("D21_gradscale_trimmed", "grad ×-10 + trimmed mean", "grad_scale_x10", "trimmed_mean", "defense"),
         CellSpec("D22_gradscale_median", "grad ×-10 + median", "grad_scale_x10", "median", "defense"),
         CellSpec("D23_gradscale_krum", "grad ×-10 + Krum (f=1)", "grad_scale_x10", "krum_f1", "defense"),
     ]
+    # Family C — stealthy gradient scaling ×-2 (NEW). Tests whether per-
+    # element defences catch a bounded-norm attacker that Krum still can.
+    grad_x2 = [
+        CellSpec("AV4_gradscalex2_vanilla", "grad ×-2 + vanilla", "grad_scale_x2", "fedavg", "attack"),
+        CellSpec("D41_gradscalex2_trimmed", "grad ×-2 + trimmed mean", "grad_scale_x2", "trimmed_mean", "defense"),
+        CellSpec("D42_gradscalex2_median", "grad ×-2 + median", "grad_scale_x2", "median", "defense"),
+        CellSpec("D43_gradscalex2_krum", "grad ×-2 + Krum (f=1)", "grad_scale_x2", "krum_f1", "defense"),
+    ]
+    # Family D — backdoor (NEW). Stealthy: honest training on poisoned data.
+    backdoor = [
+        CellSpec("AV3_backdoor_vanilla", "backdoor + vanilla", "backdoor", "fedavg", "attack"),
+        CellSpec("D31_backdoor_trimmed", "backdoor + trimmed mean", "backdoor", "trimmed_mean", "defense"),
+        CellSpec("D32_backdoor_median", "backdoor + median", "backdoor", "median", "defense"),
+        CellSpec("D33_backdoor_krum", "backdoor + Krum (f=1)", "backdoor", "krum_f1", "defense"),
+    ]
+    # Family E — coordinated Byzantine (NEW). 2 attackers, both grad ×-10.
+    # With n=4 clients this exceeds the Byzantine tolerance of every classic
+    # aggregator — an inherent limitation, not a defence bug. Both attackers
+    # are FD003 operators (same-subset collusion is the most damaging setup).
+    coord_ids: tuple[str, ...] = ("client_3", "client_4")
+    coordinated = [
+        CellSpec("AV5_coord_vanilla", "coord ×-10 (2 attackers) + vanilla",
+                 "grad_scale_x10", "fedavg", "attack", coord_ids),
+        CellSpec("D51_coord_trimmed", "coord ×-10 + trimmed mean",
+                 "grad_scale_x10", "trimmed_mean", "defense", coord_ids),
+        CellSpec("D52_coord_median", "coord ×-10 + median",
+                 "grad_scale_x10", "median", "defense", coord_ids),
+        CellSpec("D53_coord_krum_f1", "coord ×-10 + Krum (f=1, exceeded)",
+                 "grad_scale_x10", "krum_f1", "defense", coord_ids),
+        CellSpec("D54_coord_krum_f2", "coord ×-10 + Krum (f=2, weakened)",
+                 "grad_scale_x10", "krum_f2", "defense", coord_ids),
+    ]
+    return baselines + label_flip + grad_x10 + grad_x2 + backdoor + coordinated
 
 
 # The FedRep bonus run lives outside the standard matrix because it uses a
@@ -124,13 +204,23 @@ def all_cells() -> list[CellSpec]:
 # ---------------------------------------------------------------------------
 # Attacker / aggregator factories
 # ---------------------------------------------------------------------------
-def _make_attacker_factory(kind: str):
+def _make_attacker_factory(kind: str, seed: int):
+    """Build a client-wrapping callable for the given attacker kind.
+
+    ``seed`` is used by the backdoor attacker to choose which windows get
+    poisoned. Passing the run's seed keeps multi-seed comparisons honest —
+    each seed sees a different poison set.
+    """
     if kind == "none":
         return None
     if kind == "label_flip":
         return lambda inner: LabelFlipAttacker(inner=inner)
     if kind == "grad_scale_x10":
         return lambda inner: GradientScaleAttacker(inner=inner, scale=-10.0)
+    if kind == "grad_scale_x2":
+        return lambda inner: GradientScaleAttacker(inner=inner, scale=-2.0)
+    if kind == "backdoor":
+        return lambda inner: BackdoorAttacker(inner=inner, seed=seed)
     raise ValueError(f"Unknown attacker kind: {kind!r}")
 
 
@@ -143,6 +233,8 @@ def _make_aggregator(name: str):
         return make_median_aggregator()
     if name == "krum_f1":
         return make_krum_aggregator(num_byzantine=1)
+    if name == "krum_f2":
+        return make_krum_aggregator(num_byzantine=2)
     raise ValueError(f"Unknown aggregator: {name!r}")
 
 
@@ -214,6 +306,127 @@ def _eval_per_subset(
 
 
 # ---------------------------------------------------------------------------
+# Backdoor attack-success evaluation
+# ---------------------------------------------------------------------------
+@dataclass
+class TriggeredEval:
+    """Attack-success measurement for a backdoored global model.
+
+    Compares model predictions on the same test engines under two conditions:
+      1. Clean test windows (checks stealth — should look normal).
+      2. Trigger-stamped test windows (checks attack success — the model
+         should now predict 'healthy' even on fault-positive engines).
+
+    Reported as raw metrics plus a derived ``attack_success_rate``:
+    the fraction of clean-test fault-positive windows that flip to
+    fault-negative once the trigger is stamped.
+    """
+
+    clean_auprc: float
+    clean_f1: float
+    clean_fault_positive_rate: float
+    triggered_auprc: float
+    triggered_f1: float
+    triggered_fault_positive_rate: float
+    attack_success_rate: float
+
+    def as_dict(self) -> dict[str, float]:
+        return {
+            "clean_auprc": round(self.clean_auprc, 4),
+            "clean_f1": round(self.clean_f1, 4),
+            "clean_fault_positive_rate": round(self.clean_fault_positive_rate, 4),
+            "triggered_auprc": round(self.triggered_auprc, 4),
+            "triggered_f1": round(self.triggered_f1, 4),
+            "triggered_fault_positive_rate": round(self.triggered_fault_positive_rate, 4),
+            "attack_success_rate": round(self.attack_success_rate, 4),
+        }
+
+
+def _eval_backdoor_success(
+    state_dict: dict[str, torch.Tensor],
+    bundle,
+    batch_size: int,
+    *,
+    feature_idx: int = DEFAULT_TRIGGER_FEATURE_IDX,
+    cycle_offset: int = DEFAULT_TRIGGER_CYCLE_OFFSET,
+    trigger_value: float = DEFAULT_TRIGGER_VALUE,
+) -> TriggeredEval:
+    """Evaluate a global model twice: on clean test windows, then on
+    trigger-stamped copies of the same windows. Reports attack success rate.
+    """
+    from torch.utils.data import DataLoader  # local import
+    normalizer = Normalizer.fit(bundle.train_df, bundle.feature_cols)
+    model = MultiTaskCNN(
+        MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
+    )
+    model.load_state_dict(state_dict)
+    model.eval()
+    test_df = normalizer.transform(bundle.test_raw_df)
+    arrays = make_test_windows(
+        test_df, bundle.test_rul, bundle.feature_cols,
+        bundle.window_size, bundle.rul_cap, bundle.fault_threshold,
+    )
+
+    def _run(X: np.ndarray):
+        """Return (rul_preds, fault_scores) for a given input tensor."""
+        rul_preds: list[np.ndarray] = []
+        fault_scores: list[np.ndarray] = []
+        loader = DataLoader(
+            CMAPSSWindowDataset(
+                type(arrays)(
+                    X=X,
+                    y_rul=arrays.y_rul,
+                    y_fault=arrays.y_fault,
+                    unit_ids=arrays.unit_ids,
+                )
+            ),
+            batch_size=batch_size, shuffle=False, num_workers=0,
+        )
+        with torch.no_grad():
+            for x, _y_rul, _y_fault in loader:
+                pred = model(x)
+                rul_preds.append(pred.rul.numpy())
+                fault_scores.append(pred.fault_probs().numpy())
+        return np.concatenate(rul_preds), np.concatenate(fault_scores)
+
+    # 1. Clean-test pass.
+    _, clean_fault_scores = _run(arrays.X)
+    clean_m = compute_classification_metrics(arrays.y_fault, clean_fault_scores)
+    clean_positive_rate = float((clean_fault_scores >= 0.5).mean())
+
+    # 2. Trigger-stamped pass — same labels, same engines, just the trigger
+    #    stamped into every window.
+    X_triggered = stamp_trigger_on_windows(
+        arrays.X, feature_idx=feature_idx,
+        cycle_offset=cycle_offset, trigger_value=trigger_value,
+    )
+    _, triggered_fault_scores = _run(X_triggered)
+    triggered_m = compute_classification_metrics(arrays.y_fault, triggered_fault_scores)
+    triggered_positive_rate = float((triggered_fault_scores >= 0.5).mean())
+
+    # Attack success rate = fraction of the clean-positive prediction mass
+    # that flipped to negative under the trigger. Numerically robust when
+    # the clean positive rate is very small.
+    if clean_positive_rate > 1e-6:
+        asr = max(
+            0.0,
+            (clean_positive_rate - triggered_positive_rate) / clean_positive_rate,
+        )
+    else:
+        asr = 0.0
+
+    return TriggeredEval(
+        clean_auprc=clean_m.auprc,
+        clean_f1=clean_m.f1,
+        clean_fault_positive_rate=clean_positive_rate,
+        triggered_auprc=triggered_m.auprc,
+        triggered_f1=triggered_m.f1,
+        triggered_fault_positive_rate=triggered_positive_rate,
+        attack_success_rate=asr,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
 def parse_args() -> argparse.Namespace:
@@ -244,9 +457,61 @@ def parse_args() -> argparse.Namespace:
         "--skip-fedrep-bonus", action="store_true",
         help="Skip the bonus 'gradient-scale + FedRep' run.",
     )
+    p.add_argument(
+        "--no-resume", action="store_true",
+        help="Do NOT auto-resume from existing per-round CSVs. Default "
+             "behaviour: if `per_round_<cell_key>.csv` already exists in "
+             "the out-dir, the cell's metrics are loaded from the CSV and "
+             "the (expensive) FedAvg simulation is skipped. Backdoor cells "
+             "always re-run in full so their triggered-test evaluation "
+             "gets recomputed. Pass --no-resume for a clean run from scratch.",
+    )
     p.add_argument("--out-dir", type=Path,
                    default=REPO_ROOT / "results" / PHASE_ID)
     return p.parse_args()
+
+
+# ---------------------------------------------------------------------------
+# Resume helper — reload a completed cell's metrics from its per-round CSV
+# ---------------------------------------------------------------------------
+def _cell_result_from_csv(cell: CellSpec, csv_path: Path) -> dict | None:
+    """Reconstruct a ``cell_results[cell.key]`` dict from a per-round CSV.
+
+    Returns ``None`` if the CSV is missing, empty, or unreadable. The
+    resulting dict has the same shape the main loop produces for a
+    freshly-run cell, minus ``wall_seconds`` (marked ``-1`` to make the
+    resume-vs-fresh distinction easy to spot in the aggregated payload).
+
+    Per-subset breakdown is NOT recoverable from the CSV (it requires
+    the best-round state_dict, which is only in memory during a fresh
+    run). Callers accept that resumed cells won't contribute rows to
+    the per-subset plot.
+    """
+    if not csv_path.exists():
+        return None
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception:  # noqa: BLE001 — bad CSV should not abort the run
+        return None
+    if df.empty or "global_test_rmse" not in df.columns:
+        return None
+    # Pick the best round by lowest test RMSE (matches the online
+    # `best_round` logic in `run_fedavg_with_attackers`).
+    best_idx = int(df["global_test_rmse"].idxmin())
+    best_row = df.iloc[best_idx]
+    return {
+        "label": cell.label,
+        "group": cell.group,
+        "attacker_kind": cell.attacker_kind,
+        "aggregator": cell.aggregator_name,
+        "best_round": int(best_row["round"]),
+        "best_rmse": round(float(best_row["global_test_rmse"]), 4),
+        "best_nasa_score": round(float(best_row["global_test_nasa_score"]), 4),
+        "best_auprc": round(float(best_row["global_test_auprc"]), 4),
+        "best_f1": round(float(best_row["global_test_f1"]), 4),
+        "wall_seconds": -1.0,  # -1 sentinel: resumed from CSV, not timed
+        "resumed_from_csv": True,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -309,7 +574,7 @@ def _plot_headline(
 ) -> None:
     """All 11 cells side by side. Y-axis is best-round RMSE."""
     cells = all_cells()
-    fig, ax = plt.subplots(1, 1, figsize=(15, 6))
+    fig, ax = plt.subplots(1, 1, figsize=(22, 6.5))
     labels = [c.label for c in cells]
     values = [cell_results[c.key]["best_rmse"] if c.key in cell_results else float("nan") for c in cells]
     colors = [GROUP_COLOR[c.group] for c in cells]
@@ -393,8 +658,18 @@ def _plot_defense_recovery(
         ("AV2_gradscale_vanilla", "D21_gradscale_trimmed", "grad ×-10 / trimmed mean"),
         ("AV2_gradscale_vanilla", "D22_gradscale_median", "grad ×-10 / median"),
         ("AV2_gradscale_vanilla", "D23_gradscale_krum", "grad ×-10 / Krum"),
+        ("AV3_backdoor_vanilla", "D31_backdoor_trimmed", "backdoor / trimmed mean"),
+        ("AV3_backdoor_vanilla", "D32_backdoor_median", "backdoor / median"),
+        ("AV3_backdoor_vanilla", "D33_backdoor_krum", "backdoor / Krum"),
+        ("AV4_gradscalex2_vanilla", "D41_gradscalex2_trimmed", "grad ×-2 / trimmed mean"),
+        ("AV4_gradscalex2_vanilla", "D42_gradscalex2_median", "grad ×-2 / median"),
+        ("AV4_gradscalex2_vanilla", "D43_gradscalex2_krum", "grad ×-2 / Krum"),
+        ("AV5_coord_vanilla", "D51_coord_trimmed", "coord ×-10 / trimmed mean"),
+        ("AV5_coord_vanilla", "D52_coord_median", "coord ×-10 / median"),
+        ("AV5_coord_vanilla", "D53_coord_krum_f1", "coord ×-10 / Krum f=1"),
+        ("AV5_coord_vanilla", "D54_coord_krum_f2", "coord ×-10 / Krum f=2"),
     ]
-    fig, ax = plt.subplots(1, 1, figsize=(12, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(20, 5.5))
     x = np.arange(len(pairs))
     width = 0.35
     attack_vals: list[float] = []
@@ -447,7 +722,7 @@ def _plot_per_subset(
                 all_subsets.append(ps.subset)
     n_cells = len(cells)
     n_subsets = len(all_subsets)
-    fig, ax = plt.subplots(1, 1, figsize=(16, 5))
+    fig, ax = plt.subplots(1, 1, figsize=(22, 5.5))
     width = 0.8 / max(n_subsets, 1)
     x = np.arange(n_cells)
     for j, subset in enumerate(all_subsets):
@@ -547,12 +822,47 @@ def main() -> None:
     per_subset_per_cell: dict[str, list[PerSubset]] = {}
     total_start = time.perf_counter()
 
+    # Backdoor cells report attack-success rate. Accumulated here and
+    # written into the final metrics.json alongside the per-cell RMSE.
+    backdoor_eval_per_cell: dict[str, TriggeredEval] = {}
+
     for cell in cells:
         print(f"\n========= {cell.key}: {cell.label} =========")
-        attacker_factory = _make_attacker_factory(cell.attacker_kind)
-        attacker_ids: list[str] = (
-            [args.attacker_client_id] if attacker_factory is not None else []
-        )
+
+        # ---- Resume check ------------------------------------------------
+        # If a per-round CSV already exists for this cell and --no-resume
+        # wasn't passed, skip the expensive FedAvg re-run and reload the
+        # cell's metrics from the CSV. Backdoor cells always re-run because
+        # their triggered-test evaluation cannot be reconstructed from the
+        # per-round CSV alone (needs the best-round state_dict).
+        csv_path = args.out_dir / f"per_round_{cell.key}.csv"
+        if (
+            not args.no_resume
+            and cell.attacker_kind != "backdoor"
+            and csv_path.exists()
+        ):
+            resumed = _cell_result_from_csv(cell, csv_path)
+            if resumed is not None:
+                cell_results[cell.key] = resumed
+                print(
+                    f"  resumed from {csv_path.name} "
+                    f"— best round {resumed['best_round']}: "
+                    f"RMSE={resumed['best_rmse']:.2f}  "
+                    f"F1={resumed['best_f1']:.3f}"
+                )
+                continue
+
+        attacker_factory = _make_attacker_factory(cell.attacker_kind, seed=args.seed)
+        # Cells with explicit ``attacker_client_ids`` (coordinated cells)
+        # override the CLI default. Otherwise use the single-attacker default.
+        if cell.attacker_client_ids is not None:
+            attacker_ids: list[str] = list(cell.attacker_client_ids)
+        else:
+            attacker_ids = (
+                [args.attacker_client_id] if attacker_factory is not None else []
+            )
+        if attacker_ids:
+            print(f"  attackers: {', '.join(attacker_ids)}")
         aggregator = _make_aggregator(cell.aggregator_name)
         run_start = time.perf_counter()
         try:
@@ -609,6 +919,19 @@ def main() -> None:
         per_subset_per_cell[cell.key] = _eval_per_subset(
             history.best_state_dict, bundle, list(args.subsets), args.batch_size,
         )
+        # For backdoor cells, also measure attack success on trigger-stamped
+        # copies of the test set.
+        if cell.attacker_kind == "backdoor":
+            triggered = _eval_backdoor_success(
+                history.best_state_dict, bundle, args.batch_size,
+            )
+            backdoor_eval_per_cell[cell.key] = triggered
+            cell_results[cell.key]["backdoor_eval"] = triggered.as_dict()
+            print(
+                f"  backdoor: clean fault-rate={triggered.clean_fault_positive_rate:.3f}, "
+                f"triggered fault-rate={triggered.triggered_fault_positive_rate:.3f}, "
+                f"attack success rate={triggered.attack_success_rate:.3f}"
+            )
 
     # ---- bonus run ----
     if not args.skip_fedrep_bonus:
@@ -656,10 +979,12 @@ def main() -> None:
         f"RMSE {baseline_rmse}. Under attack with no defense the global "
         f"model degraded to RMSE {attack_max_rmse:.2f} (worst). The best "
         f"Byzantine-robust aggregator recovered RMSE to {best_defense_rmse:.2f} "
-        f"(within ~1 cycle of the clean baseline). This validates the "
-        f"Yin/Blanchard family of robust aggregators against the two "
-        f"canonical PHM-relevant attacks (label flip + boosted gradient "
-        f"scaling)."
+        f"(within ~1 cycle of the clean baseline). This extends the "
+        f"Yin/Blanchard/Landau family of robust aggregators to four "
+        f"attack types (label-flip, catastrophic gradient scaling, "
+        f"stealthy bounded-scale, backdoor) and to the coordinated "
+        f"Byzantine case (2 of 4 clients malicious), exposing the "
+        f"tolerance limits of each defence."
     )
 
     payload = PhaseMetrics(
@@ -674,8 +999,20 @@ def main() -> None:
             "lr": args.lr, "weight_decay": args.weight_decay,
             "lambda_fault": args.lambda_fault, "seed": args.seed,
             "attacker_client_id": args.attacker_client_id,
-            "attackers": ["label_flip", "grad_scale_x10"],
-            "defenses": ["trimmed_mean(beta=0.25)", "median", "Krum(f=1)"],
+            "attackers": [
+                "label_flip", "grad_scale_x10", "grad_scale_x2", "backdoor",
+                "coordinated_grad_scale_x10",
+            ],
+            "defenses": [
+                "trimmed_mean(beta=0.25)", "median",
+                "Krum(f=1)", "Krum(f=2)",
+            ],
+            "backdoor_trigger": {
+                "feature_idx": DEFAULT_TRIGGER_FEATURE_IDX,
+                "cycle_offset": DEFAULT_TRIGGER_CYCLE_OFFSET,
+                "trigger_value": DEFAULT_TRIGGER_VALUE,
+                "poison_fraction": DEFAULT_TRIGGER_POISON_FRAC,
+            },
             "cells_run": [c.key for c in cells],
         },
         timing={"total_seconds": round(total_seconds, 1)},
@@ -690,6 +1027,9 @@ def main() -> None:
                 if not np.isnan(best_defense_rmse) else None
             ),
             "centralized_rmse_p6": p6_central,
+            "backdoor_evaluation": {
+                k: v.as_dict() for k, v in backdoor_eval_per_cell.items()
+            },
         },
         per_client=cell_results,
         per_subset={
