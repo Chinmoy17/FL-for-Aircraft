@@ -359,12 +359,12 @@ insufficient regularization.
 
 **Table 3 — FedProx μ-sweep on FD001 + FD003.**
 
-| Method | μ | Best RMSE | Gap closed vs FedAvg headroom | FD001 RMSE (μ = best) | FD003 RMSE (μ = best) | F1 (FD003) |
-|---|---:|---:|---:|---:|---:|---:|
-| FedAvg | 0.0 | 17.95 | — | 16.99 | 18.86 | 0.727 |
-| FedProx | 0.001 | 17.85 | 2.3 % | 18.21 | 17.65 | ? |
-| FedProx | 0.01 | 17.94 | 0.1 % | 17.30 | 18.42 | ? |
-| FedProx | **0.1** | **17.70** | **6.0 %** | **17.97** | **17.42** | **0.800** |
+| Method | μ | Best RMSE | Gap closed vs FedAvg headroom | FD001 RMSE | FD003 RMSE | FD001 F1 | FD003 F1 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| FedAvg | 0.0 | 17.95 | — | 16.99 | 18.86 | 0.962 | 0.727 |
+| FedProx | 0.001 | 17.85 | 2.3 % | 18.21 | 17.49 | 0.920 | 0.895 |
+| FedProx | 0.01 | 17.94 | 0.1 % | 16.88 | 18.94 | 0.962 | 0.688 |
+| FedProx | **0.1** | **17.70** | **6.0 %** | **17.97** | **17.42** | **0.920** | **0.800** |
 
 FedProx with μ = 0.1 improves combined RMSE by 0.25 cycles and shifts the
 prognostic penalty from FD003 (harder, two fault modes) onto FD001
@@ -374,6 +374,14 @@ of the local-only → centralized headroom is closed. **Together with RQ2,
 this establishes that architectural personalization (RQ2) is ~10 × more
 effective than proximal regularization (RQ3) for closing the structural
 non-IID gap on C-MAPSS.**
+
+An interesting side-effect visible in the table: μ = 0.001 already delivers
+the best FD003 F1 (0.895) across the whole sweep — even better than
+μ = 0.1 — at the cost of a slightly higher FD001 RMSE (18.21 vs 16.88 for
+μ = 0.01). The μ-sweep therefore trades a *combined-RMSE* optimum
+(μ = 0.1) against a *fault-classification-on-the-harder-subset* optimum
+(μ = 0.001). Practitioners running maintenance-decision pipelines rather
+than pure RUL regression may prefer μ = 0.001.
 
 ### 6.3 RQ7 — adversarial robustness matrix (seed 42, 25 cells)
 
