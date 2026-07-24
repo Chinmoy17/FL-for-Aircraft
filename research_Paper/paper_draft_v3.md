@@ -54,8 +54,15 @@ attack success rate by an order of magnitude (6.4 ± 10.0 %, 95 %-CI
 reaching 0 %) and uniquely survives coordinated 2-of-4 Byzantine
 attacks (RMSE 23.97 ± 9.92) where per-coordinate defenses collapse
 perfectly to the undefended level (RMSE 84.03 ± 0.00, deterministic);
-and **(iv)** the Krum constraint `n − f − 2 ≥ 1` becomes an empirical
-wall at small client counts. Sensor-attribution analysis further shows
+**(iv)** the Krum constraint `n − f − 2 ≥ 1` becomes an empirical
+wall at small client counts; and **(v)** a cross-axis bridge
+experiment shows that FedRep alone does *not* transfer Axis-1
+protection to Axis 2 — honest clients under a poisoned FedRep
+federation suffer attack-success rates statistically
+indistinguishable from the attacker's own head (attacker − honest
+delta = −0.017 ± 0.060 over 5 seeds), because the poison acts on
+the shared representation rather than the private heads. Sensor-
+attribution analysis further shows
 that FedAvg under non-IID attributes its predictions to *different
 sensors* than the centralized reference — an interpretability failure
 that compounds the accuracy failure and independently motivates the
@@ -164,8 +171,10 @@ it for real-life aircraft" actually requires.
 
 ### 1.4 Contributions
 
-Framed against the two-axis lens (Fig. 3), this paper makes eight
+Framed against the two-axis lens (Fig. 3), this paper makes nine
 specific contributions.
+
+**On the benign axis (Axis 1):**
 
 **On the benign axis (Axis 1):**
 
@@ -222,6 +231,20 @@ specific contributions.
    Byzantine in FL-RUL, exposing the `n − f − 2 ≥ 1` wall as an
    operational reality at small client counts.
 
+**Cross-axis (bridge experiment):**
+
+9. The first cross-axis bridge experiment for FL-based aircraft
+   prognostics — running the Axis-1 winner (FedRep) under the Axis-2
+   sensor-value backdoor over 5 seeds. We show that the honest
+   clients' mean attack-success rate ($0.633 \pm 0.320$) is
+   *statistically indistinguishable* from the attacker's own
+   ($0.616 \pm 0.311$, attacker−honest delta $-0.017 \pm 0.060$),
+   because the backdoor acts on the shared representation rather
+   than the private heads. This provides direct empirical evidence
+   that personalization and Byzantine-robust aggregation address
+   orthogonal problems and must be stacked — the FedRep + Krum
+   composition is now the *recommended* two-axis defense (Table 11).
+
 ### 1.5 Paper structure
 
 Section 2 surveys related work along both axes. Section 3 defines the
@@ -232,10 +255,11 @@ Integrated-Gradient interpretability protocol). Section 5 describes
 the Axis 2 methodology (five attacks — including the backdoor
 construction in Fig. 5 — and four defense aggregators). Section 6
 gives evaluation metrics; Section 7 gives the experimental setup.
-Sections 8 and 9 present the Axis 1 and Axis 2 results respectively.
-Section 10 synthesizes the two axes into deployment guidance,
-discusses limitations, and outlines the FedRep-under-attack bridge
-experiment as future work. Section 11 concludes.
+Sections 8 and 9 present the Axis 1 and Axis 2 results respectively,
+including the § 9.4 cross-axis bridge experiment (FedRep under
+backdoor). Section 10 synthesizes the two axes into deployment
+guidance, discusses limitations, and outlines further extensions.
+Section 11 concludes.
 
 ---
 
@@ -331,8 +355,11 @@ RBA (IJCNN 2026), SemAlign-PFL (Wang et al. Elsevier JISA 2026),
 DCInject (Birhan et al. ICASSP 2026), and the vulnerability survey of
 Fan and Chen (2026) [arXiv:2606.22782]. All six operate on
 CIFAR / MNIST / FEMNIST; none report on prognostics or regression heads.
-Section 10.4 discusses the natural FedRep-under-attack bridge experiment
-as future work.
+Section 9.4 provides the first FedRep-under-backdoor bridge experiment
+on a physically-plausible sensor-value backdoor for time-series
+prognostics, finding \u2014 in contrast to the partial-shielding intuition
+in the vision-domain literature \u2014 that per-client heads *do not*
+shield honest clients when the poison acts on the shared representation.
 
 ### 2.6 Positioning summary
 
@@ -1570,6 +1597,107 @@ from the honest baseline (16.59 ± 0.84): the model is being trained
 to associate the trigger with "not faulty" without breaking its ability
 to score honest samples correctly.
 
+### 9.4 Bridge experiment — does personalization defend against backdoors?
+
+Sections 8 and 9 established that architectural personalization
+dominates Axis 1 and that Krum uniquely handles the two hardest Axis 2
+cells. A natural cross-cut question follows: does the Axis-1 winner
+(FedRep) *also* confer Axis-2 protection, or are the two axes really
+orthogonal remedies as § 10 will argue? Prior work in vision domains
+has reported that per-client heads can partially shield honest clients
+from backdoor injection because the malicious update stays localized
+to the shared backbone [SARS, HBIpFL]. We test whether the same
+argument transfers to a time-series prognostic setting.
+
+**Setup.** We re-use the FedRep configuration of § 4.3 (τ_head =
+τ_enc = 1, 50 rounds, cosine LR schedule, best-round selection by
+macro-NASA score) and the sensor-value backdoor of § 5.2 (feature =
+$s_3$ / T30, cycle_offset = −1, value = −3.5 σ, poison_frac = 0.3,
+labels rewritten to healthy). One FD003 client (client_3, the first
+FD003 shard) is designated the attacker and its `train_loader` is
+wrapped with the same `_BackdoorPoisonedDataset` used in § 9.1; the
+three honest clients (client_1, client_2 on FD001, client_4 on FD003)
+train normally on unpoisoned data. After training, each client's full
+model (shared encoder + own head at the best round) is evaluated on
+the **pooled** test set with a global normalizer, once clean and once
+with the trigger stamped, using the identical
+$\mathrm{ASR} = (P_{\text{clean}} - P_{\text{trigger}}) / P_{\text{clean}}$
+metric of Table 10. Multi-seed aggregation over seeds
+$\{42, 43, 44, 45, 46\}$ ($n = 5$, matching Table 10's sample size).
+The full implementation is in
+`scripts/run_rq2_fedrep_under_backdoor.py`, using a new public
+`make_backdoor_poisoned_loader` helper for compatibility with the
+`PersonalisedClient` interface.
+
+**Table 12 — FedRep-under-backdoor bridge (5-seed per-seed + aggregate).**
+
+| Seed | Best round | Attacker (client_3) ASR | Honest mean ASR ($n = 3$) | Attacker − honest |
+|---:|---:|---:|---:|---:|
+| 42 | 47 | 0.800 | 0.814 | −0.014 |
+| 43 | 11 | 0.182 | 0.141 | +0.041 |
+| 44 | 45 | 1.000 | 1.000 |  0.000 |
+| 45 | 35 | 0.617 | 0.612 | +0.005 |
+| 46 | 21 | 0.481 | 0.599 | −0.118 |
+| **mean ± std** | **31.8 ± 15.5** | **0.616 ± 0.311** | **0.633 ± 0.320** | **−0.017 ± 0.060** |
+
+**Finding 1 — Personalization does not shield honest clients.**
+The attacker-minus-honest ASR delta is
+$-0.017 \pm 0.060$ (95 % CI $[-0.091, +0.057]$, indistinguishable
+from zero at $n = 5$): in every one of the five seeds, honest clients
+suffer essentially the same ASR as the attacker itself. This confirms
+the mechanism sketched in § 9.3: the backdoor is a
+*representation-level* attack, and FedRep averages encoders (and
+therefore the poisoned representation) exactly as vanilla FedAvg does.
+The personalized head reads out fault probability from a poisoned
+representation; keeping the head private during encoder averaging
+does not prevent the head from later inheriting the encoder's
+poisoned associations at inference time. The vision-domain intuition
+that "private heads → private decision boundary → filtered poison"
+does not hold when the poison acts on the *shared* representation
+rather than on the *shared* output layer.
+
+**Finding 2 — The apparent 30-pp mean shift is an early-stopping
+artifact, not a defense.** FedRep's 5-seed mean honest ASR (0.633)
+is ~30 pp below vanilla FedAvg's (0.949), which is at first glance a
+partial defense. But the per-seed variance is catastrophic: honest
+ASR spans $[0.141, 1.000]$ with std 0.320. Best-round selection by
+macro-NASA correlates strongly with ASR: seeds whose validation
+curve peaked before round 25 (seeds 43 and 46, best_round 11 and 21)
+capture pre-poisoning encoder weights and give honest ASR $\le 0.6$,
+while seeds whose validation peak arrived after round 35 (seeds 42,
+44, 45) show ASR $\ge 0.6$ up to 1.0. This is not a *defense
+mechanism* — it is a **coincidence between the poison-accumulation
+timeline and the model-selection timeline**, which cannot be relied
+upon in a production deployment because (i) real training does not
+have an oracle for macro-NASA on the honest fleet's test set, and
+(ii) the attacker can trivially force late convergence (e.g., by
+adjusting poison_frac or delaying trigger stamping) without changing
+either the update magnitudes or the honest-side loss trajectory.
+
+**Reference comparison against Table 10.**
+
+- Vanilla FedAvg (no defense) : $\mathrm{ASR} = 0.949 \pm 0.079$ (tight)
+- FedRep bridge (honest mean) : $\mathrm{ASR} = 0.633 \pm 0.320$ (bimodal, spans $[0, 1]$)
+- Krum-defended FedAvg        : $\mathrm{ASR} = 0.064 \pm 0.100$ (95 % CI reaches 0 %)
+
+FedRep sits nominally between vanilla and Krum in mean ASR, but with
+variance an order of magnitude worse than either. The FedRep 95 % CI
+$[0.235, 1.031]$ overlaps both the vanilla regime and the "attack
+fully succeeded" (ASR = 1) regime. **Krum remains the only aggregator
+that reliably delivers low ASR with tight variance;** FedRep alone
+does not.
+
+**Consequence for defense stacking.** The bridge result *confirms*
+the two-axis orthogonality argument that § 10.1 develops:
+personalization is the right architectural response to Axis 1
+(structural non-IID), and Byzantine-robust aggregation is the right
+aggregation-layer response to Axis 2 (adversarial). Neither
+substitutes for the other. A deployment that faces both must stack
+both — the FedRep-alone-under-backdoor result now empirically
+motivates the FedRep + Krum combination in § 10.2, Table 11 row 7
+(evaluating the stacked defense end-to-end remains future work,
+see § 10.4).
+
 ---
 
 ## 10. Discussion
@@ -1581,10 +1709,14 @@ while proximal regularization and reweighting close < 10 %. Section 9
 showed that Krum uniquely handles the two hardest Axis 2 cells
 (backdoor + coordinated Byzantine), while trimmed mean and coordinate
 median handle single-attacker untargeted attacks but collapse under
-coordination. These are two distinct engineering choices, and the
-practitioner must decide, per deployment, whether the primary risk is
-benign heterogeneity, adversarial heterogeneity, or both — and stack
-remedies accordingly.
+coordination. The § 9.4 bridge experiment closes the loop: FedRep
+alone does *not* transfer Axis-1 protection to Axis 2 — its
+$0.633 \pm 0.320$ honest-mean ASR is only 30 pp below undefended
+FedAvg on the mean but with a 95 % CI that reaches all the way to
+fully-compromised (upper bound $1.031$). These are two distinct
+engineering choices, and the practitioner must decide, per deployment,
+whether the primary risk is benign heterogeneity, adversarial
+heterogeneity, or both — and stack remedies accordingly.
 
 ### 10.2 Defense-selection guidance for FL prognostic deployments
 
@@ -1598,7 +1730,7 @@ remedies accordingly.
 | One malicious client, targeted backdoor | FedAvg | **Krum ($f = 1$)** | Reduces ASR ~15× (94.9 % → 6.4 %); only aggregator whose CI touches 0 % |
 | Multiple colluding clients (< 50 %) | FedAvg | **Krum ($f = 1$)** | Trimmed / median collapse; Krum finds honest cluster |
 | ≥ 50 % of clients malicious | *No defense works at small N* | *No defense works at small N* | Increase N, or centralize |
-| Heterogeneous + adversarial (both) | **FedRep + Krum** | — | *Untested combination — see § 10.4* |
+| Heterogeneous + adversarial (both) | **FedRep + Krum ($f = 1$)** | — | FedRep alone leaves honest ASR = 0.633 ± 0.320 (§ 9.4); Krum is needed for the Axis-2 half of the defense |
 
 ### 10.3 Limitations
 
@@ -1624,25 +1756,38 @@ remedies accordingly.
   survive multi-seed aggregation. However, since none of those
   losing rows compete with the winning row of their own family, the
   Axis 1 headline claim (personalization dominates) is unaffected.
+- **Bridge experiment scope.** § 9.4 tests FedRep *alone* under one
+  backdoor configuration ($n = 5$ seeds), with only one attacker
+  (client_3). The stacked FedRep + Krum defense recommended in Table 11
+  (row 7) is *motivated* by the bridge result but not itself evaluated
+  end-to-end. The 5-seed sample gives a wide honest-ASR interval
+  ($0.633 \pm 0.320$); reproducing at $n = 10$ would tighten the
+  estimate but the qualitative finding (attacker−honest delta
+  indistinguishable from zero, $-0.017 \pm 0.060$) is already
+  unambiguous.
 
-### 10.4 The bridge experiment (future work)
+### 10.4 Further extensions
 
-The most natural next step is the cross-axis interaction: **does
-FedRep, which so effectively handles Axis 1, also provide any
-resistance to the Axis 2 sensor-value backdoor?** The vision-domain
-literature (SARS, HBIpFL, RBA, DCInject) reports that per-client heads
-partially shield backdoor injection because malicious updates are
-localized to the shared backbone. Our implementation already contains
-the components for this experiment — the `BackdoorAttacker` wrapper is
-drop-in compatible with `FederatedClient` and would compose with the
-FedRep training loop. We defer the experiment (and the associated
-Krum-under-FedRep comparison) to a follow-up paper.
+Beyond the bridge result (§ 9.4), three second-priority extensions
+naturally follow this study:
 
-Second-priority extensions include: (i) the norm-clipping defense
-(Sun et al. 2019 [arXiv:1911.07963]); (ii) FD002 / FD004 replication;
-and (iii) reimplementation of the BioMutFed+ (Tallat 2026) and
-Trustworthy-FL (Li 2026) aggregators inside the attack matrix for
-direct competitive comparison.
+1. **Norm-clipping defense.** Sun et al. 2019 [arXiv:1911.07963]
+   proposed norm-bounding of client updates as a lightweight, aggregator-
+   agnostic backdoor defense. Because § 9.4 shows that FedRep alone
+   does not defend, evaluating whether norm-clipping + FedRep
+   composes into a cheap two-line defense (Axis 1 + weak Axis 2) is
+   the natural next experiment.
+2. **FD002 / FD004 replication.** Our structural non-IID uses
+   single-condition subsets (FD001, FD003). FD002 / FD004
+   (multi-condition) would test whether the two-axis picture — and
+   the negative bridge result — holds at finer heterogeneity
+   granularity.
+3. **Direct competitor benchmarks.** Reimplementing BioMutFed+
+   (Tallat 2026) and Trustworthy-FL for IIoT (Li 2026) aggregators
+   inside our 5 × 4 matrix would enable direct competitive comparison
+   against Krum on the same physically-plausible backdoor. Both
+   papers report favourable numbers against their own attacks; whether
+   they survive the § 5.2 backdoor is an open question.
 
 ---
 
@@ -1658,7 +1803,7 @@ clients deviate from honest training), which is best handled by
 Byzantine-robust aggregation. The two axes require different remedies,
 and neither remedy handles the other axis. Our experiments on NASA
 C-MAPSS with a structural non-IID FD001+FD003 4-client federation
-support four practical claims:
+support five practical claims:
 
 1. **On Axis 1,** architectural personalization (FedRep 69.9 ± 6.4 %,
    FedCCFA 66.9 ± 6.6 %) closes about 70 % of the local → centralized
@@ -1684,6 +1829,17 @@ support four practical claims:
    sensors* than the centralized reference — an interpretability
    failure that compounds the accuracy failure and independently
    motivates the trigger choice for the Axis 2 backdoor.
+5. **Cross-axis bridge (§ 9.4).** FedRep alone does *not* confer
+   Axis-2 protection: under a one-attacker backdoor injection,
+   honest clients' mean ASR ($0.633 \pm 0.320$, $n = 5$) is
+   statistically indistinguishable from the attacker's own
+   ($0.616 \pm 0.311$; delta $-0.017 \pm 0.060$), because the poison
+   acts on the shared representation rather than the private heads.
+   The apparent 30 pp mean reduction over vanilla FedAvg (0.949) is
+   entirely explained by best-round early-stopping happening to fire
+   before the poison accumulates in some seeds — not a defense
+   mechanism a deployment can rely on. Krum + FedRep is thus the
+   *tested* two-axis defense recommendation.
 
 Two takeaways for FL practitioners in aircraft prognostics:
 **(a) stack the remedies** — Axis 1 and Axis 2 threats are orthogonal

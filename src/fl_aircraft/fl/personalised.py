@@ -49,7 +49,7 @@ import copy
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 import numpy as np
 import torch
@@ -446,12 +446,20 @@ def run_fedrep_from_bundle(
     use_cosine_schedule: bool = True,
     seed: int = 42,
     log_every: int = 5,
+    client_hook: Optional[Callable[[list["PersonalisedClient"]], None]] = None,
 ) -> FedRepHistory:
     """Run a FedRep simulation against ``bundle``'s data and ``shards``.
 
     Total local epochs per round = ``head_epochs + encoder_epochs``. Default
     1 + 1 = 2 to match the per-round compute budget of vanilla FedAvg
     (which does 2 epochs of joint training).
+
+    If ``client_hook`` is given, it is called with the freshly-built list of
+    :class:`PersonalisedClient` objects right after construction and before
+    the training loop starts. Used by the FedRep-under-backdoor bridge
+    experiment (``scripts/run_rq2_fedrep_under_backdoor.py``) to swap a
+    specific client's ``train_loader`` with a poisoned version — see
+    :func:`~fl_aircraft.fl.poisoning.make_backdoor_poisoned_loader`.
     """
     if n_rounds < 1:
         raise ValueError(f"n_rounds must be >= 1, got {n_rounds}.")
@@ -461,6 +469,9 @@ def run_fedrep_from_bundle(
     clients = build_personalised_clients_from_bundle(
         bundle, shards, batch_size, lambda_fault, seed, shard_to_subset,
     )
+
+    if client_hook is not None:
+        client_hook(clients)
 
     # Initial shared state == every client's encoder+trunk at construction
     # (they all initialised from the same seed, so they're identical).

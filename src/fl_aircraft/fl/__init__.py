@@ -53,6 +53,7 @@ from .poisoning import (
     GradientScaleAttacker,
     LabelFlipAttacker,
     MaliciousClient,
+    make_backdoor_poisoned_loader,
     stamp_trigger_on_windows,
 )
 from .robust_aggregators import (
@@ -94,6 +95,7 @@ __all__ = [
     "build_imbalance_aware_clients",
     "build_personalised_clients_from_bundle",
     "fedavg_aggregate",
+    "make_backdoor_poisoned_loader",
     "make_fault_count_aggregator",
     "make_inverse_loss_aggregator",
     "make_krum_aggregator",
