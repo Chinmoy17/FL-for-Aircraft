@@ -474,11 +474,18 @@ def parse_args() -> argparse.Namespace:
 # ---------------------------------------------------------------------------
 # Resume helper — reload a completed cell's metrics from its per-round CSV
 # ---------------------------------------------------------------------------
-def _cell_result_from_csv(cell: CellSpec, csv_path: Path) -> dict | None:
+def _cell_result_from_csv(
+    cell: CellSpec, csv_path: Path, expected_n_rounds: int
+) -> dict | None:
     """Reconstruct a ``cell_results[cell.key]`` dict from a per-round CSV.
 
-    Returns ``None`` if the CSV is missing, empty, or unreadable. The
-    resulting dict has the same shape the main loop produces for a
+    Returns ``None`` if the CSV is missing, empty, unreadable, or
+    *incomplete* — defined as ``len(df) < expected_n_rounds``. An
+    incomplete CSV means the cell died mid-run last time and the
+    best-round metric would be under-trained; the caller re-runs the
+    cell from scratch in that case.
+
+    The resulting dict has the same shape the main loop produces for a
     freshly-run cell, minus ``wall_seconds`` (marked ``-1`` to make the
     resume-vs-fresh distinction easy to spot in the aggregated payload).
 
@@ -494,6 +501,9 @@ def _cell_result_from_csv(cell: CellSpec, csv_path: Path) -> dict | None:
     except Exception:  # noqa: BLE001 — bad CSV should not abort the run
         return None
     if df.empty or "global_test_rmse" not in df.columns:
+        return None
+    if len(df) < expected_n_rounds:
+        # Partial CSV — cell was killed mid-run; force re-run.
         return None
     # Pick the best round by lowest test RMSE (matches the online
     # `best_round` logic in `run_fedavg_with_attackers`).
@@ -841,7 +851,7 @@ def main() -> None:
             and cell.attacker_kind != "backdoor"
             and csv_path.exists()
         ):
-            resumed = _cell_result_from_csv(cell, csv_path)
+            resumed = _cell_result_from_csv(cell, csv_path, args.n_rounds)
             if resumed is not None:
                 cell_results[cell.key] = resumed
                 print(
@@ -851,6 +861,18 @@ def main() -> None:
                     f"F1={resumed['best_f1']:.3f}"
                 )
                 continue
+            else:
+                # CSV exists but is incomplete (or unreadable) — tell the
+                # user why we are re-running instead of resuming, so a
+                # crash-recovery run does not look suspicious.
+                try:
+                    partial_rows = len(pd.read_csv(csv_path))
+                except Exception:  # noqa: BLE001
+                    partial_rows = -1
+                print(
+                    f"  found partial CSV ({partial_rows} rows, "
+                    f"need {args.n_rounds}) — re-running cell fresh."
+                )
 
         attacker_factory = _make_attacker_factory(cell.attacker_kind, seed=args.seed)
         # Cells with explicit ``attacker_client_ids`` (coordinated cells)
