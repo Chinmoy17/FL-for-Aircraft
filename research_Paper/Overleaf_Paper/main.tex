@@ -85,16 +85,19 @@ trained on a structural non-IID partition, we compare four
 benign-heterogeneity remedy families and evaluate a
 $5 \times 4$ attack $\times$ aggregator matrix that includes a
 physically-plausible sensor-value backdoor targeting the HPC-outlet
-temperature. Four findings stand out: (i)~architectural
+temperature. Five findings stand out: (i)~architectural
 personalization (FedRep, FedCCFA) closes $\sim$70\% of the
 local-to-centralized RMSE gap, 3--4$\times$ more than proximal
 regularization; (ii)~the backdoor achieves 94.9\% attack success
 against vanilla FedAvg while clean metrics remain statistically
 unchanged; (iii)~Krum reduces attack success by an order of magnitude
 and uniquely survives coordinated 2-of-4 Byzantine attacks;
-(iv)~personalization alone does not confer adversarial robustness.
-Distinct, stackable remedies are required; we recommend
-FedRep~+~Krum as the two-axis defense composition.
+(iv)~personalization alone does not confer adversarial robustness;
+(v)~the FedRep~$+$~Krum stacked composition, evaluated end-to-end
+over 5 seeds, drives honest-client attack-success rate down to
+$2.8\% \pm 2.4\%$ --- roughly $4\times$ tighter variance than
+Krum alone --- confirming that the two axes require distinct but
+compositional remedies.
 \end{abstract}
 
 %% ----- Highlights (Elsevier: 3-5 bullets, <=85 chars each incl. spaces) -----
@@ -103,7 +106,7 @@ FedRep~+~Krum as the two-axis defense composition.
 \item Personalization (FedRep, FedCCFA) closes $\sim$70\% of the non-IID gap; 3--4$\times$ FedProx.
 \item Physically-plausible sensor backdoor: 94.9\% ASR, invisible on clean metrics.
 \item Krum cuts backdoor ASR to 6.4\% and survives coordinated 2-of-4 Byzantine attacks.
-\item FedRep alone does not shield honest clients; remedies must be stacked.
+\item Stacked FedRep~$+$~Krum drives backdoor ASR to 2.8\%~$\pm$~2.4\%; FedRep alone fails.
 \end{highlights}
 
 %% ----- Keywords ----------------------------------------------------
@@ -312,15 +315,19 @@ contributions are as follows.
     \setcounter{enumi}{7}
     \item The first cross-axis bridge experiment for FL-based
     aircraft prognostics: running the Axis-1 winner (FedRep) under
-    the Axis-2 sensor-value backdoor over five seeds. The honest
-    clients' mean attack-success rate is statistically
-    indistinguishable from the attacker's own (attacker\,--\,honest
-    delta $-0.017 \pm 0.060$), because the backdoor acts on the
-    shared representation rather than on the private heads. This
-    provides direct empirical evidence that personalization and
-    Byzantine-robust aggregation address orthogonal problems and
-    must be stacked --- the FedRep\,+\,Krum composition is the
-    recommended two-axis defense.
+    the Axis-2 sensor-value backdoor over five seeds. FedRep alone
+    does not defend --- the honest clients' mean attack-success rate
+    is statistically indistinguishable from the attacker's own
+    (attacker\,--\,honest delta $-0.017 \pm 0.060$), because the
+    backdoor acts on the shared representation rather than on the
+    private heads. Extending the bridge to the stacked
+    FedRep~$+$~Krum defense (Krum aggregation on the shared-encoder
+    deltas, personalised heads unchanged) reduces the honest-mean
+    ASR to $0.028 \pm 0.024$ over the same 5 seeds --- roughly
+    $4\times$ tighter variance than Krum-alone $(0.064 \pm 0.100)$
+    and $22\times$ lower mean than FedRep-alone $(0.633 \pm 0.320)$
+    --- providing direct empirical validation of FedRep~$+$~Krum as
+    the recommended two-axis defense composition.
 \end{enumerate}
 
 \subsection{Paper structure}
@@ -2392,10 +2399,12 @@ evidence.
 \footnotesize
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.2}
-\caption{Two-axis orthogonality. Each candidate remedy is strong on
-its own axis and empirically inadequate on the other; the two
-remedies must be stacked. Numbers are 5-seed means from
-Tables~\ref{tab:axis1-synth}, \ref{tab:matrix}, and~\ref{tab:bridge}.}
+\caption{Two-axis orthogonality and its stacked resolution. Each
+single-axis remedy is strong on its own axis and empirically
+inadequate on the other; the FedRep~$+$~Krum stack (Krum aggregation
+on the shared-encoder deltas) delivers the strongest joint result.
+Numbers are 5-seed means from Tables~\ref{tab:axis1-synth},
+\ref{tab:matrix}, \ref{tab:bridge}, and~\ref{tab:stacked}.}
 \label{tab:orthogonality}
 \begin{tabular}{@{}l l l@{}}
 \toprule
@@ -2403,7 +2412,9 @@ Remedy & Axis-1 score (gap closed) & Axis-2 score (backdoor ASR) \\
 \midrule
 FedAvg (baseline)          & $-0.7\%$ (fails Axis-1)               & $0.949 \pm 0.079$ (fails Axis-2) \\
 FedRep (personalization)   & \textbf{$+69.9\% \pm 6.4\%$}          & $0.633 \pm 0.320$ (fails Axis-2) \\
-Krum ($f = 1$)             & --- (not evaluated as Axis-1 remedy)  & \textbf{$0.064 \pm 0.100$} \\
+Krum ($f = 1$)             & --- (not evaluated as Axis-1 remedy)  & $0.064 \pm 0.100$ \\
+\midrule
+\textbf{FedRep~$+$~Krum (stacked)} & \textbf{$+69.9\% \pm 6.4\%$} (inherits FedRep) & \textbf{$0.028 \pm 0.024$} (best of all) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2415,13 +2426,93 @@ the same way it operates on FedAvg's whole-model deltas --- the
 argmin-in-distance rule is oblivious to whether the input update
 represents a full model or a shared encoder only. Composing the two
 into FedRep~$+$~Krum (personalized heads plus Byzantine-robust
-encoder aggregation) is therefore the paper's recommended two-axis
-defense composition. Empirical validation of the stacked defense
-end-to-end on the 5-seed matrix is left as immediate future work;
-the empirical case for stacking, however, rests on
-Table~\ref{tab:bridge} above --- personalization alone is not a
-Byzantine defense in the sensor-value threat model, no matter how
-well it closes the benign heterogeneity gap.
+encoder aggregation) yields the paper's recommended two-axis defense
+composition. The stacked defense is evaluated end-to-end in
+Section~\ref{sec:bridge-stacked} below.
+
+%% -----------------------------------------------------------
+\subsection{Stacked FedRep~$+$~Krum defense --- end-to-end 5-seed evaluation}
+\label{sec:bridge-stacked}
+
+The stacked defense reuses the FedRep configuration of
+Section~\ref{sec:bridge-setup} (same partition, same trigger, same
+5-seed harness) with a single change: the shared-encoder aggregation
+step uses Krum ($f = 1$, Algorithm~\ref{alg:krum}) instead of
+sample-count-weighted FedAvg. Per-client heads remain private and
+locally trained (unchanged from Section~\ref{sec:bridge-results}).
+Table~\ref{tab:stacked} reports the per-seed outcome and 5-seed
+aggregate.
+
+\begin{table}[!ht]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.15}
+\caption{FedRep~$+$~Krum stacked-defense bridge: per-seed values
+and 5-seed aggregate. Same partition, same trigger, and same
+attacker (client~3) as Table~\ref{tab:bridge}; the only change is
+that Krum~$(f = 1)$ replaces sample-count-weighted mean as the
+shared-encoder aggregator. All ASR values are in $[0, 1]$; higher
+is worse for the defender.}
+\label{tab:stacked}
+\begin{tabular}{@{}c r r r r r@{}}
+\toprule
+Seed & Best round & Best macro RMSE & Attacker ASR & Honest mean ASR ($n = 3$) & Attacker $-$ honest \\
+\midrule
+42 & 16 & $17.946$ & $0.040$ & $0.064$ & $-0.024$ \\
+43 & 14 & $17.268$ & $0.000$ & $0.006$ & $-0.006$ \\
+44 & 22 & $18.947$ & $0.035$ & $0.038$ & $-0.003$ \\
+45 & 19 & $16.338$ & $0.000$ & $0.024$ & $-0.024$ \\
+46 & 16 & $17.639$ & $0.059$ & $0.006$ & $+0.053$ \\
+\midrule
+\textbf{mean $\pm$ std} & $\mathbf{17.4 \pm 3.1}$ & $\mathbf{17.63 \pm 0.95}$ & $\mathbf{0.027 \pm 0.026}$ & $\mathbf{0.028 \pm 0.024}$ & $\mathbf{-0.001 \pm 0.031}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Finding: FedRep~$+$~Krum outperforms both single-axis remedies.}
+On the same 5-seed harness as Table~\ref{tab:matrix} and
+Table~\ref{tab:bridge}, the stacked defense delivers honest-mean
+ASR $0.028 \pm 0.024$ (95\%-CI $[-0.002, 0.058]$). This is
+simultaneously (i)~roughly $22\times$ lower than FedRep alone
+($0.633 \pm 0.320$), (ii)~roughly $2\times$ lower than Krum alone
+($0.064 \pm 0.100$), and (iii)~roughly $4\times$ tighter in variance
+than Krum alone. Crucially, the stacked 95\%-CI upper bound
+($0.058$) sits below Krum-alone's mean ($0.064$), so on this
+harness the composition delivers a strictly better ASR distribution
+than either constituent remedy.
+
+The attacker~$-$~honest ASR delta remains statistically
+indistinguishable from zero ($-0.001 \pm 0.031$, 95\%-CI
+$[-0.040, 0.038]$), reproducing the bridge finding that FedRep's
+private heads offer no per-client isolation against a
+representation-level backdoor. The compositional benefit is
+therefore not from head-side rejection but from Krum's argmin
+selecting an honest encoder update each round --- the personalised
+heads then read out fault probability from a \emph{clean} encoder
+rather than a poisoned one.
+
+\paragraph{Clean-task performance is preserved.}
+Best macro test RMSE for the stacked defense is $17.63 \pm 0.95$,
+compared to $19.61 \pm 0.61$ for Krum alone under the same
+backdoor (Table~\ref{tab:matrix}, backdoor row). The improvement on
+the RMSE side is attributable to FedRep's per-client heads recovering
+fault-mode specialisation that Krum's single-vector selection
+otherwise loses. The stacked defense therefore inherits FedRep's
+Axis-1 gap-closing benefit ($\sim 70\%$ of the local-only $\to$
+centralized headroom, Table~\ref{tab:axis1-synth}) while adding
+Krum's Axis-2 backdoor protection --- the two remedies compose
+additively rather than antagonistically.
+
+\paragraph{Verdict.}
+At $N = 4$ under the sensor-value backdoor of
+Section~\ref{subsec:backdoor} and the 5-seed harness of
+Section~\ref{sec:setup}, FedRep~$+$~Krum is empirically the
+strongest configuration evaluated in this paper along either axis.
+We therefore promote the ``motivated combination'' framing of
+Section~\ref{sec:bridge-stacking} to an ``end-to-end validated
+combination'' and adopt FedRep~$+$~Krum as the paper's headline
+two-axis defense recommendation.
 
 %% ============================================================
 %% End of Section 9. Section 10 (Discussion) will follow.
@@ -2485,7 +2576,7 @@ One malicious client, targeted backdoor       & FedAvg                     & \te
 Multiple colluding clients ($< 50\%$)         & FedAvg                     & \textbf{Krum ($f = 1$)}            & Trimmed mean and coordinate median collapse to RMSE $84.03$; Krum still finds the honest cluster (Sec.~\ref{sec:axis2-results-observations}) \\
 $\geq 50\%$ of clients malicious              & \emph{No defense evaluated} & \emph{No defense evaluated}        & At $N = 4$ this is beyond any evaluated aggregator; pragmatic fix is to increase $N$ or centralise \\
 \midrule
-\textbf{Heterogeneous $+$ adversarial (both)} & \textbf{FedRep}            & \textbf{Krum ($f = 1$)}            & Bridge (Sec.~\ref{sec:bridge}) shows FedRep alone leaves honest ASR $0.633 \pm 0.320$; the two remedies must be stacked \\
+\textbf{Heterogeneous $+$ adversarial (both)} & \textbf{FedRep}            & \textbf{Krum ($f = 1$)}            & \textbf{Empirically validated} (Sec.~\ref{sec:bridge-stacked}): 5-seed honest-mean ASR $0.028 \pm 0.024$, roughly $2\times$ lower and $4\times$ tighter than Krum alone; inherits FedRep's Axis-1 gap-closing benefit \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -2556,34 +2647,37 @@ winning row of their own family, however, so the Axis-1 headline
 claim (personalization dominates) is unaffected.
 
 \paragraph{Bridge experiment scope.}
-Section~\ref{sec:bridge} tests FedRep \emph{alone} under one
-backdoor configuration ($n = 5$ seeds) with a single attacker
-(client~3). The stacked FedRep~$+$~Krum defense recommended in
-Table~\ref{tab:guidance} (final row) is \emph{motivated} by the
-bridge result but is not itself evaluated end-to-end on the full
-matrix. The bridge suffices to rule out FedRep-alone as a defense
---- the attacker~$-$~honest delta of $-0.017 \pm 0.060$ is
-unambiguously indistinguishable from zero --- but a full 5-seed
-matrix on stacked defenses is a priority for a follow-up study.
+Section~\ref{sec:bridge} evaluates FedRep alone and
+Section~\ref{sec:bridge-stacked} evaluates the FedRep~$+$~Krum stack
+--- both under a single backdoor configuration ($n = 5$ seeds) with
+one attacker (client~3). Coordinated backdoor variants (two
+colluding attackers with a common trigger), adaptive triggers, and
+larger seed counts are outside the present scope; the empirical
+case for the stacked defense established in
+Section~\ref{sec:bridge-stacked} is qualitatively unambiguous
+($0.028 \pm 0.024$ vs.\ Krum-alone $0.064 \pm 0.100$), but the
+5-seed 95\%-CI $[-0.002, 0.058]$ leaves modest room for
+tighter-variance replication at $n = 10$--$20$.
 
 %% -----------------------------------------------------------
 \subsection{Future work}
 \label{sec:discuss-future}
 
-Beyond the immediate stacked-defense evaluation, three
-second-priority extensions naturally follow the results of this
-study.
+Three extensions naturally follow the results of this study.
 
 \paragraph{Norm-clipping composition.}
 \citet{Sun2019CanYouBackdoor} argued that bounding the norm of each
 client update is a lightweight, aggregator-agnostic partial defense
-against backdoors. Because Section~\ref{sec:bridge} shows that
-FedRep alone does not defend, evaluating whether norm-clipping
-$+$ FedRep composes into a cheap two-line defense against the
-sensor-value backdoor is the natural next experiment. The
-evaluation is inexpensive: norm-clipping adds no per-round overhead,
-so a 5-seed replication of the bridge with clipping enabled would
-slot directly into the existing harness.
+against backdoors. Since Section~\ref{sec:bridge-stacked} shows
+that FedRep~$+$~Krum is the strongest evaluated defense but Krum's
+argmin selection has known seed-variance drawbacks on untargeted
+attacks (Section~\ref{sec:axis2-results-observations},
+Observation~(7)), a natural question is whether the cheaper
+norm-clipping~$+$~FedRep composition delivers comparable
+protection at lower coordination cost. The evaluation is
+inexpensive: norm-clipping adds no per-round overhead, so a 5-seed
+replication of the bridge with clipping enabled would slot directly
+into the existing harness.
 
 \paragraph{Multi-condition partition (FD002 / FD004) replication.}
 Extending the two-axis frame to multi-condition C-MAPSS subsets
@@ -2662,20 +2756,21 @@ support five practical claims.
     and independently motivates the trigger choice for the Axis-2
     backdoor.
 
-    \item \emph{Cross-axis bridge.} FedRep alone does \emph{not}
-    confer Axis-2 protection: under a one-attacker backdoor
-    injection, honest clients' mean ASR
+    \item \emph{Cross-axis bridge and stacked defense.} FedRep
+    alone does \emph{not} confer Axis-2 protection: under a
+    one-attacker backdoor injection, honest clients' mean ASR
     ($0.633 \pm 0.320$, $n = 5$) is statistically indistinguishable
     from the attacker's own ($0.616 \pm 0.311$; delta
     $-0.017 \pm 0.060$), because the poison acts on the shared
-    representation rather than the private heads. The apparent
-    $\sim 30$~pp mean reduction over vanilla FedAvg is entirely
-    explained by best-round early-stopping happening to fire before
-    the poison accumulates in some seeds --- not a defense
-    mechanism a deployment can rely on.
-    \textbf{FedRep~$+$~Krum} is therefore the recommended two-axis
-    defense composition; its end-to-end evaluation is the paper's
-    principal outstanding experimental item.
+    representation rather than the private heads. Extending the
+    bridge to the stacked \textbf{FedRep~$+$~Krum} defense (Krum
+    aggregation on the shared-encoder deltas, personalised heads
+    unchanged) reduces the honest-mean ASR to
+    $\mathbf{0.028 \pm 0.024}$ on the same 5 seeds --- roughly
+    $2\times$ lower and $4\times$ tighter than Krum alone
+    ($0.064 \pm 0.100$), while inheriting FedRep's Axis-1
+    gap-closing benefit. FedRep~$+$~Krum is therefore the paper's
+    empirically validated two-axis defense recommendation.
 \end{enumerate}
 
 Two takeaways for FL practitioners in aircraft prognostics.

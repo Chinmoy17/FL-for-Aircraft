@@ -1,0 +1,716 @@
+{
+  "phase_id": "rq_bridge",
+  "phase_name": "Bridge - FedRep under backdoor (aggregated over 5 seeds)",
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "n_seeds": 5,
+  "alpha": 0.05,
+  "config_common": {
+    "subsets": [
+      "FD001",
+      "FD003"
+    ],
+    "n_clients_per_subset": 2,
+    "n_rounds": 50,
+    "head_epochs": 1,
+    "encoder_epochs": 1,
+    "batch_size": 256,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "lambda_fault": 0.5,
+    "use_cosine_schedule": true,
+    "attacker_client_id": "client_3",
+    "aggregator": "krum_f1",
+    "krum_f": 1,
+    "backdoor_trigger": {
+      "feature_idx": 4,
+      "cycle_offset": -1,
+      "trigger_value": -3.5,
+      "poison_fraction": 0.3
+    }
+  },
+  "summary": {
+    "best_round": {
+      "mean": 17.4,
+      "std": 3.1305,
+      "ci_lo": 13.513,
+      "ci_hi": 21.287,
+      "n": 5,
+      "values": [
+        16.0,
+        14.0,
+        22.0,
+        19.0,
+        16.0
+      ]
+    },
+    "best_macro_rmse": {
+      "mean": 17.6275,
+      "std": 0.9531,
+      "ci_lo": 16.4441,
+      "ci_hi": 18.8109,
+      "n": 5,
+      "values": [
+        17.9464,
+        17.2681,
+        18.9465,
+        16.3381,
+        17.6385
+      ]
+    },
+    "best_macro_nasa_score": {
+      "mean": 1157.8696,
+      "std": 390.5076,
+      "ci_lo": 672.9904,
+      "ci_hi": 1642.7488,
+      "n": 5,
+      "values": [
+        1096.1774,
+        744.3007,
+        1729.859,
+        882.2507,
+        1336.7603
+      ]
+    },
+    "attacker_asr": {
+      "mean": 0.0267,
+      "std": 0.026,
+      "ci_lo": -0.0056,
+      "ci_hi": 0.0589,
+      "n": 5,
+      "values": [
+        0.04,
+        0.0,
+        0.0345,
+        0.0,
+        0.0588
+      ]
+    },
+    "honest_mean_asr": {
+      "mean": 0.0275,
+      "std": 0.0241,
+      "ci_lo": -0.0024,
+      "ci_hi": 0.0575,
+      "n": 5,
+      "values": [
+        0.0636,
+        0.0061,
+        0.0378,
+        0.0238,
+        0.0064
+      ]
+    },
+    "honest_max_asr": {
+      "mean": 0.0589,
+      "std": 0.0556,
+      "ci_lo": -0.0102,
+      "ci_hi": 0.1279,
+      "n": 5,
+      "values": [
+        0.1538,
+        0.0182,
+        0.0556,
+        0.0476,
+        0.0192
+      ]
+    }
+  },
+  "attacker_minus_honest_asr": {
+    "mean": -0.0009,
+    "std": 0.0313,
+    "ci_lo": -0.0397,
+    "ci_hi": 0.038,
+    "n": 5,
+    "values": [
+      -0.0236,
+      -0.0061,
+      -0.0033,
+      -0.0238,
+      0.0524
+    ]
+  },
+  "per_client_backdoor_evaluation": {
+    "client_1": {
+      "clean_auprc": {
+        "mean": 0.9541,
+        "std": 0.0232,
+        "ci_lo": 0.9253,
+        "ci_hi": 0.983,
+        "n": 5,
+        "values": [
+          0.9206,
+          0.9802,
+          0.9623,
+          0.9657,
+          0.9418
+        ]
+      },
+      "clean_f1": {
+        "mean": 0.8394,
+        "std": 0.0698,
+        "ci_lo": 0.7528,
+        "ci_hi": 0.9261,
+        "n": 5,
+        "values": [
+          0.7222,
+          0.9048,
+          0.8395,
+          0.8736,
+          0.8571
+        ]
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.183,
+        "std": 0.0289,
+        "ci_lo": 0.1472,
+        "ci_hi": 0.2188,
+        "n": 5,
+        "values": [
+          0.135,
+          0.195,
+          0.18,
+          0.21,
+          0.195
+        ]
+      },
+      "triggered_auprc": {
+        "mean": 0.9507,
+        "std": 0.0234,
+        "ci_lo": 0.9216,
+        "ci_hi": 0.9798,
+        "n": 5,
+        "values": [
+          0.9138,
+          0.9724,
+          0.9563,
+          0.9674,
+          0.9435
+        ]
+      },
+      "triggered_f1": {
+        "mean": 0.8231,
+        "std": 0.0716,
+        "ci_lo": 0.7342,
+        "ci_hi": 0.9121,
+        "n": 5,
+        "values": [
+          0.7042,
+          0.8837,
+          0.8101,
+          0.8605,
+          0.8571
+        ]
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.181,
+        "std": 0.0319,
+        "ci_lo": 0.1414,
+        "ci_hi": 0.2206,
+        "n": 5,
+        "values": [
+          0.13,
+          0.205,
+          0.17,
+          0.205,
+          0.195
+        ]
+      },
+      "attack_success_rate": {
+        "mean": 0.0233,
+        "std": 0.0241,
+        "ci_lo": -0.0066,
+        "ci_hi": 0.0532,
+        "n": 5,
+        "values": [
+          0.037,
+          0.0,
+          0.0556,
+          0.0238,
+          0.0
+        ]
+      }
+    },
+    "client_2": {
+      "clean_auprc": {
+        "mean": 0.9538,
+        "std": 0.0241,
+        "ci_lo": 0.924,
+        "ci_hi": 0.9837,
+        "n": 5,
+        "values": [
+          0.9188,
+          0.981,
+          0.9619,
+          0.9657,
+          0.9418
+        ]
+      },
+      "clean_f1": {
+        "mean": 0.8607,
+        "std": 0.046,
+        "ci_lo": 0.8036,
+        "ci_hi": 0.9178,
+        "n": 5,
+        "values": [
+          0.7857,
+          0.878,
+          0.9091,
+          0.8736,
+          0.8571
+        ]
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.2,
+        "std": 0.0122,
+        "ci_lo": 0.1848,
+        "ci_hi": 0.2152,
+        "n": 5,
+        "values": [
+          0.195,
+          0.185,
+          0.215,
+          0.21,
+          0.195
+        ]
+      },
+      "triggered_auprc": {
+        "mean": 0.9517,
+        "std": 0.0236,
+        "ci_lo": 0.9224,
+        "ci_hi": 0.981,
+        "n": 5,
+        "values": [
+          0.9141,
+          0.9732,
+          0.9592,
+          0.9674,
+          0.9446
+        ]
+      },
+      "triggered_f1": {
+        "mean": 0.8445,
+        "std": 0.0595,
+        "ci_lo": 0.7705,
+        "ci_hi": 0.9184,
+        "n": 5,
+        "values": [
+          0.7436,
+          0.878,
+          0.8966,
+          0.8471,
+          0.8571
+        ]
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.191,
+        "std": 0.0171,
+        "ci_lo": 0.1698,
+        "ci_hi": 0.2122,
+        "n": 5,
+        "values": [
+          0.165,
+          0.185,
+          0.21,
+          0.2,
+          0.195
+        ]
+      },
+      "attack_success_rate": {
+        "mean": 0.0449,
+        "std": 0.064,
+        "ci_lo": -0.0345,
+        "ci_hi": 0.1244,
+        "n": 5,
+        "values": [
+          0.1538,
+          0.0,
+          0.0233,
+          0.0476,
+          0.0
+        ]
+      }
+    },
+    "client_3": {
+      "clean_auprc": {
+        "mean": 0.9556,
+        "std": 0.0252,
+        "ci_lo": 0.9243,
+        "ci_hi": 0.9869,
+        "n": 5,
+        "values": [
+          0.919,
+          0.9834,
+          0.9675,
+          0.9659,
+          0.9422
+        ]
+      },
+      "clean_f1": {
+        "mean": 0.8663,
+        "std": 0.0393,
+        "ci_lo": 0.8175,
+        "ci_hi": 0.9151,
+        "n": 5,
+        "values": [
+          0.8,
+          0.9053,
+          0.8738,
+          0.8776,
+          0.875
+        ]
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.262,
+        "std": 0.0168,
+        "ci_lo": 0.2411,
+        "ci_hi": 0.2829,
+        "n": 5,
+        "values": [
+          0.25,
+          0.25,
+          0.29,
+          0.265,
+          0.255
+        ]
+      },
+      "triggered_auprc": {
+        "mean": 0.9547,
+        "std": 0.0253,
+        "ci_lo": 0.9233,
+        "ci_hi": 0.9861,
+        "n": 5,
+        "values": [
+          0.914,
+          0.9759,
+          0.9683,
+          0.9687,
+          0.9466
+        ]
+      },
+      "triggered_f1": {
+        "mean": 0.8644,
+        "std": 0.0395,
+        "ci_lo": 0.8154,
+        "ci_hi": 0.9134,
+        "n": 5,
+        "values": [
+          0.7957,
+          0.8958,
+          0.8713,
+          0.8776,
+          0.8817
+        ]
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.256,
+        "std": 0.0171,
+        "ci_lo": 0.2348,
+        "ci_hi": 0.2772,
+        "n": 5,
+        "values": [
+          0.24,
+          0.255,
+          0.28,
+          0.265,
+          0.24
+        ]
+      },
+      "attack_success_rate": {
+        "mean": 0.0267,
+        "std": 0.026,
+        "ci_lo": -0.0056,
+        "ci_hi": 0.0589,
+        "n": 5,
+        "values": [
+          0.04,
+          0.0,
+          0.0345,
+          0.0,
+          0.0588
+        ]
+      }
+    },
+    "client_4": {
+      "clean_auprc": {
+        "mean": 0.9549,
+        "std": 0.0251,
+        "ci_lo": 0.9237,
+        "ci_hi": 0.986,
+        "n": 5,
+        "values": [
+          0.9179,
+          0.9821,
+          0.9659,
+          0.9663,
+          0.9421
+        ]
+      },
+      "clean_f1": {
+        "mean": 0.8739,
+        "std": 0.0146,
+        "ci_lo": 0.8558,
+        "ci_hi": 0.892,
+        "n": 5,
+        "values": [
+          0.8491,
+          0.88,
+          0.8738,
+          0.88,
+          0.8866
+        ]
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.281,
+        "std": 0.0171,
+        "ci_lo": 0.2598,
+        "ci_hi": 0.3022,
+        "n": 5,
+        "values": [
+          0.305,
+          0.275,
+          0.29,
+          0.275,
+          0.26
+        ]
+      },
+      "triggered_auprc": {
+        "mean": 0.9539,
+        "std": 0.0247,
+        "ci_lo": 0.9233,
+        "ci_hi": 0.9846,
+        "n": 5,
+        "values": [
+          0.9136,
+          0.9751,
+          0.9644,
+          0.9687,
+          0.9478
+        ]
+      },
+      "triggered_f1": {
+        "mean": 0.8729,
+        "std": 0.0148,
+        "ci_lo": 0.8544,
+        "ci_hi": 0.8913,
+        "n": 5,
+        "values": [
+          0.8491,
+          0.8889,
+          0.8713,
+          0.88,
+          0.875
+        ]
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.277,
+        "std": 0.0182,
+        "ci_lo": 0.2544,
+        "ci_hi": 0.2996,
+        "n": 5,
+        "values": [
+          0.305,
+          0.27,
+          0.28,
+          0.275,
+          0.255
+        ]
+      },
+      "attack_success_rate": {
+        "mean": 0.0144,
+        "std": 0.0146,
+        "ci_lo": -0.0038,
+        "ci_hi": 0.0325,
+        "n": 5,
+        "values": [
+          0.0,
+          0.0182,
+          0.0345,
+          0.0,
+          0.0192
+        ]
+      }
+    }
+  },
+  "per_client_clean_test_rmse_best_round": {
+    "client_1": {
+      "mean": 14.0943,
+      "std": 0.8834,
+      "ci_lo": 12.9974,
+      "ci_hi": 15.1912,
+      "n": 5,
+      "values": [
+        14.5176,
+        14.4465,
+        14.8744,
+        12.6094,
+        14.0238
+      ]
+    },
+    "client_2": {
+      "mean": 14.3314,
+      "std": 1.0122,
+      "ci_lo": 13.0746,
+      "ci_hi": 15.5883,
+      "n": 5,
+      "values": [
+        14.4085,
+        14.7497,
+        15.1356,
+        12.5802,
+        14.7831
+      ]
+    },
+    "client_3": {
+      "mean": 21.5823,
+      "std": 1.3564,
+      "ci_lo": 19.898,
+      "ci_hi": 23.2665,
+      "n": 5,
+      "values": [
+        21.7946,
+        20.3712,
+        23.6675,
+        20.3647,
+        21.7133
+      ]
+    },
+    "client_4": {
+      "mean": 20.5021,
+      "std": 1.0732,
+      "ci_lo": 19.1695,
+      "ci_hi": 21.8346,
+      "n": 5,
+      "values": [
+        21.0648,
+        19.5049,
+        22.1087,
+        19.7983,
+        20.0336
+      ]
+    }
+  },
+  "per_client_clean_test_rmse_final_round": {
+    "client_1": {
+      "mean": 14.6936,
+      "std": 1.1791,
+      "ci_lo": 13.2296,
+      "ci_hi": 16.1576,
+      "n": 5,
+      "values": [
+        15.4317,
+        15.7879,
+        15.0891,
+        12.8114,
+        14.3481
+      ]
+    },
+    "client_2": {
+      "mean": 15.3971,
+      "std": 1.2386,
+      "ci_lo": 13.8592,
+      "ci_hi": 16.935,
+      "n": 5,
+      "values": [
+        15.9792,
+        16.3869,
+        16.0241,
+        13.2959,
+        15.2994
+      ]
+    },
+    "client_3": {
+      "mean": 24.5316,
+      "std": 2.828,
+      "ci_lo": 21.0202,
+      "ci_hi": 28.043,
+      "n": 5,
+      "values": [
+        28.2574,
+        20.9543,
+        26.335,
+        23.8334,
+        23.278
+      ]
+    },
+    "client_4": {
+      "mean": 23.4586,
+      "std": 3.5878,
+      "ci_lo": 19.0038,
+      "ci_hi": 27.9135,
+      "n": 5,
+      "values": [
+        29.0069,
+        20.4247,
+        24.1321,
+        23.5921,
+        20.1374
+      ]
+    }
+  },
+  "per_seed_summary": {
+    "42": {
+      "best_round": 16,
+      "best_macro_rmse": 17.9464,
+      "best_macro_nasa_score": 1096.1774,
+      "attacker_id": "client_3",
+      "attacker_asr": 0.04,
+      "honest_mean_asr": 0.0636,
+      "honest_max_asr": 0.1538,
+      "n_honest_clients": 3
+    },
+    "43": {
+      "best_round": 14,
+      "best_macro_rmse": 17.2681,
+      "best_macro_nasa_score": 744.3007,
+      "attacker_id": "client_3",
+      "attacker_asr": 0.0,
+      "honest_mean_asr": 0.0061,
+      "honest_max_asr": 0.0182,
+      "n_honest_clients": 3
+    },
+    "44": {
+      "best_round": 22,
+      "best_macro_rmse": 18.9465,
+      "best_macro_nasa_score": 1729.859,
+      "attacker_id": "client_3",
+      "attacker_asr": 0.0345,
+      "honest_mean_asr": 0.0378,
+      "honest_max_asr": 0.0556,
+      "n_honest_clients": 3
+    },
+    "45": {
+      "best_round": 19,
+      "best_macro_rmse": 16.3381,
+      "best_macro_nasa_score": 882.2507,
+      "attacker_id": "client_3",
+      "attacker_asr": 0.0,
+      "honest_mean_asr": 0.0238,
+      "honest_max_asr": 0.0476,
+      "n_honest_clients": 3
+    },
+    "46": {
+      "best_round": 16,
+      "best_macro_rmse": 17.6385,
+      "best_macro_nasa_score": 1336.7603,
+      "attacker_id": "client_3",
+      "attacker_asr": 0.0588,
+      "honest_mean_asr": 0.0064,
+      "honest_max_asr": 0.0192,
+      "n_honest_clients": 3
+    }
+  },
+  "reference_baselines": {
+    "note": "5-seed aggregates from Table 11 (matrix) and Table 12 (bridge).",
+    "AV3_backdoor_vanilla_asr_mean": 0.949,
+    "AV3_backdoor_vanilla_asr_std": 0.079,
+    "D33_backdoor_krum_asr_mean": 0.064,
+    "D33_backdoor_krum_asr_std": 0.1,
+    "FedRep_alone_bridge_honest_asr_mean": 0.633,
+    "FedRep_alone_bridge_honest_asr_std": 0.32
+  }
+}

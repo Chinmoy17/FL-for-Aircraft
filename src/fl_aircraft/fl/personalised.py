@@ -72,6 +72,7 @@ from ..eval import (
 )
 from ..models import MultiTaskCNN, MultiTaskCNNConfig, MultiTaskLoss
 from ..utils import seed_everything
+from .robust_aggregators import Aggregator
 from .server import ClientUpdate, fedavg_aggregate
 
 
@@ -408,12 +409,17 @@ def _evaluate_client(client: PersonalisedClient) -> FedRepClientMetrics:
 # ---------------------------------------------------------------------------
 def _aggregate_shared(
     clients: Sequence[PersonalisedClient],
+    aggregator: Aggregator = fedavg_aggregate,
 ) -> dict[str, torch.Tensor]:
-    """FedAvg over each client's shared backbone (encoder + trunk only).
+    """Aggregate each client's shared backbone (encoder + trunk only).
 
-    Uses :func:`fedavg_aggregate` so the math matches every other phase
-    bit-for-bit. Each ``ClientUpdate.state_dict`` is the *shared* state-dict
-    only — heads never leave clients.
+    By default uses :func:`fedavg_aggregate` so the math matches every
+    other phase bit-for-bit. Callers may pass in a Byzantine-robust
+    aggregator (e.g.\ :func:`~fl_aircraft.fl.robust_aggregators.make_krum_aggregator`)
+    to compose FedRep with a robust aggregation rule --- this is the
+    stacked defense evaluated by the FedRep~$+$~Krum bridge experiment
+    (Section~9 of the paper). Each ``ClientUpdate.state_dict`` is the
+    *shared* state-dict only --- heads never leave clients.
     """
     updates = [
         ClientUpdate(
@@ -425,7 +431,7 @@ def _aggregate_shared(
         )
         for c in clients
     ]
-    return fedavg_aggregate(updates)
+    return aggregator(updates)
 
 
 # ---------------------------------------------------------------------------
@@ -447,6 +453,7 @@ def run_fedrep_from_bundle(
     seed: int = 42,
     log_every: int = 5,
     client_hook: Optional[Callable[[list["PersonalisedClient"]], None]] = None,
+    aggregator: Aggregator = fedavg_aggregate,
 ) -> FedRepHistory:
     """Run a FedRep simulation against ``bundle``'s data and ``shards``.
 
@@ -458,8 +465,15 @@ def run_fedrep_from_bundle(
     :class:`PersonalisedClient` objects right after construction and before
     the training loop starts. Used by the FedRep-under-backdoor bridge
     experiment (``scripts/run_rq2_fedrep_under_backdoor.py``) to swap a
-    specific client's ``train_loader`` with a poisoned version — see
+    specific client's ``train_loader`` with a poisoned version --- see
     :func:`~fl_aircraft.fl.poisoning.make_backdoor_poisoned_loader`.
+
+    ``aggregator`` selects the server-side rule applied to the shared
+    encoder deltas each round. Default is :func:`fedavg_aggregate`
+    (sample-count weighted mean). Passing a Byzantine-robust aggregator
+    such as :func:`~fl_aircraft.fl.robust_aggregators.make_krum_aggregator`
+    yields the FedRep~$+$~Krum stacked defense evaluated by the paper's
+    bridge experiment. The heads remain per-client regardless.
     """
     if n_rounds < 1:
         raise ValueError(f"n_rounds must be >= 1, got {n_rounds}.")
@@ -512,7 +526,7 @@ def run_fedrep_from_bundle(
         mean_fault = round_fault / n
 
         # 3. Encoder-only aggregation.
-        shared_state = _aggregate_shared(clients)
+        shared_state = _aggregate_shared(clients, aggregator=aggregator)
 
         # 4. After-aggregation re-broadcast + per-client evaluation.
         # Each client now has the new shared backbone + its own head, which
