@@ -15,58 +15,45 @@
 
 ## Abstract
 
-Federated Learning (FL) is a natural fit for aircraft-engine prognostics,
-where fleet operators would like to jointly train a Remaining Useful Life
-(RUL) model without exposing raw sensor telemetry to competitors. In
-practice, however, a deployed FL prognostics pipeline must contend with
-**two orthogonal axes of client heterogeneity**: (i) *benign
-heterogeneity* — clients honestly hold data from different operating
-conditions and fault modes; and (ii) *adversarial heterogeneity* — one
-or more clients may deviate from honest training. Prior FL-for-prognostics
-work is almost entirely benign, and the two recent 2026 papers that do
-consider attacks (BioMutFed+, Trustworthy FL for IIoT) each evaluate a
-single novel aggregator against a single attack family. This paper
-presents the first study that quantifies both axes jointly on NASA
-C-MAPSS. Using a multi-task 1-D CNN (30 018 parameters, GroupNorm
-normalization for FL safety) trained on a structural non-IID partition
-(2 clients from FD001 + 2 clients from FD003, one operating condition
-per subset), we run four remedy families on Axis 1 — FedAvg (baseline),
-FedProx (μ-sweep), FedRep (personalized heads), FedCCFA (clustered
-personalization), and imbalance-aware server-side reweighting — and a
-5 × 4 attack × aggregator matrix on Axis 2 covering four untargeted
-attacks (label-flip, gradient scaling ×−10, ×−2, coordinated 2-of-4
-Byzantine) and one targeted attack (a physically-plausible sensor-value
-backdoor stamping T30 = −3.5 σ at the last cycle) against FedAvg,
-trimmed mean, coordinate median, and Krum with two tolerance settings.
-Four findings stand out: **(i)** on the benign axis, architectural
-personalization (FedRep 69.9 ± 6.4 %, FedCCFA 66.9 ± 6.6 %) closes
-about 70 % of the local → centralized RMSE gap, roughly 3–4× more
-than optimization-side proximal regularization (FedProx μ = 0.1:
-21.0 ± 13.1 %) and 6–7× more than server-side reweighting
-(validation-F1: 10.4 ± 6.9 %) — with a reproducibility bonus:
-personalization's seed-to-seed std is half that of FedProx;
-**(ii)** on the adversarial axis,
-the physically-plausible sensor-value backdoor achieves 94.9 ± 7.9 %
-attack success rate against vanilla FedAvg (mean ± std over 5 seeds)
-while clean RMSE (16.86 ± 0.43) is statistically indistinguishable from
-the honest baseline (16.59 ± 0.84); **(iii)** Krum reduces backdoor
-attack success rate by an order of magnitude (6.4 ± 10.0 %, 95 %-CI
-reaching 0 %) and uniquely survives coordinated 2-of-4 Byzantine
-attacks (RMSE 23.97 ± 9.92) where per-coordinate defenses collapse
-perfectly to the undefended level (RMSE 84.03 ± 0.00, deterministic);
-**(iv)** the Krum constraint `n − f − 2 ≥ 1` becomes an empirical
-wall at small client counts; and **(v)** a cross-axis bridge
-experiment shows that FedRep alone does *not* transfer Axis-1
-protection to Axis 2 — honest clients under a poisoned FedRep
-federation suffer attack-success rates statistically
-indistinguishable from the attacker's own head (attacker − honest
-delta = −0.017 ± 0.060 over 5 seeds), because the poison acts on
-the shared representation rather than the private heads. Sensor-
-attribution analysis further shows
-that FedAvg under non-IID attributes its predictions to *different
-sensors* than the centralized reference — an interpretability failure
-that compounds the accuracy failure and independently motivates the
-trigger design of the Axis 2 backdoor.
+Federated Learning (FL) lets aircraft-fleet operators jointly train
+Remaining-Useful-Life (RUL) models on engine sensor telemetry without
+exchanging raw data. In deployment, however, an FL prognostics
+pipeline faces two orthogonal axes of client heterogeneity:
+*benign* — honest clients hold data from different operating conditions
+and fault modes — and *adversarial* — one or more clients deviate from
+honest training. Prior FL-for-prognostics work addresses one axis at a
+time; even the two 2026 attack-aware papers evaluate a single
+aggregator against a single attack family. We present the first joint
+study of both axes on the NASA C-MAPSS turbofan benchmark. A multi-task
+1-D CNN (30 018 parameters; GroupNorm for FL safety) is trained on a
+structural non-IID partition (2 clients from FD001 + 2 from FD003), and
+we compare four remedy families on the benign axis (FedProx, FedRep,
+FedCCFA, imbalance-aware reweighting) alongside a $5 \times 4$ attack
+× aggregator matrix on the adversarial axis, including a
+physically-plausible sensor-value backdoor targeting the HPC-outlet
+temperature (T30) evaluated against FedAvg, trimmed mean, coordinate
+median, and Krum. Four findings stand out. **(i)** Architectural
+personalization closes ~70 % of the local-to-centralized RMSE gap
+(FedRep 69.9 ± 6.4 %, FedCCFA 66.9 ± 6.6 %), 3–4× more than proximal
+regularization (FedProx μ = 0.1: 21.0 ± 13.1 %) and 6–7× more than
+server-side reweighting (10.4 ± 6.9 %), with roughly half the
+seed-to-seed variance of FedProx. **(ii)** The backdoor achieves
+94.9 ± 7.9 % attack success against vanilla FedAvg while clean RMSE
+(16.86 ± 0.43) is statistically indistinguishable from the honest
+baseline (16.59 ± 0.84) — invisible to any monitoring pipeline that
+inspects only clean data. **(iii)** Krum reduces backdoor attack
+success by an order of magnitude (to 6.4 ± 10.0 %; 95 %-CI reaches
+0 %) and uniquely survives coordinated 2-of-4 Byzantine attacks
+(RMSE 23.97 ± 9.92) where per-coordinate defenses collapse
+deterministically to RMSE 84.03 ± 0.00. **(iv)** A cross-axis bridge
+experiment shows that FedRep *alone* does not transfer Axis-1
+protection to Axis 2: honest clients suffer attack-success rates
+statistically indistinguishable from the attacker's own
+(delta $-0.017 \pm 0.060$, $n = 5$ seeds), because the poison acts
+on the shared representation rather than the private heads. The two
+axes require distinct, stackable remedies; our results motivate
+FedRep + Krum as the recommended two-axis defense composition for
+production FL prognostic deployments.
 
 **Keywords:** federated learning; prognostics; remaining useful life;
 personalization; Byzantine-robust aggregation; backdoor attack;
