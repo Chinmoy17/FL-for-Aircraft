@@ -71,7 +71,7 @@ from ..eval import (
     compute_regression_metrics,
 )
 from ..models import MultiTaskCNN, MultiTaskCNNConfig, MultiTaskLoss
-from ..utils import seed_everything
+from ..utils import resolve_device, seed_everything
 from .robust_aggregators import Aggregator
 from .server import ClientUpdate, fedavg_aggregate
 
@@ -190,6 +190,8 @@ def build_personalised_clients_from_bundle(
     lambda_fault: float,
     seed: int,
     shard_to_subset: dict[str, str],
+    *,
+    device: "str | torch.device | None" = None,
 ) -> list[PersonalisedClient]:
     """Construct one :class:`PersonalisedClient` per shard.
 
@@ -270,7 +272,7 @@ def build_personalised_clients_from_bundle(
             MultiTaskCNNConfig(
                 n_features=bundle.n_features, window_size=bundle.window_size,
             )
-        )
+        ).to(resolve_device(device))
         n_pos = int(train_arrays.y_fault.sum())
         n_neg = int(train_arrays.y_fault.shape[0] - n_pos)
         pos_weight = float(n_neg) / float(max(n_pos, 1))
@@ -299,11 +301,15 @@ def _train_one_epoch(
 ) -> tuple[float, float, float]:
     """One epoch with only the currently-unfrozen parameters being updated."""
     client.model.train()
+    device = next(client.model.parameters()).device
     running_total = 0.0
     running_rul = 0.0
     running_fault = 0.0
     n_batches = 0
     for x, y_rul, y_fault in client.train_loader:
+        x = x.to(device, non_blocking=True)
+        y_rul = y_rul.to(device, non_blocking=True)
+        y_fault = y_fault.to(device, non_blocking=True)
         optimizer.zero_grad(set_to_none=True)
         pred = client.model(x)
         losses = client.loss_fn(pred, y_rul, y_fault)
@@ -379,15 +385,17 @@ def _local_train_two_phase(
 def _evaluate_client(client: PersonalisedClient) -> FedRepClientMetrics:
     """Score this client's (shared backbone + own head) model on its own test slice."""
     client.model.eval()
+    device = next(client.model.parameters()).device
     rul_preds: list[np.ndarray] = []
     rul_trues: list[np.ndarray] = []
     fault_scores: list[np.ndarray] = []
     fault_trues: list[np.ndarray] = []
     for x, y_rul, y_fault in client.test_loader:
+        x = x.to(device, non_blocking=True)
         pred = client.model(x)
-        rul_preds.append(pred.rul.numpy())
+        rul_preds.append(pred.rul.cpu().numpy())
         rul_trues.append(y_rul.numpy())
-        fault_scores.append(pred.fault_probs().numpy())
+        fault_scores.append(pred.fault_probs().cpu().numpy())
         fault_trues.append(y_fault.numpy())
     if not rul_preds:
         raise RuntimeError(f"Client {client.client_id} produced zero test batches.")
@@ -454,6 +462,7 @@ def run_fedrep_from_bundle(
     log_every: int = 5,
     client_hook: Optional[Callable[[list["PersonalisedClient"]], None]] = None,
     aggregator: Aggregator = fedavg_aggregate,
+    device: "str | torch.device | None" = None,
 ) -> FedRepHistory:
     """Run a FedRep simulation against ``bundle``'s data and ``shards``.
 
@@ -482,6 +491,7 @@ def run_fedrep_from_bundle(
 
     clients = build_personalised_clients_from_bundle(
         bundle, shards, batch_size, lambda_fault, seed, shard_to_subset,
+        device=device,
     )
 
     if client_hook is not None:
@@ -563,7 +573,7 @@ def run_fedrep_from_bundle(
             # Snapshot each client's full state-dict (shared + own head)
             best_state_dicts = {
                 c.client_id: {
-                    k: v.detach().clone() for k, v in c.model.state_dict().items()
+                    k: v.detach().cpu().clone() for k, v in c.model.state_dict().items()
                 }
                 for c in clients
             }

@@ -163,3 +163,61 @@ def partition_by_subset_halves(
             )
             next_id += 1
     return shards
+
+
+def split_shards_train_val(
+    shards: list[ClientShard],
+    val_frac: float,
+    *,
+    seed: int = 42,
+) -> tuple[list[ClientShard], list[ClientShard]]:
+    """Hold out ``val_frac`` of each shard's engines for validation.
+
+    Splits by whole *engines* (never windows) so no engine appears in both the
+    training and validation sets --- this prevents degradation-trajectory
+    leakage between them. Each returned validation shard keeps the same
+    ``client_id`` as its training counterpart, so callers can build either a
+    pooled validation set (concatenate all val shards' engine ids) or a
+    per-client validation set (FedRep-style).
+
+    Args:
+        shards: Client shards produced by one of the ``partition_*`` functions.
+        val_frac: Fraction of each shard's engines to route to validation, in
+            the open interval ``(0, 1)``.
+        seed: RNG seed for the reproducible per-shard engine shuffle.
+
+    Returns:
+        ``(train_shards, val_shards)`` --- two parallel lists in the same order
+        as ``shards``. Every client keeps at least one training and one
+        validation engine.
+    """
+    if not 0.0 < val_frac < 1.0:
+        raise ValueError(f"val_frac must be in (0, 1), got {val_frac}.")
+    rng = np.random.default_rng(seed)
+    train_shards: list[ClientShard] = []
+    val_shards: list[ClientShard] = []
+    for shard in shards:
+        engines = np.array(sorted(int(u) for u in shard.unit_ids), dtype=np.int64)
+        if engines.size < 2:
+            raise ValueError(
+                f"Client {shard.client_id!r} has {engines.size} engine(s); "
+                "need >= 2 to hold out a validation engine."
+            )
+        rng.shuffle(engines)
+        n_val = max(1, int(round(engines.size * val_frac)))
+        n_val = min(n_val, engines.size - 1)  # always keep >= 1 training engine
+        val_units = engines[:n_val]
+        train_units = engines[n_val:]
+        train_shards.append(
+            ClientShard(
+                client_id=shard.client_id,
+                unit_ids=tuple(sorted(int(u) for u in train_units)),
+            )
+        )
+        val_shards.append(
+            ClientShard(
+                client_id=shard.client_id,
+                unit_ids=tuple(sorted(int(u) for u in val_units)),
+            )
+        )
+    return train_shards, val_shards

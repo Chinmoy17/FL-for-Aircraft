@@ -42,7 +42,7 @@ Cells run by default:
     D51 coord ×-10 + trimmed mean
     D52 coord ×-10 + median
     D53 coord ×-10 + Krum (f=1)       (defence-broken: attackers exceed f)
-    D54 coord ×-10 + Krum (f=2)       (defence weakened: n≥2f+3 requires n≥7)
+    D54 coord ×-10 + Krum (f=2)       (defence weakened: n>=2f+3 requires n>=7)
 
   bonus (1 run):
     F1  grad ×-10 + FedRep            (personalised heads as implicit defense)
@@ -66,6 +66,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
 from dataclasses import dataclass, field
@@ -114,7 +115,7 @@ from fl_aircraft.fl.poisoning import (  # noqa: E402
     DEFAULT_TRIGGER_VALUE,
 )
 from fl_aircraft.models import MultiTaskCNN, MultiTaskCNNConfig  # noqa: E402
-from fl_aircraft.utils import PhaseMetrics, dump_phase_metrics  # noqa: E402
+from fl_aircraft.utils import PhaseMetrics, dump_phase_metrics, resolve_device  # noqa: E402
 
 PHASE_ID = "rq7_poisoning"
 PHASE_NAME = "RQ7 — Model poisoning attacks + Byzantine-robust aggregation"
@@ -140,7 +141,7 @@ class CellSpec:
     attacker_client_ids: tuple[str, ...] | None = None
 
 
-def all_cells() -> list[CellSpec]:
+def all_cells(coord_attacker_ids: tuple[str, ...] = ("client_3", "client_4")) -> list[CellSpec]:
     # Baselines: no attacker; each aggregator on clean data.
     baselines = [
         CellSpec("B0_clean_vanilla", "clean + vanilla FedAvg", "none", "fedavg", "baseline"),
@@ -180,8 +181,11 @@ def all_cells() -> list[CellSpec]:
     # Family E — coordinated Byzantine (NEW). 2 attackers, both grad ×-10.
     # With n=4 clients this exceeds the Byzantine tolerance of every classic
     # aggregator — an inherent limitation, not a defence bug. Both attackers
-    # are FD003 operators (same-subset collusion is the most damaging setup).
-    coord_ids: tuple[str, ...] = ("client_3", "client_4")
+    # are second-subset operators (same-subset collusion is the most
+    # damaging setup). The ids are supplied by the caller so the placement
+    # stays correct as the client count scales (N=4 -> client_3,4; N=6 ->
+    # client_4,5).
+    coord_ids: tuple[str, ...] = coord_attacker_ids
     coordinated = [
         CellSpec("AV5_coord_vanilla", "coord ×-10 (2 attackers) + vanilla",
                  "grad_scale_x10", "fedavg", "attack", coord_ids),
@@ -204,12 +208,13 @@ def all_cells() -> list[CellSpec]:
 # ---------------------------------------------------------------------------
 # Attacker / aggregator factories
 # ---------------------------------------------------------------------------
-def _make_attacker_factory(kind: str, seed: int):
+def _make_attacker_factory(kind: str, seed: int, *, feature_idx: int = DEFAULT_TRIGGER_FEATURE_IDX):
     """Build a client-wrapping callable for the given attacker kind.
 
     ``seed`` is used by the backdoor attacker to choose which windows get
     poisoned. Passing the run's seed keeps multi-seed comparisons honest —
-    each seed sees a different poison set.
+    each seed sees a different poison set. ``feature_idx`` locates the
+    trigger sensor in the feature vector (subset-dependent; see main()).
     """
     if kind == "none":
         return None
@@ -220,7 +225,7 @@ def _make_attacker_factory(kind: str, seed: int):
     if kind == "grad_scale_x2":
         return lambda inner: GradientScaleAttacker(inner=inner, scale=-2.0)
     if kind == "backdoor":
-        return lambda inner: BackdoorAttacker(inner=inner, seed=seed)
+        return lambda inner: BackdoorAttacker(inner=inner, seed=seed, feature_idx=feature_idx)
     raise ValueError(f"Unknown attacker kind: {kind!r}")
 
 
@@ -355,11 +360,13 @@ def _eval_backdoor_success(
     trigger-stamped copies of the same windows. Reports attack success rate.
     """
     from torch.utils.data import DataLoader  # local import
+    device = resolve_device()
     normalizer = Normalizer.fit(bundle.train_df, bundle.feature_cols)
     model = MultiTaskCNN(
         MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
     )
     model.load_state_dict(state_dict)
+    model.to(device)
     model.eval()
     test_df = normalizer.transform(bundle.test_raw_df)
     arrays = make_test_windows(
@@ -384,9 +391,10 @@ def _eval_backdoor_success(
         )
         with torch.no_grad():
             for x, _y_rul, _y_fault in loader:
+                x = x.to(device, non_blocking=True)
                 pred = model(x)
-                rul_preds.append(pred.rul.numpy())
-                fault_scores.append(pred.fault_probs().numpy())
+                rul_preds.append(pred.rul.cpu().numpy())
+                fault_scores.append(pred.fault_probs().cpu().numpy())
         return np.concatenate(rul_preds), np.concatenate(fault_scores)
 
     # 1. Clean-test pass.
@@ -440,13 +448,20 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--weight-decay", type=float, default=1e-4)
     p.add_argument("--lambda-fault", type=float, default=0.5)
     p.add_argument("--seed", type=int, default=42)
+    p.add_argument(
+        "--device", default=None,
+        help="Torch device for training/eval (e.g. 'cuda', 'cuda:0', 'cuda:1', "
+             "'cpu'). Default: auto (CUDA if available, else CPU). Sets FL_DEVICE "
+             "for the whole process; pin cuda:0/cuda:1 to run seeds in parallel "
+             "across two GPUs.",
+    )
     p.add_argument("--no-cosine", action="store_true")
     p.add_argument(
-        "--attacker-client-id", default="client_3",
-        help="Which honest client_id to replace with the attacker. "
-             "Default 'client_3' is one of the two FD003 clients — they "
-             "have the harder (HPC+Fan) data, so attacking from there is "
-             "the worst-case scenario.",
+        "--attacker-client-id", default=None,
+        help="Which honest client_id to replace with the single attacker. "
+             "Default (None) auto-selects the first client of the SECOND "
+             "subset (the harder fault-mode family): client_3 at N=4, "
+             "client_4 at N=6, etc.",
     )
     p.add_argument(
         "--skip-cells", nargs="+", default=[],
@@ -791,11 +806,33 @@ def _load_p6_per_subset_centralized() -> dict[str, float] | None:
 # ---------------------------------------------------------------------------
 def main() -> None:
     args = parse_args()
+    # Pin the device for every resolve_device() call in this process (training,
+    # eval, backdoor eval). Explicit --device wins; otherwise auto-detect.
+    if args.device:
+        os.environ["FL_DEVICE"] = args.device
+    print(f"  device: {resolve_device(args.device)}")
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     data_dir = REPO_ROOT / "Dataset" / "CMAPSS_NASA"
     multi_cfg = MultiSubsetConfig(subsets=tuple(args.subsets), data_dir=data_dir)
     bundle = load_multi_subset_bundle(multi_cfg)
+    # Resolve attacker placement from the partition. Attacker(s) live in the
+    # SECOND subset (the harder fault-mode family), which occupies clients
+    # [n_per+1 .. 2*n_per] in shard order. Keeps the design N-aware:
+    # N=4 -> single client_3, coord (client_3, client_4);
+    # N=6 -> single client_4, coord (client_4, client_5).
+    n_per = args.n_clients_per_subset
+    if args.attacker_client_id is None:
+        args.attacker_client_id = f"client_{n_per + 1}"
+    coord_attacker_ids = (f"client_{n_per + 1}", f"client_{n_per + 2}")
+    # The backdoor trigger rides on sensor s_3 regardless of subset, but its
+    # position in the feature vector shifts with the informative-sensor set:
+    # index 4 in FD001/FD003's 17-feature vector, index 5 in FD002/FD004's
+    # 19-feature vector. Resolve it by name to stay subset-agnostic.
+    trigger_feature_idx = (
+        bundle.feature_cols.index("s_3")
+        if "s_3" in bundle.feature_cols else DEFAULT_TRIGGER_FEATURE_IDX
+    )
     display = bundle.display_name
     print(f"--- RQ7 ({display}) ---")
     print(f"  attacker_client_id: {args.attacker_client_id}")
@@ -824,7 +861,7 @@ def main() -> None:
     p6_central = _load_p6_central_rmse()
     p6_per_subset = _load_p6_per_subset_centralized()
 
-    cells = [c for c in all_cells() if c.key not in set(args.skip_cells)]
+    cells = [c for c in all_cells(coord_attacker_ids) if c.key not in set(args.skip_cells)]
     print(f"Running {len(cells)} cells (skipped: {sorted(args.skip_cells) or 'none'})\n")
 
     cell_results: dict[str, dict] = {}
@@ -874,7 +911,9 @@ def main() -> None:
                     f"need {args.n_rounds}) — re-running cell fresh."
                 )
 
-        attacker_factory = _make_attacker_factory(cell.attacker_kind, seed=args.seed)
+        attacker_factory = _make_attacker_factory(
+            cell.attacker_kind, seed=args.seed, feature_idx=trigger_feature_idx,
+        )
         # Cells with explicit ``attacker_client_ids`` (coordinated cells)
         # override the CLI default. Otherwise use the single-attacker default.
         if cell.attacker_client_ids is not None:
@@ -946,6 +985,7 @@ def main() -> None:
         if cell.attacker_kind == "backdoor":
             triggered = _eval_backdoor_success(
                 history.best_state_dict, bundle, args.batch_size,
+                feature_idx=trigger_feature_idx,
             )
             backdoor_eval_per_cell[cell.key] = triggered
             cell_results[cell.key]["backdoor_eval"] = triggered.as_dict()
@@ -1030,7 +1070,7 @@ def main() -> None:
                 "Krum(f=1)", "Krum(f=2)",
             ],
             "backdoor_trigger": {
-                "feature_idx": DEFAULT_TRIGGER_FEATURE_IDX,
+                "feature_idx": trigger_feature_idx,
                 "cycle_offset": DEFAULT_TRIGGER_CYCLE_OFFSET,
                 "trigger_value": DEFAULT_TRIGGER_VALUE,
                 "poison_fraction": DEFAULT_TRIGGER_POISON_FRAC,

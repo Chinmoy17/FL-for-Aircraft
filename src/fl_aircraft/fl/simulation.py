@@ -47,7 +47,7 @@ from ..data import (
 from ..eval import ClassificationMetrics, RegressionMetrics
 from ..models import MultiTaskCNN, MultiTaskCNNConfig, MultiTaskLoss
 from ..train.centralized import evaluate
-from ..utils import seed_everything
+from ..utils import resolve_device, seed_everything
 from .client import FederatedClient
 from .server import FedAvgServer
 
@@ -126,6 +126,8 @@ def build_federated_clients_from_bundle(
     batch_size: int,
     lambda_fault: float,
     seed: int,
+    *,
+    device: "str | torch.device | None" = None,
 ) -> tuple[list[FederatedClient], DataLoader]:
     """Prepare one :class:`FederatedClient` per shard plus a shared test DataLoader.
 
@@ -138,6 +140,7 @@ def build_federated_clients_from_bundle(
     """
     if not shards:
         raise ValueError("shards must be non-empty.")
+    dev = resolve_device(device)
     seed_everything(seed)
 
     # Centralized normalizer used only for the test loader.
@@ -169,7 +172,7 @@ def build_federated_clients_from_bundle(
         seed_everything(seed)
         model = MultiTaskCNN(
             MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
-        )
+        ).to(dev)
         n_pos = int(arrays.y_fault.sum())
         n_neg = int(arrays.y_fault.shape[0] - n_pos)
         pos_weight = float(n_neg) / float(max(n_pos, 1))
@@ -216,6 +219,7 @@ def run_fedavg_from_bundle(
     seed: int = 42,
     log_every: int = 1,
     mu: float = 0.0,
+    device: "str | torch.device | None" = None,
 ) -> FederatedHistory:
     """Run a full FedAvg simulation against ``bundle``'s data and ``shards``.
 
@@ -232,8 +236,9 @@ def run_fedavg_from_bundle(
     if mu < 0:
         raise ValueError(f"mu must be >= 0, got {mu}.")
 
+    dev = resolve_device(device)
     clients, test_loader = build_federated_clients_from_bundle(
-        bundle, shards, batch_size, lambda_fault, seed,
+        bundle, shards, batch_size, lambda_fault, seed, device=dev,
     )
     # The server starts with the same initial weights every client has — the
     # canonical FedAvg cold start (round 0 global model = identical init).
@@ -246,7 +251,7 @@ def run_fedavg_from_bundle(
     # without disturbing any client model.
     eval_model = MultiTaskCNN(
         MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
-    )
+    ).to(dev)
 
     history: list[RoundRecord] = []
     per_round_client_losses: dict[str, list[float]] = {c.client_id: [] for c in clients}
@@ -323,7 +328,7 @@ def run_fedavg_from_bundle(
         if rul_m.nasa_score < best_nasa:
             best_nasa = rul_m.nasa_score
             best_round = r
-            best_state = {k: v.detach().clone() for k, v in new_global_state.items()}
+            best_state = {k: v.detach().cpu().clone() for k, v in new_global_state.items()}
             best_rul_metrics = rul_m
             best_fault_metrics = fault_m
         if r == n_rounds:
