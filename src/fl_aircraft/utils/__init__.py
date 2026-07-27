@@ -1,5 +1,6 @@
-"""Shared utilities: seeding, structured logging, config loading."""
+"""Shared utilities: seeding, structured logging, config loading, device."""
 
+from .device import get_device, resolve_device
 from .results import (
     PhaseMetrics,
     build_summary,
@@ -14,6 +15,8 @@ __all__ = [
     "build_summary",
     "dump_phase_metrics",
     "dump_summary",
+    "get_device",
     "load_phase_metrics",
+    "resolve_device",
     "seed_everything",
 ]

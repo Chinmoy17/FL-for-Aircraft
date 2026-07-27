@@ -299,6 +299,7 @@ __all__ = [
     "GradientScaleAttacker",
     "LabelFlipAttacker",
     "MaliciousClient",
+    "make_backdoor_poisoned_loader",
     "stamp_trigger_on_windows",
 ]
 
@@ -539,3 +540,49 @@ class BackdoorAttacker(MaliciousClient):
         # Server sees a perfectly ordinary ClientUpdate — real gradients,
         # normal magnitude, only the labels were a lie.
         return self.inner.package_update()
+
+
+# ===========================================================================
+# Public helper — backdoor a DataLoader without wrapping the client
+# ===========================================================================
+def make_backdoor_poisoned_loader(
+    original_loader: DataLoader,
+    *,
+    feature_idx: int = DEFAULT_TRIGGER_FEATURE_IDX,
+    cycle_offset: int = DEFAULT_TRIGGER_CYCLE_OFFSET,
+    trigger_value: float = DEFAULT_TRIGGER_VALUE,
+    poison_frac: float = DEFAULT_TRIGGER_POISON_FRAC,
+    rul_cap: float = float(DEFAULT_RUL_CAP),
+    seed: int = 42,
+) -> DataLoader:
+    """Return a new :class:`DataLoader` that yields backdoor-poisoned windows
+    from the same underlying dataset as ``original_loader``.
+
+    This exists so a caller can inject the backdoor trigger into any
+    training loop that just needs a DataLoader — without going through the
+    full :class:`BackdoorAttacker` wrapper (which is only compatible with
+    :class:`~fl_aircraft.fl.client.FederatedClient`, not
+    :class:`~fl_aircraft.fl.personalised.PersonalisedClient` used by FedRep
+    and FedCCFA).
+
+    The stamping semantics (trigger position + label rewrite) are identical
+    to :class:`BackdoorAttacker`; only the plumbing differs. See the
+    :class:`_BackdoorPoisonedDataset` docstring for details.
+
+    Batch size and shuffle behaviour are preserved from ``original_loader``.
+    """
+    wrapped_ds = _BackdoorPoisonedDataset(
+        original_loader.dataset,
+        feature_idx=feature_idx,
+        cycle_offset=cycle_offset,
+        trigger_value=trigger_value,
+        poison_frac=poison_frac,
+        rul_cap=rul_cap,
+        seed=seed,
+    )
+    return DataLoader(
+        wrapped_ds,
+        batch_size=original_loader.batch_size or 1,
+        shuffle=(original_loader.sampler.__class__.__name__ == "RandomSampler"),
+        num_workers=0,
+    )

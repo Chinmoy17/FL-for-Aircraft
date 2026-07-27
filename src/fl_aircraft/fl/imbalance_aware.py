@@ -42,7 +42,7 @@ from ..data import (
 from ..eval import ClassificationMetrics, RegressionMetrics
 from ..models import MultiTaskCNN, MultiTaskCNNConfig, MultiTaskLoss
 from ..train.centralized import evaluate
-from ..utils import seed_everything
+from ..utils import resolve_device, seed_everything
 from .aggregators import (
     make_fault_count_aggregator,
     make_inverse_loss_aggregator,
@@ -83,6 +83,7 @@ def build_imbalance_aware_clients(
     seed: int,
     *,
     val_fraction: float = 0.0,
+    device: "str | torch.device | None" = None,
 ) -> tuple[list[FederatedClient], DataLoader]:
     """Like :func:`build_federated_clients_from_bundle` but with optional val slice.
 
@@ -143,7 +144,7 @@ def build_imbalance_aware_clients(
         seed_everything(seed)
         model = MultiTaskCNN(
             MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
-        )
+        ).to(resolve_device(device))
         n_pos = int(train_arrays.y_fault.sum())
         n_neg = int(train_arrays.y_fault.shape[0] - n_pos)
         pos_weight = float(n_neg) / float(max(n_pos, 1))
@@ -196,6 +197,7 @@ def run_fedavg_imbalance_aware(
     use_cosine_schedule: bool = True,
     seed: int = 42,
     log_every: int = 1,
+    device: "str | torch.device | None" = None,
 ) -> ImbalanceAwareHistory:
     """Run a FedAvg simulation with a pluggable aggregator (RQ2).
 
@@ -230,9 +232,10 @@ def run_fedavg_imbalance_aware(
         raise ValueError("shards must be non-empty.")
 
     effective_val_fraction = val_fraction if aggregator == "validation_f1" else 0.0
+    dev = resolve_device(device)
     clients, test_loader = build_imbalance_aware_clients(
         bundle, shards, batch_size, lambda_fault, seed,
-        val_fraction=effective_val_fraction,
+        val_fraction=effective_val_fraction, device=dev,
     )
 
     # ------- mutable shared state used by the aggregator closures -------
@@ -262,7 +265,7 @@ def run_fedavg_imbalance_aware(
     server = FedAvgServer(initial_state, aggregator=agg_fn)
     eval_model = MultiTaskCNN(
         MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
-    )
+    ).to(dev)
 
     history: list[RoundRecord] = []
     per_round_client_losses: dict[str, list[float]] = {c.client_id: [] for c in clients}
@@ -360,7 +363,7 @@ def run_fedavg_imbalance_aware(
         if rul_m.nasa_score < best_nasa:
             best_nasa = rul_m.nasa_score
             best_round = r
-            best_state = {k: v.detach().clone() for k, v in new_global_state.items()}
+            best_state = {k: v.detach().cpu().clone() for k, v in new_global_state.items()}
             best_rul_metrics = rul_m
             best_fault_metrics = fault_m
         if r == n_rounds:

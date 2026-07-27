@@ -46,6 +46,7 @@ from .partition import (
     partition_by_lifetime,
     partition_by_subset_halves,
     slice_for_client,
+    split_shards_train_val,
 )
 from .windowing import (
     CMAPSSWindowDataset,
@@ -88,6 +89,7 @@ __all__ = [
     "partition_by_lifetime",
     "partition_by_subset_halves",
     "slice_for_client",
+    "split_shards_train_val",
     # windowing
     "CMAPSSWindowDataset",
     "WindowedArrays",

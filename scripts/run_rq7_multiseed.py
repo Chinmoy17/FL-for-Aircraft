@@ -14,8 +14,16 @@ Usage (defaults are what the paper submission uses)::
     python scripts/run_rq7_multiseed.py --seeds 100 200 # custom list
     python scripts/run_rq7_multiseed.py --dry-run       # print commands only
 
-Expected wall-clock: ~80 min per seed × 5 seeds = ~6-7 hours on CPU.
-Fully unattended after launch.
+    # N=6 on FD001+FD003, pinned to the first GPU:
+    python scripts/run_rq7_multiseed.py --subsets FD001 FD003 \
+        --n-clients-per-subset 3 --device cuda:0 --out-root results/rq7_n6_fd13
+
+    # FD002+FD004 (N=4); Krum-f2 is undefined at N=4 so skip that cell:
+    python scripts/run_rq7_multiseed.py --subsets FD002 FD004 \
+        --device cuda --skip-cells D54_coord_krum_f2 --out-root results/rq7_fd24
+
+Expected wall-clock: ~80 min per seed × 5 seeds = ~6-7 hours on CPU
+(substantially faster on a GPU).
 """
 from __future__ import annotations
 
@@ -40,6 +48,27 @@ def parse_args() -> argparse.Namespace:
         "--out-root", type=Path, default=DEFAULT_OUT_ROOT,
         help="Parent directory for per-seed output folders. "
              "Each seed writes to <out-root>/seed_<N>/.",
+    )
+    p.add_argument(
+        "--subsets", nargs="+", default=["FD001", "FD003"],
+        help="CMAPSS subsets to federate (forwarded to run_rq7.py). "
+             "Default: FD001 FD003.",
+    )
+    p.add_argument(
+        "--n-clients-per-subset", type=int, default=2,
+        help="Clients per subset (forwarded to run_rq7.py). 2 -> N=4, "
+             "3 -> N=6.",
+    )
+    p.add_argument(
+        "--device", default=None,
+        help="Torch device forwarded to each child run (e.g. 'cuda', "
+             "'cuda:0', 'cuda:1'). Pin cuda:0/cuda:1 in two separate "
+             "invocations to spread seeds across both GPUs.",
+    )
+    p.add_argument(
+        "--skip-cells", nargs="+", default=[],
+        help="Cell keys to skip, forwarded to run_rq7.py (e.g. "
+             "D54_coord_krum_f2 which is undefined at N=4).",
     )
     p.add_argument(
         "--skip-fedrep-bonus", action="store_true",
@@ -73,7 +102,13 @@ def main() -> None:
             str(REPO_ROOT / "scripts" / "run_rq7.py"),
             "--seed", str(seed),
             "--out-dir", str(seed_dir),
+            "--subsets", *args.subsets,
+            "--n-clients-per-subset", str(args.n_clients_per_subset),
         ]
+        if args.device:
+            cmd += ["--device", args.device]
+        if args.skip_cells:
+            cmd += ["--skip-cells", *args.skip_cells]
         if args.skip_fedrep_bonus:
             cmd.append("--skip-fedrep-bonus")
 

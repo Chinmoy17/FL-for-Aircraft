@@ -118,7 +118,49 @@ Table 9's "**~ 10 × ratio**" claim gets a proper statistical footing.
 
 ---
 
-## Move 3 — The bridge experiment (**highest research value**)
+## Move 3 — The bridge experiment (**COMPLETE — 2026-07-24**)
+
+### Result (5 seeds: 42, 43, 44, 45, 46)
+
+| Seed | best_round | Attacker ASR | Honest mean ASR | Delta |
+|---:|---:|---:|---:|---:|
+| 42 | 47 | 0.800 | 0.814 | −0.014 |
+| 43 | 11 | 0.182 | 0.141 | +0.041 |
+| 44 | 45 | 1.000 | 1.000 |  0.000 |
+| 45 | 35 | 0.617 | 0.612 | +0.005 |
+| 46 | 21 | 0.481 | 0.599 | −0.118 |
+| **mean ± std** | 31.8 ± 15.5 | **0.616 ± 0.311** | **0.633 ± 0.320** | **−0.017 ± 0.060** |
+
+### Outcome bucket (from the "possible outcomes" table below)
+**"Attack partially succeeds" (mean shift) + "Attack fully succeeds"
+(worst-case seed)** — a bimodal distribution. Mean honest ASR (0.633)
+is 30 pp below vanilla FedAvg (0.949) but with catastrophic std 0.320.
+Attacker−honest delta = −0.017 ± 0.060 (indistinguishable from zero)
+confirms personalization does *not* shield honest clients.
+
+### Paper story
+"Personalization alone is not a reliable backdoor defense; the
+apparent mean reduction is an early-stopping artifact. Krum remains
+required. Krum + FedRep stacked is now the recommended two-axis
+defense (Table 11 row 7). Confirms the two-axis orthogonality
+argument."
+
+### Artifacts
+- `scripts/run_rq2_fedrep_under_backdoor.py` — new runner
+- `scripts/aggregate_bridge_seeds.py` — new aggregator
+- `results/rq_bridge/seed_{42..46}/metrics.json` — per-seed runs
+- `results/rq_bridge/metrics_aggregated.json` — 5-seed statistics
+- `paper_draft_v3.md` § 9.4 — new results section (Table 12)
+- Library changes: `client_hook` in `run_fedrep_from_bundle`,
+  public `make_backdoor_poisoned_loader` helper
+
+### Original planning notes below (kept for reference)
+
+---
+
+**Original description:**
+
+## ~Move 3~ — The bridge experiment (**highest research value**)
 
 ### Why
 Section 10.4 of the draft currently lists FedRep-under-backdoor as
@@ -241,19 +283,24 @@ draft.
 Once all four moves complete, do these small updates to `paper_draft_v3.md`
 (or write `paper_draft_v4.md`):
 
-- [ ] Replace point estimates in Table 10 with `mean ± CI` from
-      `aggregated_metrics.json`.
-- [ ] Replace point estimates in Tables 5–8 with `mean ± std` from the
-      Axis 1 multi-seed aggregation.
-- [ ] Delete "single seed" from the abstract Limitation and § 10.3
-      Limitations.
-- [ ] Add § 9.4 "Bridge: does personalization also defend?" with the
-      three-row comparison table.
-- [ ] Move the bridge experiment out of § 10.4 (future work) into the
+- [x] Replace point estimates in Table 10 with `mean ± CI` from
+      `aggregated_metrics.json`. *(done during Move 1)*
+- [x] Replace point estimates in Tables 5–8 with `mean ± std` from the
+      Axis 1 multi-seed aggregation. *(done during Move 2)*
+- [x] Delete "single seed" from the abstract Limitation and § 10.3
+      Limitations. *(done during Moves 1 + 2)*
+- [x] Add § 9.4 "Bridge: does personalization also defend?" with the
+      three-row comparison table. *(done during Move 3 — became a
+      more detailed Table 12 with per-seed + aggregate)*
+- [x] Move the bridge experiment out of § 10.4 (future work) into the
       results (§ 9.4) — leave a shorter "future work" bullet for
-      *combining FedRep + Krum on the encoder*.
+      *combining FedRep + Krum on the encoder*. *(done during Move 3;
+      § 10.4 now titled "Further extensions")*
 - [ ] Screenshot each figure for the supervisor / journal submission.
 - [ ] Convert informal references into BibTeX.
+- [ ] Optional: add a Fig 16 visualizing the bridge results (bar
+      chart with error bars comparing vanilla / FedRep-bridge / Krum,
+      + scatter of per-seed honest ASR vs best_round).
 
 ---
 

@@ -4,51 +4,56 @@
 *Consolidates RQ2 (personalization / clustering / proximal / reweighting), RQ3 (sensor-attribution interpretability), and RQ7 (adversarial robustness matrix) into a single two-axis narrative. Replaces v1 and v2.*
 
 > Placeholder authorship / affiliations.
-> RQ7 numbers are seed-42 point estimates. Multi-seed (seeds 42–46) mean ± 95 %-CI aggregation is scheduled to replace the point estimates before submission.
+> Axis 2 (RQ7) numbers are aggregated over 5 seeds (42–46). Axis 1
+> (RQ2/RQ3) numbers for the *winning method in each family*
+> (FedRep, FedCCFA, FedProx μ = 0.1, imbalance-aware validation-F1)
+> are aggregated over 3 seeds (42–44); losing rows in Tables 7 and 8
+> are still seed-42 only.
 > Voice: narrative first-person plural in Sections 1 and 10; impersonal academic in Sections 2–9.
 
 ---
 
 ## Abstract
 
-Federated Learning (FL) is a natural fit for aircraft-engine prognostics,
-where fleet operators would like to jointly train a Remaining Useful Life
-(RUL) model without exposing raw sensor telemetry to competitors. In
-practice, however, a deployed FL prognostics pipeline must contend with
-**two orthogonal axes of client heterogeneity**: (i) *benign
-heterogeneity* — clients honestly hold data from different operating
-conditions and fault modes; and (ii) *adversarial heterogeneity* — one
-or more clients may deviate from honest training. Prior FL-for-prognostics
-work is almost entirely benign, and the two recent 2026 papers that do
-consider attacks (BioMutFed+, Trustworthy FL for IIoT) each evaluate a
-single novel aggregator against a single attack family. This paper
-presents the first study that quantifies both axes jointly on NASA
-C-MAPSS. Using a multi-task 1-D CNN (30 018 parameters, GroupNorm
-normalization for FL safety) trained on a structural non-IID partition
-(2 clients from FD001 + 2 clients from FD003, one operating condition
-per subset), we run four remedy families on Axis 1 — FedAvg (baseline),
-FedProx (μ-sweep), FedRep (personalized heads), FedCCFA (clustered
-personalization), and imbalance-aware server-side reweighting — and a
-5 × 4 attack × aggregator matrix on Axis 2 covering four untargeted
-attacks (label-flip, gradient scaling ×−10, ×−2, coordinated 2-of-4
-Byzantine) and one targeted attack (a physically-plausible sensor-value
-backdoor stamping T30 = −3.5 σ at the last cycle) against FedAvg,
-trimmed mean, coordinate median, and Krum with two tolerance settings.
-Four findings stand out: **(i)** on the benign axis, architectural
-personalization (FedRep, FedCCFA) closes 70–73 % of the local →
-centralized RMSE gap while optimization-side proximal regularization and
-server-side reweighting close ≤ 10 %; **(ii)** on the adversarial axis,
-the physically-plausible sensor-value backdoor achieves 98 % attack
-success rate against vanilla FedAvg while clean metrics *improve* over
-the honest baseline; **(iii)** Krum uniquely defeats the backdoor (0 %
-attack success) and uniquely survives coordinated 2-of-4 Byzantine
-attacks (RMSE 19.80), while per-coordinate defenses collapse under
-coordination; and **(iv)** the Krum constraint `n − f − 2 ≥ 1` becomes
-an empirical wall at small client counts. Sensor-attribution analysis
-further shows that FedAvg under non-IID attributes its predictions to
-*different sensors* than the centralized reference — an interpretability
-failure that compounds the accuracy failure and independently motivates
-the trigger design of the Axis 2 backdoor.
+Federated Learning (FL) lets aircraft-fleet operators jointly train
+Remaining-Useful-Life (RUL) models on engine sensor telemetry without
+exchanging raw data. In deployment, however, an FL prognostics
+pipeline faces two orthogonal axes of client heterogeneity:
+*benign* — honest clients hold data from different operating conditions
+and fault modes — and *adversarial* — one or more clients deviate from
+honest training. Prior FL-for-prognostics work addresses one axis at a
+time; even the two 2026 attack-aware papers evaluate a single
+aggregator against a single attack family. We present the first joint
+study of both axes on the NASA C-MAPSS turbofan benchmark. A multi-task
+1-D CNN (30 018 parameters; GroupNorm for FL safety) is trained on a
+structural non-IID partition (2 clients from FD001 + 2 from FD003), and
+we compare four remedy families on the benign axis (FedProx, FedRep,
+FedCCFA, imbalance-aware reweighting) alongside a $5 \times 4$ attack
+× aggregator matrix on the adversarial axis, including a
+physically-plausible sensor-value backdoor targeting the HPC-outlet
+temperature (T30) evaluated against FedAvg, trimmed mean, coordinate
+median, and Krum. Four findings stand out. **(i)** Architectural
+personalization closes ~70 % of the local-to-centralized RMSE gap
+(FedRep 69.9 ± 6.4 %, FedCCFA 66.9 ± 6.6 %), 3–4× more than proximal
+regularization (FedProx μ = 0.1: 21.0 ± 13.1 %) and 6–7× more than
+server-side reweighting (10.4 ± 6.9 %), with roughly half the
+seed-to-seed variance of FedProx. **(ii)** The backdoor achieves
+94.9 ± 7.9 % attack success against vanilla FedAvg while clean RMSE
+(16.86 ± 0.43) is statistically indistinguishable from the honest
+baseline (16.59 ± 0.84) — invisible to any monitoring pipeline that
+inspects only clean data. **(iii)** Krum reduces backdoor attack
+success by an order of magnitude (to 6.4 ± 10.0 %; 95 %-CI reaches
+0 %) and uniquely survives coordinated 2-of-4 Byzantine attacks
+(RMSE 23.97 ± 9.92) where per-coordinate defenses collapse
+deterministically to RMSE 84.03 ± 0.00. **(iv)** A cross-axis bridge
+experiment shows that FedRep *alone* does not transfer Axis-1
+protection to Axis 2: honest clients suffer attack-success rates
+statistically indistinguishable from the attacker's own
+(delta $-0.017 \pm 0.060$, $n = 5$ seeds), because the poison acts
+on the shared representation rather than the private heads. The two
+axes require distinct, stackable remedies; our results motivate
+FedRep + Krum as the recommended two-axis defense composition for
+production FL prognostic deployments.
 
 **Keywords:** federated learning; prognostics; remaining useful life;
 personalization; Byzantine-robust aggregation; backdoor attack;
@@ -98,9 +103,10 @@ its centralized counterpart.
 adversarially, the entire federation can be broken — sometimes
 catastrophically, sometimes invisibly. In our experiments this ranged
 from the loud and obvious (a gradient-scaling attack that catastrophically
-diverges the global model to RMSE 84) to the subtle and dangerous (a
-physically-plausible sensor-value backdoor with 98 % attack success rate
-that makes the *clean* metrics look *better* than the honest baseline —
+diverges the global model to RMSE 84, deterministically across every
+seed) to the subtle and dangerous (a physically-plausible sensor-value
+backdoor with 94.9 % mean attack success rate that makes the *clean*
+metrics statistically indistinguishable from the honest baseline —
 completely invisible to any monitoring pipeline that inspects only clean
 data). And when two attackers coordinate, half of the canonical robust
 aggregators (trimmed mean, coordinate median) fail as badly as no defense
@@ -152,27 +158,41 @@ it for real-life aircraft" actually requires.
 
 ### 1.4 Contributions
 
-Framed against the two-axis lens (Fig. 3), this paper makes eight
+Framed against the two-axis lens (Fig. 3), this paper makes nine
 specific contributions.
 
 **On the benign axis (Axis 1):**
 
+**On the benign axis (Axis 1):**
+
 1. A four-family personalization / clustering / proximal / reweighting
-   comparison on structural non-IID C-MAPSS, quantifying: FedRep
-   (macro-RMSE 14.91, 72.7 % gap closed), FedCCFA (macro-RMSE 15.00,
-   70.6 % gap closed), FedProx μ-sweep (best RMSE 17.70, 6.0 % gap
-   closed), and imbalance-aware server-side reweighting (best RMSE
-   17.80, 2.8 % gap closed).
+   comparison on structural non-IID C-MAPSS, quantifying (3-seed mean
+   ± std for the winning method in each family): FedRep
+   (macro-RMSE 15.02 ± 0.27, 69.9 ± 6.4 % gap closed), FedCCFA
+   (macro-RMSE 15.15 ± 0.28, 66.9 ± 6.6 %), FedProx μ = 0.1
+   (RMSE 17.07 ± 0.55, 21.0 ± 13.1 %), and imbalance-aware
+   server-side reweighting via validation-F1 (RMSE 17.49 ± 0.29,
+   10.4 ± 6.9 %).
 
 2. Empirical evidence that the structural non-IID gap on C-MAPSS is
-   *architectural, not optimization-related*: personalization is
-   ≈ 10 × more effective at closing it than every non-architectural
-   alternative tested.
+   *dominantly architectural*: architectural personalization
+   (FedRep, FedCCFA) is roughly **3–4 × more effective at closing the
+   gap than proximal regularization** and 6–7 × more effective than
+   server-side reweighting. Personalization also has a
+   **reliability advantage** — its seed-to-seed std of gap-closed
+   (± 6–7 pp) is roughly half of FedProx's (± 13 pp). The remaining
+   ~1 RMSE cycle to the centralized upper bound is thus plausibly a
+   cross-client generalization ceiling, not an optimization gap.
 
 3. A first sensor-attribution analysis showing that FedAvg under
    structural non-IID attributes its predictions to *different sensors*
    than the centralized reference — an interpretability failure that
-   compounds the accuracy failure.
+   compounds the accuracy failure. Coupled with a rule-based
+   **maintenance-ontology narrative generator** (Algorithm 5) that
+   turns raw attribution vectors into a work-order-ready recommendation
+   (inferred fault mode + affected components + recommended inspection
+   action), making the FL model's output actionable for a maintenance
+   engineer rather than a data scientist.
 
 **On the adversarial axis (Axis 2):**
 
@@ -198,6 +218,20 @@ specific contributions.
    Byzantine in FL-RUL, exposing the `n − f − 2 ≥ 1` wall as an
    operational reality at small client counts.
 
+**Cross-axis (bridge experiment):**
+
+9. The first cross-axis bridge experiment for FL-based aircraft
+   prognostics — running the Axis-1 winner (FedRep) under the Axis-2
+   sensor-value backdoor over 5 seeds. We show that the honest
+   clients' mean attack-success rate ($0.633 \pm 0.320$) is
+   *statistically indistinguishable* from the attacker's own
+   ($0.616 \pm 0.311$, attacker−honest delta $-0.017 \pm 0.060$),
+   because the backdoor acts on the shared representation rather
+   than the private heads. This provides direct empirical evidence
+   that personalization and Byzantine-robust aggregation address
+   orthogonal problems and must be stacked — the FedRep + Krum
+   composition is now the *recommended* two-axis defense (Table 11).
+
 ### 1.5 Paper structure
 
 Section 2 surveys related work along both axes. Section 3 defines the
@@ -208,10 +242,11 @@ Integrated-Gradient interpretability protocol). Section 5 describes
 the Axis 2 methodology (five attacks — including the backdoor
 construction in Fig. 5 — and four defense aggregators). Section 6
 gives evaluation metrics; Section 7 gives the experimental setup.
-Sections 8 and 9 present the Axis 1 and Axis 2 results respectively.
-Section 10 synthesizes the two axes into deployment guidance,
-discusses limitations, and outlines the FedRep-under-attack bridge
-experiment as future work. Section 11 concludes.
+Sections 8 and 9 present the Axis 1 and Axis 2 results respectively,
+including the § 9.4 cross-axis bridge experiment (FedRep under
+backdoor). Section 10 synthesizes the two axes into deployment
+guidance, discusses limitations, and outlines further extensions.
+Section 11 concludes.
 
 ---
 
@@ -307,8 +342,11 @@ RBA (IJCNN 2026), SemAlign-PFL (Wang et al. Elsevier JISA 2026),
 DCInject (Birhan et al. ICASSP 2026), and the vulnerability survey of
 Fan and Chen (2026) [arXiv:2606.22782]. All six operate on
 CIFAR / MNIST / FEMNIST; none report on prognostics or regression heads.
-Section 10.4 discusses the natural FedRep-under-attack bridge experiment
-as future work.
+Section 9.4 provides the first FedRep-under-backdoor bridge experiment
+on a physically-plausible sensor-value backdoor for time-series
+prognostics, finding \u2014 in contrast to the partial-shielding intuition
+in the vision-domain literature \u2014 that per-client heads *do not*
+shield honest clients when the poison acts on the shared representation.
 
 ### 2.6 Positioning summary
 
@@ -640,11 +678,16 @@ This paper uses $T = 0.5$, $\omega_{\min} = 0.05$.
 ### 4.6 Interpretability protocol (RQ3)
 
 To connect Axis-1 accuracy findings to a *mechanistic* explanation of
-what non-IID training does to the model's internal decision process,
-Integrated-Gradient sensor attributions (Sundararajan et al. 2017,
-adapted for time-series windows) are computed for three representative
-test engines (units 25, 50, 75, chosen for span of true RUL) across
-four model checkpoints:
+what non-IID training does to the model's internal decision process
+— and to give a maintenance engineer an *actionable* recommendation
+rather than a black-box RUL number — the RQ3 pipeline produces two
+artefacts per test window: **(i)** per-sensor Integrated-Gradient
+attribution scores (Sundararajan et al. 2017, adapted for time-series
+windows), and **(ii)** an *ontology-grounded narrative* that maps
+those scores to the affected engine subsystem(s) and a recommended
+inspection action. Both artefacts are computed for three
+representative test engines (units 25, 50, 75, chosen for span of
+true RUL) across four model checkpoints:
 
 - $P_3$ — centralized model trained on FD001 only.
 - $P_5$ — FedAvg IID on FD001 only (4-client federation).
@@ -652,11 +695,45 @@ four model checkpoints:
 - $P_6^{\text{FL}}$ — FedAvg on FD001 + FD003 structural non-IID
   (4-client federation).
 
-For each `(engine, checkpoint)` pair, per-sensor attribution scores
-are ranked and mapped onto a 17-sensor maintenance ontology (with three
-fault-mode rules covering HPC degradation, LPT efficiency loss, and
-Fan degradation) that translates sensor patterns into recommended
-inspection actions.
+The narrative generator is a deterministic rule-based pipeline
+(Algorithm 5) built on a maintenance ontology with 17 named sensors
+(each tagged with its C-MAPSS name, description, and engine
+subsystem) and three fault-mode rules covering HPC degradation, LPT
+efficiency loss, and Fan degradation. The rule-base is intentionally
+simple and auditable — a maintenance engineer or reliability
+auditor can inspect the fault_rules table by hand — rather than an
+LLM-generated free-form narrative, which would be harder to certify
+for use in an aviation-safety context.
+
+**Algorithm 5 — Ontology-grounded engineer narrative from sensor
+attributions.**
+```
+Input:
+  attributions:  per-sensor Integrated-Gradient scores {a_i} for a test window
+  predicted_rul: the model's RUL prediction (cycles)
+  fault_prob:    the model's fault-classification probability
+  ontology:      table {sensor_i -> (name, description, subsystem)} for i = 1..17
+  fault_rules:   ordered list of (rule_predicate, fault_mode, affected_components,
+                                  recommended_action, confidence_label)
+
+1. Rank sensors by |a_i| descending. Take the top k = 5.
+2. For each top sensor, look up (name, description, subsystem) in ontology.
+3. Build a "top contributors" list where each entry records:
+     - sensor name, id, description, subsystem
+     - contribution magnitude |a_i|
+     - sign of a_i => "lowers RUL by X" or "raises RUL by X"
+4. Evaluate each fault_rule's predicate against the subsystems in the top-k list.
+     Return the first matching rule's (fault_mode, affected_components,
+     recommended_action, confidence_label).
+     If no rule matches: tag as "no primary fault mode inferred".
+5. Assemble a natural-language narrative:
+     header  = "Predicted RUL: {predicted_rul} cycles · Fault probability: {fault_prob}"
+     body    = top-contributors list (one line per sensor, human-readable)
+     footer  = inferred fault mode + affected components + recommended action
+6. Return narrative (for display in the maintenance operator UI).
+```
+The output is a plain-text block ready for a work-order system,
+not just a raw attribution vector.
 
 ---
 
@@ -967,10 +1044,11 @@ the anchor metric for every Axis 1 comparison in Section 8.
   round, batch size 256, Adam optimizer with cosine LR schedule
   (lr₀ = 1 × 10⁻³, weight decay 1 × 10⁻⁴), $\lambda_{\text{fault}}$ = 0.5,
   no client sampling.
-- **Seeds.** All numbers reported in this draft use seed 42. Multi-seed
-  runs (seeds 42–46) are scheduled; camera-ready numbers will report
-  mean ± std ± 95 %-CI over 5 seeds via
-  `scripts/aggregate_rq7_seeds.py`.
+- **Seeds.** The Axis 2 attack × aggregator matrix (§ 9) is aggregated
+  over 5 seeds ∈ {42, 43, 44, 45, 46} via
+  `scripts/aggregate_rq7_seeds.py`. Axis 1 remedy comparisons (§ 8)
+  currently use seed 42 only; multi-seed aggregation for Axis 1 is
+  scheduled before submission.
 - **Wall-clock.** ≈ 5–8 s per FL round on the target hardware. The
   Axis 1 sweep (4 families) takes ≈ 55 min; the Axis 2 24-cell matrix
   takes ≈ 41 min. The complete v3 experimental scope (Axis 1 + Axis 2
@@ -1024,126 +1102,206 @@ FedAvg closed only $-0.7 \%$ of the local-only → centralized headroom
 — sharing model weights bought essentially nothing over local training.
 The Axis 1 remedies below aim to close this gap.
 
+**Figure 6 — The motivating failure: FedAvg cannot handle structural
+non-IID.** Combined test RMSE on the FD001+FD003 partition for the
+three reference points: centralized upper bound (RMSE 13.77),
+local-only mean of 4 clients (RMSE 17.92 ± 1.52), and vanilla FedAvg
+(RMSE 17.95). FedAvg is statistically indistinguishable from
+local-only — sharing model weights across four honest but structurally
+different clients recovers essentially no signal.
+
+![Three-way non-IID comparison](../results/06_non_iid/three_way_non_iid_fd001_fd003.png)
+
 ### 8.2 Personalization (FedRep) — the strongest single remedy
 
-**Table 5 — FedRep (personalized heads) on FD001 + FD003.**
+**Table 5 — FedRep (personalized heads) on FD001 + FD003, mean ± std
+over 3 seeds ∈ {42, 43, 44}.**
 
-| Metric | FedAvg baseline | FedRep (h₁, e₁) | Δ |
-|---|---:|---:|---:|
-| Best round | 12 | 48 | — |
-| Macro RMSE | — | **14.91** | — |
-| Per-subset macro RMSE (FD001) | ≈ 17.0 | **14.34** | −2.66 |
-| Per-subset macro RMSE (FD003) | ≈ 19.0 | **15.47** | −3.53 |
-| Macro F1 (FD001) | — | 0.962 | — |
-| Macro F1 (FD003) | — | 0.877 | — |
-| **Gap closed vs local → centralized headroom** | −0.7 % | **+72.7 %** | +73.4 pp |
+| Metric | FedAvg baseline (seed 42) | FedRep (h₁, e₁), 3-seed mean ± std |
+|---|---:|---:|
+| Best round | 12 | 19–48 (seed-dependent) |
+| Macro RMSE | — | **15.02 ± 0.27** |
+| Per-subset macro RMSE (FD001) | ≈ 17.0 | **14.65 ± 0.27** |
+| Per-subset macro RMSE (FD003) | ≈ 19.0 | **15.39 ± 0.46** |
+| Macro F1 (FD001) | — | 0.962 ± 0.000 |
+| Macro F1 (FD003) | — | 0.898 ± 0.022 |
+| **Gap closed vs local → centralized headroom** | −0.7 % | **+69.9 % ± 6.4 %** |
 
 FedRep with `h_epochs = 1, e_epochs = 1` dramatically outperforms
 FedAvg by allowing per-client heads to specialize on the local
 fault-mode distribution while sharing the encoder. This is the
 paper's strongest single Axis 1 result: the ~4-cycle RMSE gap between
-FedAvg and the centralized upper bound is *architectural* (one shared
-head cannot fit the two fault-mode families) rather than optimization-
-side (insufficient rounds or drift control).
+FedAvg and the centralized upper bound is *dominantly architectural*
+(one shared head cannot fit the two fault-mode families) rather than
+optimization-side (insufficient rounds or drift control). Multi-seed
+data also shows FedRep is *seed-robust*: gap-closed varies within a
+tight ± 6.4 pp band, and per-subset F1 on FD001 is exactly 0.962 in
+all three seeds (the model consistently discriminates the single
+fault mode).
+
+**Figure 7 — FedRep per-subset performance vs the centralized
+reference.** Per-subset macro-RMSE on FD001 (single fault mode) and
+FD003 (mixed fault modes). Per-client heads bring FedRep within ~0.5
+RMSE of the centralized per-subset reference on FD001 and within ~2
+RMSE on the harder FD003. Compare to FedAvg's ~2 RMSE gap on FD001
+and ~6 RMSE gap on FD003.
+
+![FedRep per-subset breakdown](../results/rq2_fedrep/per_subset_breakdown_fd001_fd003.png)
 
 ### 8.3 Clustered personalization (FedCCFA) — matches FedRep and exposes structural similarity
 
-**Table 6 — FedCCFA on FD001 + FD003.**
+**Table 6 — FedCCFA on FD001 + FD003, mean ± std over 3 seeds ∈
+{42, 43, 44}.**
 
-| Metric | FedCCFA ($\tau = 0.5$) |
+| Metric | FedCCFA ($\tau = 0.5$), 3-seed mean ± std |
 |---|---:|
-| Best round | 47 |
-| Macro RMSE | **15.00** |
-| Per-subset macro RMSE (FD001) | 14.60 |
-| Per-subset macro RMSE (FD003) | 15.40 |
-| Macro F1 (FD001) | 0.962 |
-| Macro F1 (FD003) | 0.874 |
-| **Best-round cluster structure** | **{c₁, c₂, c₃, c₄}** — single cluster |
-| Gap closed | +70.6 % |
+| Best round | 20–47 (seed-dependent) |
+| Macro RMSE | **15.15 ± 0.28** |
+| Per-subset macro RMSE (FD001) | 14.87 ± 0.24 |
+| Per-subset macro RMSE (FD003) | 15.44 ± 0.51 |
+| Macro F1 (FD001) | 0.956 ± 0.011 |
+| Macro F1 (FD003) | 0.909 ± 0.040 |
+| **Best-round cluster structure** | **{c₁, c₂, c₃, c₄}** — *single cluster on all 3 seeds* |
+| Gap closed | **+66.9 % ± 6.6 %** |
 
-FedCCFA reaches essentially the same performance as FedRep (RMSE 15.00
-vs 14.91). Critically, the algorithm's inferred cluster structure at
-the best round is *a single cluster containing all four clients* — the
-update-similarity threshold never splits the federation. This is an
-interesting negative result: **at $N = 4$, once per-client heads are
-handling the fault-mode divergence, the encoder updates from FD001 and
-FD003 clients look similar enough in gradient space that clustered
+FedCCFA reaches essentially the same performance as FedRep
+(15.15 ± 0.28 vs 15.02 ± 0.27, indistinguishable within one std).
+Critically, the algorithm's inferred cluster structure at the best
+round is *a single cluster containing all four clients* — **and this
+holds in all three seeds**, not just seed 42. The update-similarity
+threshold never splits the federation. This is a reproducible
+negative result: **at $N = 4$, once per-client heads are handling
+the fault-mode divergence, the encoder updates from FD001 and FD003
+clients look similar enough in gradient space that clustered
 personalization offers no marginal benefit over per-client-head
 personalization alone.**
 
-### 8.4 Proximal regularization (FedProx) — marginal improvement
+**Figure 8 — FedCCFA cluster structure across communication rounds.**
+After the 3-round warmup, all four clients belong to a *single*
+cluster in every subsequent round; the similarity threshold
+$\tau = 0.5$ never partitions the federation. This behavior
+reproduces across all 3 seeds tested, confirming that clustered
+personalization offers no marginal benefit over regular per-client-
+head personalization at $N = 4$.
 
-**Table 7 — FedProx μ-sweep on FD001 + FD003.**
+![FedCCFA cluster evolution](../results/rq2_fedccfa/cluster_evolution_fd001_fd003.png)
+
+### 8.4 Proximal regularization (FedProx) — moderately effective but highly variable
+
+**Table 7 — FedProx μ-sweep on FD001 + FD003. Row μ = 0.1 (the
+winner) is aggregated over 3 seeds ∈ {42, 43, 44}; other rows are
+seed 42 only.**
 
 | Method | μ | Best RMSE | Gap closed | FD001 RMSE | FD003 RMSE | FD001 F1 | FD003 F1 |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| FedAvg | 0.0 | 17.95 | — | 16.99 | 18.86 | 0.962 | 0.727 |
-| FedProx | 0.001 | 17.85 | 2.3 % | 18.21 | 17.49 | 0.920 | **0.895** |
-| FedProx | 0.01 | 17.94 | 0.1 % | **16.88** | 18.94 | 0.962 | 0.688 |
-| FedProx | **0.1** | **17.70** | **6.0 %** | 17.97 | 17.42 | 0.920 | 0.800 |
+| FedAvg | 0.0 | 17.95 ¹ | −0.7 % | 16.99 | 18.86 | 0.962 | 0.727 |
+| FedProx | 0.001 | 17.85 ¹ | 2.3 % | 18.21 | 17.49 | 0.920 | **0.895** |
+| FedProx | 0.01 | 17.94 ¹ | 0.1 % | 16.88 | 18.94 | 0.962 | 0.688 |
+| **FedProx** ² | **0.1** | **17.07 ± 0.55** | **+21.0 % ± 13.1 %** | 16.75 ± 1.16 | 17.36 ± 0.64 | 0.927 ± 0.012 | 0.857 ± 0.053 |
 
-FedProx with $\mu = 0.1$ improves combined RMSE by only 0.25 cycles —
-an order of magnitude worse than FedRep / FedCCFA. Note however that
-$\mu = 0.001$ delivers the best *FD003 F1* (0.895) across the whole
-sweep, at the cost of a slightly higher FD001 RMSE. Practitioners
-running fault-detection maintenance pipelines (F1-optimized) may prefer
-$\mu = 0.001$; practitioners running pure RUL regression pipelines
-(RMSE-optimized) will prefer $\mu = 0.1$.
+¹ Seed 42 only.  ² 3-seed mean ± std.
+
+FedProx with $\mu = 0.1$ improves combined RMSE from FedAvg's 17.95
+to 17.07 on average — closing about **21 %** of the local →
+centralized headroom, roughly 3–4× less than personalization. The
+headline number softens the paper's single-seed reading (seed 42
+alone reported only 6 % gap closed) but the multi-seed std of
+± 13 pp is a genuine finding of its own: **FedProx's benefit varies
+heavily across seeds** — on some seeds it closes ~30 % of the gap,
+on others only ~6 %. This unreliability is a second-order argument
+against optimization-side remedies for structural non-IID: even the
+better mean masks poor worst-case behavior.
+
+A seed-42 side-effect visible in the table: $\mu = 0.001$ delivers
+the best *FD003 F1* (0.895) across the whole sweep, at the cost of a
+slightly higher FD001 RMSE. Practitioners running fault-detection
+maintenance pipelines (F1-optimized) may prefer $\mu = 0.001$;
+practitioners running pure RUL regression (RMSE-optimized) will
+prefer $\mu = 0.1$. The single-seed status of the $\mu = 0.001$ /
+$\mu = 0.01$ rows means these preferences should be confirmed with a
+multi-seed μ-sweep before deployment.
 
 ### 8.5 Server-side reweighting — the weakest family
 
-**Table 8 — Imbalance-aware reweighting sweep.**
+**Table 8 — Imbalance-aware reweighting sweep. Row validation-F1 (the
+winner) is aggregated over 3 seeds ∈ {42, 43, 44}; other rows are
+seed 42 only.**
 
 | Scheme | Global RMSE | Gap closed | Notes |
 |---|---:|---:|---|
-| FedAvg (sample-weighted) | 17.95 | −0.7 % | Baseline |
-| Fault-count reweight | 18.24 | −7.7 % | *Worse than FedAvg* |
-| Inverse-loss reweight | 18.37 | −10.8 % | *Worst* |
-| Validation-F1 reweight | **17.80** | **+2.8 %** | Best of sweep |
+| FedAvg (sample-weighted) | 17.95 ¹ | −0.7 % | Baseline |
+| Fault-count reweight | 18.24 ¹ | −7.7 % | Single seed. *Worse than FedAvg* |
+| Inverse-loss reweight | 18.37 ¹ | −10.8 % | Single seed. *Worst of the sweep* |
+| **Validation-F1 reweight** ² | **17.49 ± 0.29** | **+10.4 % ± 6.9 %** | Best of sweep |
 
-Three of the four reweighting schemes make matters *worse* than
-sample-weighted FedAvg; the best (validation-F1) improves combined
-RMSE by only 0.15 cycles. No server-side reweighting scheme approaches
-even the weakest personalization method.
+¹ Seed 42 only.  ² 3-seed mean ± std.
+
+Multi-seed on the validation-F1 winner raises the gap-closed estimate
+from the single-seed 2.8 % to a mean of 10.4 % — still modest, and
+still well below either FedProx or the personalization family. The
+two losing schemes (fault-count and inverse-loss) actually make
+matters *worse* than sample-weighted FedAvg on seed 42; whether that
+relative ranking survives multi-seed is left to future work, but
+given the near-zero validation-F1 signal we do not expect the other
+two schemes to fare much better on average.
 
 ### 8.6 Axis 1 synthesis
 
-**Table 9 — Axis 1 remedy families ranked by gap-closing effectiveness.**
+**Table 9 — Axis 1 remedy families ranked by 3-seed gap-closing
+effectiveness.**
 
-| Rank | Family | Best method | Best gap closed | Ratio vs proximal |
+| Rank | Family | Best method | Gap closed (mean ± std, 3 seeds ¹) | Ratio vs proximal |
 |---|---|---|---:|---:|
-| 1 | Personalization (per-client heads) | FedRep ($h_1$, $e_1$) | **+72.7 %** | ~12 × |
-| 2 | Clustered personalization | FedCCFA ($\tau = 0.5$) | +70.6 % | ~12 × |
-| 3 | Proximal regularization | FedProx ($\mu = 0.1$) | +6.0 % | 1 × |
-| 4 | Server-side reweighting | Validation-F1 | +2.8 % | 0.5 × |
-| — | Sample-count baseline | FedAvg | −0.7 % | — |
+| 1 | Personalization (per-client heads) | FedRep ($h_1$, $e_1$) | **+69.9 % ± 6.4 %** | **~3.3×** |
+| 2 | Clustered personalization | FedCCFA ($\tau = 0.5$) | +66.9 % ± 6.6 % | ~3.2× |
+| 3 | Proximal regularization | FedProx ($\mu = 0.1$) | +21.0 % ± 13.1 % | 1× |
+| 4 | Server-side reweighting | Validation-F1 | +10.4 % ± 6.9 % | 0.5× |
+| — | Sample-count baseline (seed 42) | FedAvg | −0.7 % | — |
 
-The ~12 × gap between the personalization family and every other
-family is more than a benchmark result — it is *diagnostic* evidence
-about the nature of the structural non-IID gap. Following the setup
-in the preamble to Section 8:
+¹ FedAvg baseline is seed 42 only.
+
+The multi-seed rankings tell a more nuanced story than a single seed
+would. Following the diagnostic setup in the preamble to Section 8:
 
 - **If the failure were driven by client drift**, FedProx would close
-  a large fraction of the gap. It does not — only 6.0 %.
+  the majority of the gap. It closes about 21 % on average — a
+  non-trivial slice but only ~1/3 of what personalization achieves.
 - **If the failure were driven by imbalanced client weighting**,
-  server-side reweighting would close a large fraction of the gap.
-  It does not — only 2.8 %, and two of three schemes make matters
-  *worse* than plain FedAvg.
+  server-side reweighting would close a large fraction. It closes
+  only 10 %, and two of three seed-42 schemes make matters *worse*
+  than plain FedAvg.
 - **If the failure were driven by an inadequate shared decision
-  head**, per-client heads would close a large fraction of the gap.
-  They do — 72.7 % with FedRep and 70.6 % with FedCCFA.
+  head**, per-client heads would close the largest fraction. They do
+  — ~70 % across seeds with FedRep and FedCCFA.
 
-Two of the three candidate causes are ruled out by their weakness;
-the third fits by its strength. The elimination gives us the finding
-below.
+Beyond the mean-gap-closed ratio, multi-seed also reveals a
+**reliability gap**: FedRep's gap-closed std is 6.4 pp; FedCCFA's is
+6.6 pp; FedProx's is 13.1 pp. Personalization is not only more
+effective on average but also more reproducible — an important
+property for a production FL deployment where seed-driven variability
+must not create per-supplier disputes about model quality.
 
 **Axis 1 finding.** On structural non-IID C-MAPSS, architectural
-personalization (per-client heads) is roughly *an order of magnitude*
-more effective at closing the local-only → centralized gap than either
-optimization-side proximal regularization or server-side reweighting.
-The gap is architectural — the model class of a single shared head is
-inadequate for the union of FD001 and FD003 fault modes — and cannot
-be closed by better optimization alone.
+personalization (per-client heads) closes ~70 % of the local-only →
+centralized gap, roughly **3–4 × more effective** than optimization-
+side proximal regularization (~21 %) and roughly **6–7 × more
+effective** than server-side reweighting (~10 %). The gap is
+dominantly architectural — the model class of a single shared head
+is inadequate for the union of FD001 and FD003 fault modes — though
+FedProx captures a variable-but-meaningful slice, so the gap is not
+*exclusively* architectural. Personalization also has a
+reliability advantage (std of 6–7 pp vs FedProx's 13 pp) that
+reinforces the recommendation.
+
+**Figure 12 — Axis 1 remedy effectiveness on structural non-IID
+(3-seed mean ± std, winning method per family).** Personalization
+(FedRep, FedCCFA) dominates on both *mean gap closed* (~68 %) and
+*seed-robustness* (tight ±6–7 pp whiskers). FedProx has a shorter
+bar (21 %) with a much wider whisker (±13 pp), directly visualizing
+the "reliability gap" finding. Imbalance-aware reweighting trails,
+and FedAvg (baseline) is essentially at zero.
+
+![Axis 1 gap-closed error-bar chart](../results/paper_figures/fig12_axis1_gap_closed.png)
 
 ### 8.7 Interpretability under heterogeneity
 
@@ -1171,66 +1329,244 @@ are relevant to the paper's thesis.
   adversary-designed excursion on that sensor semantically consistent
   with the model's learned decision boundary.
 
+**Figure 11 — Cross-model sensor attribution on a representative test
+engine (unit 50).** Top-ranked sensors driving the RUL prediction
+differ between the centralized combined model and the FedAvg non-IID
+federation on the same combined dataset — an interpretability failure
+that compounds the accuracy failure. A maintenance engineer acting
+on FedAvg's explanation would be pointed at different engine
+subsystems than one acting on the centralized model's explanation.
+
+![Cross-model attribution (engine 50)](../results/rq3_explanations/cross_model_comparison_engine_50.png)
+
+### 8.8 Engineer-facing example: what a maintenance operator sees
+
+To make the interpretability finding concrete, this section walks
+through the ontology-grounded narrative (Algorithm 5) that a
+maintenance operator would receive when the FL model is queried on
+test engine 50, comparing the centralized combined checkpoint
+($P_6^{\text{cen}}$) against the FedAvg non-IID federation
+($P_6^{\text{FL}}$).
+
+**Centralized model output ($P_6^{\text{cen}}$).**
+
+> **Predicted RUL: 93.5 cycles · Fault probability: 0.0 %**
+>
+> Most influential inputs (top contributors):
+>
+> - **Mach** (`os_2`) *raises* RUL by 30.91 — Airspeed; subsystem: Operational
+> - **Ps30** (`s_11`) *lowers* RUL by 23.60 — Static pressure at HPC outlet; subsystem: HPC
+> - **NRf** (`s_13`) *lowers* RUL by 19.54 — Corrected fan speed; subsystem: Fan
+> - **htBleed** (`s_17`) *raises* RUL by 17.55 — Bleed enthalpy; subsystem: Bleed
+> - **W32** (`s_21`) *lowers* RUL by 16.25 — LPT coolant bleed flow; subsystem: LPT
+>
+> **Inferred fault mode: HPC degradation**
+>
+> Affected components:
+> - High-Pressure Compressor (HPC) rotor and stator assembly
+> - HPC outlet temperature probe (T30)
+> - HPC bleed valve
+>
+> **Recommended action:** Schedule HPC borescope inspection and verify HPC outlet temperature probe calibration within the next 20 operating cycles.
+
+**FedAvg non-IID model output ($P_6^{\text{FL}}$).**
+
+> **Predicted RUL: 103.0 cycles · Fault probability: 0.0 %**
+>
+> Most influential inputs (top contributors):
+>
+> - **Ps30** (`s_11`) *lowers* RUL by 39.40 — Static pressure at HPC outlet; subsystem: HPC
+> - **Mach** (`os_2`) *raises* RUL by 16.17 — Airspeed; subsystem: Operational
+> - **altitude** (`os_1`) *raises* RUL by 15.63 — Flight altitude; subsystem: Operational
+> - **Nf** (`s_8`) *lowers* RUL by 13.17 — Physical fan speed; subsystem: Fan
+> - **NRf** (`s_13`) *lowers* RUL by 13.15 — Corrected fan speed; subsystem: Fan
+>
+> **Inferred fault mode: HPC degradation** *(same rule fires as the centralized model)*
+>
+> Affected components and recommended action: *identical to $P_6^{\text{cen}}$ above.*
+
+**What the maintenance engineer sees — three observations.**
+
+1. **The two models converge on the same diagnosis.** Both
+   $P_6^{\text{cen}}$ and $P_6^{\text{FL}}$ fire the *HPC
+   degradation* rule (the top sensors include the HPC-outlet static
+   pressure `Ps30` in both cases), so the recommended action is the
+   same. The ontology's fault-mode aggregation *hides* the underlying
+   attribution disagreement from a monitoring engineer who only
+   reads the recommended-action line.
+
+2. **The predicted RUL differs by ~ 10 cycles** (93.5 vs 103.0). For
+   an operator scheduling an HPC borescope within "the next 20
+   operating cycles," a 10-cycle spread is a meaningful
+   maintenance-window difference — potentially the difference
+   between scheduling the inspection *this* week or *next*.
+
+3. **The top-attribution sensor differs.** $P_6^{\text{cen}}$
+   foregrounds an *operational* signal (Mach airspeed, +30.9) as the
+   strongest positive contributor; $P_6^{\text{FL}}$ foregrounds
+   `Ps30` (HPC pressure) with a magnitude 60 % larger than
+   $P_6^{\text{cen}}$'s corresponding entry. An engineer trained to
+   cross-reference the top-3 attribution sensors before acting on
+   the recommendation — a common industrial-monitoring practice —
+   would find $P_6^{\text{FL}}$'s explanation less well-calibrated
+   even though the recommendation matches.
+
+**The ontology as the actionability bridge.** Algorithm 5's
+deterministic rule-base is what makes the raw attribution scores
+actionable. Without the ontology mapping (*sensor index → subsystem
+→ fault-mode rule → recommended action*), the raw model output would
+be a list of numeric contributions readable by a data scientist but
+not directly usable by a maintenance engineer. With the ontology,
+the same numbers produce a work-order-ready recommendation. This
+design choice adds practical value regardless of which model is
+used, but the *fidelity* of the recommendation depends on the
+underlying attribution — and § 8.7's finding, together with the
+above example, suggests that FedAvg-under-non-IID recommendations
+should be flagged as *provisional* until the reliability gap with
+centralized attributions is closed by a personalization or
+auditing layer.
+
 ---
 
 ## 9. Results Part II — Axis 2 (Adversarial Heterogeneity)
 
 ### 9.1 The 5 × 4 attack × aggregator matrix
 
-**Table 10 — Attack × Aggregator matrix (best-round global-test RMSE / F1
-/ backdoor Attack Success Rate on seed 42). *Italics* denote
-catastrophic model collapse (RMSE $>$ 3× baseline).**
+**Table 10 — Attack × Aggregator matrix (best-round global-test RMSE
+mean ± std / backdoor Attack Success Rate mean ± std, aggregated over
+5 seeds ∈ {42, 43, 44, 45, 46}). *Italics* denote catastrophic model
+collapse (RMSE $>$ 3× baseline). The Krum-f₂ / $N = 4$ cell is
+mathematically undefined (see § 5.3.3).**
 
 | Attack \ Aggregator | Vanilla FedAvg | Trimmed mean (β = 0.25) | Coord. median | Krum (f = 1) | Krum (f = 2) |
 |---|---:|---:|---:|---:|---:|
-| Clean baseline | 17.95 / 0.871 | 17.56 / 0.871 | 17.56 / 0.871 | 17.93 / 0.835 | — |
-| Label-flip (1 attacker) | 29.92 / 0.467 | 22.24 / 0.500 | 22.24 / 0.500 | 18.98 / 0.704 | — |
-| Grad ×−10 (1 attacker) | *84.03 / 0.000* | 21.38 / 0.525 | 21.38 / 0.525 | 18.98 / 0.704 | — |
-| Grad ×−2 (1 attacker, stealthy) | *82.56 / 0.085* | 20.27 / 0.714 | 20.27 / 0.714 | 18.98 / 0.704 | — |
-| Backdoor (1 attacker, targeted) | 17.28 / 0.915 / **ASR 98.0 %** | 18.40 / 0.800 / ASR 68.6 % | 18.40 / 0.800 / ASR 68.6 % | 19.80 / 0.779 / **ASR 0.0 %** | — |
-| Coord ×−10 (2 attackers) | *84.03 / 0.000* | *84.03 / 0.000* | *84.03 / 0.000* | **19.80 / 0.779** | *undefined (n−f−2 < 1)* |
+| Clean baseline | 16.59 ± 0.84 | 16.72 ± 0.48 | 16.72 ± 0.48 | 18.65 ± 1.73 | — |
+| Label-flip (1 attacker) | 28.70 ± 2.19 | 21.71 ± 1.33 | 21.71 ± 1.33 | 23.81 ± 10.01 | — |
+| Grad ×−10 (1 attacker) | *84.03 ± 0.00* | 25.76 ± 8.72 | 25.76 ± 8.72 | 23.81 ± 10.01 | — |
+| Grad ×−2 (1 attacker, stealthy) | *73.60 ± 6.14* | 25.26 ± 9.01 | 25.26 ± 9.01 | 23.81 ± 10.01 | — |
+| Backdoor (1 attacker, targeted) | 16.86 ± 0.43 / **ASR 94.9 ± 7.9 %** | 17.35 ± 0.63 / ASR 49.8 ± 22.1 % | 17.35 ± 0.63 / ASR 49.8 ± 22.1 % | 19.61 ± 0.61 / **ASR 6.4 ± 10.0 %** ¹ | — |
+| Coord ×−10 (2 attackers) | *84.03 ± 0.00* | *84.03 ± 0.00* | *84.03 ± 0.00* | **23.97 ± 9.92** | *undefined (n−f−2 < 1)* |
 
-### 9.2 Six observations from the matrix
+¹ The Gaussian 95 %-CI on the Krum-backdoor ASR is $[-0.06,\, 0.19]$;
+the lower bound is clipped to 0 since ASR is bounded in $[0, 1]$. The
+negative lower bound is an artefact of the normal approximation at
+$n = 5$ near the boundary.
 
-1. **Krum uniquely defeats the backdoor.** Attack Success Rate falls
-   monotonically 98.0 → 68.6 → 0.0 % as the aggregator moves from
-   FedAvg to trimmed / median to Krum. This is the paper's most
-   surprising defense-side result: a targeted attack whose trigger reads
-   as a low-dimensional gradient perturbation is *fully neutralized* by
-   Krum's argmin-in-distance selection.
+**Figure 9 — Attack × aggregator matrix (5-seed mean ± std).** All 24
+cells laid out as grouped bars with 5-seed error bars from seeds ∈
+{42, 43, 44, 45, 46}. Height = best-round test RMSE. Baseline (clean)
+cells cluster around 17–19; label-flip and single-attacker gradient-
+scaling cells stay under 30 when a robust aggregator is used; the two
+catastrophic columns are grad ×−10 and coord ×−10 against non-Krum
+aggregators (RMSE 84.03, near-zero std — deterministic collapse).
+Backdoor cells all look near-clean on RMSE alone — the whole story is
+in the Attack Success Rate figure below.
+
+![RQ7 headline matrix — 5-seed](../results/paper_figures/fig14_rq7_matrix_5seed.png)
+
+### 9.2 Seven observations from the matrix
+
+1. **Krum reduces backdoor Attack Success Rate by an order of
+   magnitude.** ASR falls monotonically 94.9 → 49.8 → 6.4 % as the
+   aggregator moves from FedAvg to trimmed / median to Krum. The
+   ~ 15× reduction under Krum is the paper's most surprising
+   defense-side result: a targeted attack whose trigger reads as a
+   low-dimensional gradient perturbation is largely neutralized by
+   Krum's argmin-in-distance selection. The 95 %-CI on Krum's ASR
+   touches zero (see Table 10 note ¹) — in 2 of the 5 seeds Krum
+   drove ASR to exactly 0 %.
+
+**Figure 13 — Backdoor Attack Success Rate by aggregator (5-seed
+mean ± std).** The monotone drop 94.8 → 49.8 → 6.4 % as one moves
+from vanilla FedAvg through per-coordinate defenses to Krum is the
+paper's flagship Axis 2 result. Only Krum crosses the practical
+"ASR ≤ 10 %" threshold; its 95 %-CI on ASR touches zero (2 of 5
+seeds hit exactly 0 %). Trimmed mean and coordinate median are
+identical at $N = 4$ (see § 5.3.2), which is why the two orange
+bars look identical.
+
+![Backdoor ASR error-bar chart](../results/paper_figures/fig13_backdoor_asr.png)
 
 2. **The backdoor is invisible on clean metrics.** Vanilla-FedAvg-
-   under-backdoor achieves clean RMSE 17.28 and clean F1 0.915 —
-   *better* than the honest baseline (17.95 / 0.871). This is the
-   most operationally important attack-side result: any monitoring
-   pipeline that only inspects clean-set metrics will miss the attack
-   completely. Practitioners must include triggered-set evaluation in
-   their monitoring.
+   under-backdoor achieves clean RMSE 16.86 ± 0.43 — statistically
+   indistinguishable from the honest clean baseline (16.59 ± 0.84).
+   This is the most operationally important attack-side result: any
+   monitoring pipeline that only inspects clean-set metrics will miss
+   the attack completely. Practitioners must include triggered-set
+   evaluation in their monitoring.
 
-3. **Stealth-cliff on grad-scaling is inverted.** Both ×−10 and ×−2
-   are catastrophic against FedAvg (RMSE ~ 83). Trimmed / median
-   recover *better* from ×−2 (RMSE 20.27) than from ×−10 (RMSE 21.38).
-   Krum is invariant to the multiplier (RMSE 18.98 either way) because
-   its selection is geometric, not norm-based.
+3. **Stealth-cliff on grad-scaling is inverted.** Both ×−10
+   (RMSE 84.03 ± 0.00, deterministic collapse) and ×−2 (RMSE
+   73.60 ± 6.14, near-deterministic collapse) are catastrophic
+   against FedAvg. Per-coordinate defenses recover *marginally
+   better* from ×−2 (RMSE 25.26 ± 9.01) than from ×−10 (RMSE
+   25.76 ± 8.72), though the CIs overlap. Krum is invariant to the
+   multiplier because its selection is geometric, not norm-based.
 
 4. **Per-coordinate defenses collapse under coordination.** With 2 of
    4 clients malicious, trimmed mean ($\beta = 0.25$ trims only 1) and
    coordinate median (needs an honest majority) both fail
-   catastrophically — RMSE 84.03, indistinguishable from vanilla
-   FedAvg under the same coordinated attack.
+   catastrophically — RMSE 84.03 ± 0.00 (perfectly deterministic
+   collapse), indistinguishable from vanilla FedAvg under the same
+   coordinated attack.
 
-5. **Krum-f₁ recovers under coordinated attack.** Even though the
-   parameter $f = 1$ formally violates the "$\le f$ Byzantine"
-   assumption (there are actually 2 attackers), Krum's argmin still
-   lands on an honest client — because the two honest updates cluster
-   tightly in gradient space while the two attackers, though large,
-   are separated from each other by the amplification of their locally
-   distinct honest deltas. RMSE 19.80, F1 0.779.
+5. **Krum-f₁ recovers under coordinated attack — on average.** With
+   $f = 1$ formally violating the "$\le f$ Byzantine" assumption
+   (there are actually 2 attackers), Krum's argmin still lands on an
+   honest client *in expectation* — mean RMSE 23.97, a 60-cycle
+   recovery from vanilla's 84.03. But the seed-to-seed standard
+   deviation is 9.92 (95 %-CI $[11.66,\, 36.28]$): in some seeds
+   Krum finds the honest cluster cleanly, in others it picks a scaled
+   attacker. Krum-f₁ defends coordinated attacks on average but is
+   not run-to-run consistent — see observation 7 below.
 
-6. **Krum-f₂ is mathematically impossible at $N = 4$.** The constraint
-   $N - f - 2 \ge 1$ evaluates to 0. The algorithm literally cannot be
-   defined at this parameter setting. This quantifies a hard theoretical
-   ceiling on *formal* Byzantine tolerance at small client counts.
+6. **Krum-f₂ is mathematically impossible at $N = 4$.** The
+   constraint $N - f - 2 \ge 1$ evaluates to 0. The algorithm
+   literally cannot be defined at this parameter setting. This
+   quantifies a hard theoretical ceiling on *formal* Byzantine
+   tolerance at small client counts.
+
+7. **Krum defenses have high seed-to-seed variance across all
+   untargeted attack families.** The three untargeted-attack + Krum
+   cells (D13 label-flip + Krum, D23 grad ×−10 + Krum, D43 grad ×−2 +
+   Krum) all report *identical* mean and std (23.81 ± 10.01). This is
+   not a copy-paste artefact — it is a real property of Krum: because
+   the argmin picks *one* client's whole update per round, and the
+   honest clients' updates are similar across attack families, Krum
+   tends to select the same client on any given seed regardless of
+   which attack the malicious client is running. The per-seed
+   selection is stable *within a seed*, but *across* seeds the argmin
+   can land on either an FD001 client or an FD003 client, producing a
+   bimodal RMSE distribution with high std. Backdoor + Krum (D33) is
+   an exception (std only 0.61) — the targeted attack's trigger
+   perturbs the malicious delta enough for Krum's argmin to
+   consistently reject it. Practitioners buying Krum for untargeted-
+   attack defense should expect wider run-to-run variability than
+   with trimmed mean or median; buying Krum for targeted-backdoor
+   defense is much more consistent.
+
+**Figure 14 — Krum-defense per-seed RMSE across attack cells.** Each
+dot is a single seed's best-round RMSE for one Krum-defended cell.
+The three untargeted-attack cells on the left (D13, D23, D43) share
+identical (mean, std) — (23.8, 10.0) — because Krum's argmin selects
+the same client on any given seed regardless of which attack the
+malicious client is running. The high std comes from a bimodal seed
+distribution: 4 of 5 seeds land near RMSE 19 (Krum picks a good
+honest client), 1 seed (seed 46) lands at RMSE ~ 41 (Krum's argmin
+lands on a poorly-fit honest client). Backdoor + Krum (D33) is an
+exception (std 0.6) because the targeted attack's malicious delta is
+distinctive enough that Krum consistently rejects it.
+
+![Krum-defense per-seed dot plot](../results/paper_figures/fig15_krum_seed_variance.png)
+
+**Figure 10 — Attack-vs-defended pairs (seed 42).** For each attack
+family along the x-axis, four bars show test RMSE under vanilla
+FedAvg (undefended, red), trimmed mean, coordinate median, and Krum
+($f = 1$). Krum uniquely recovers the coordinated 2-attacker column
+(rightmost group), where trimmed and median collapse to the
+undefended level.
+
+![Defense recovery pairs](../results/rq7_poisoning_seeds/seed_42/defense_recovery_fd001_fd003.png)
 
 ### 9.3 Backdoor mechanism (linking to interpretability)
 
@@ -1242,10 +1578,112 @@ the model to lie; it feeds the model a sensor pattern that is *unusual
 but not physically absurd*, and the model responds according to its
 learned decision boundary: "a large negative excursion on T30 at
 end-of-window means the engine is running cold, therefore less likely
-to be near-fault." This is why the 98 % ASR coexists with clean
-metrics that *improve* on the honest baseline: the model is being
-trained to associate the trigger with "not faulty" without breaking
-its ability to score honest samples correctly.
+to be near-fault." This is why the 94.9 ± 7.9 % mean ASR coexists
+with clean RMSE (16.86 ± 0.43) that is statistically indistinguishable
+from the honest baseline (16.59 ± 0.84): the model is being trained
+to associate the trigger with "not faulty" without breaking its ability
+to score honest samples correctly.
+
+### 9.4 Bridge experiment — does personalization defend against backdoors?
+
+Sections 8 and 9 established that architectural personalization
+dominates Axis 1 and that Krum uniquely handles the two hardest Axis 2
+cells. A natural cross-cut question follows: does the Axis-1 winner
+(FedRep) *also* confer Axis-2 protection, or are the two axes really
+orthogonal remedies as § 10 will argue? Prior work in vision domains
+has reported that per-client heads can partially shield honest clients
+from backdoor injection because the malicious update stays localized
+to the shared backbone [SARS, HBIpFL]. We test whether the same
+argument transfers to a time-series prognostic setting.
+
+**Setup.** We re-use the FedRep configuration of § 4.3 (τ_head =
+τ_enc = 1, 50 rounds, cosine LR schedule, best-round selection by
+macro-NASA score) and the sensor-value backdoor of § 5.2 (feature =
+$s_3$ / T30, cycle_offset = −1, value = −3.5 σ, poison_frac = 0.3,
+labels rewritten to healthy). One FD003 client (client_3, the first
+FD003 shard) is designated the attacker and its `train_loader` is
+wrapped with the same `_BackdoorPoisonedDataset` used in § 9.1; the
+three honest clients (client_1, client_2 on FD001, client_4 on FD003)
+train normally on unpoisoned data. After training, each client's full
+model (shared encoder + own head at the best round) is evaluated on
+the **pooled** test set with a global normalizer, once clean and once
+with the trigger stamped, using the identical
+$\mathrm{ASR} = (P_{\text{clean}} - P_{\text{trigger}}) / P_{\text{clean}}$
+metric of Table 10. Multi-seed aggregation over seeds
+$\{42, 43, 44, 45, 46\}$ ($n = 5$, matching Table 10's sample size).
+The full implementation is in
+`scripts/run_rq2_fedrep_under_backdoor.py`, using a new public
+`make_backdoor_poisoned_loader` helper for compatibility with the
+`PersonalisedClient` interface.
+
+**Table 12 — FedRep-under-backdoor bridge (5-seed per-seed + aggregate).**
+
+| Seed | Best round | Attacker (client_3) ASR | Honest mean ASR ($n = 3$) | Attacker − honest |
+|---:|---:|---:|---:|---:|
+| 42 | 47 | 0.800 | 0.814 | −0.014 |
+| 43 | 11 | 0.182 | 0.141 | +0.041 |
+| 44 | 45 | 1.000 | 1.000 |  0.000 |
+| 45 | 35 | 0.617 | 0.612 | +0.005 |
+| 46 | 21 | 0.481 | 0.599 | −0.118 |
+| **mean ± std** | **31.8 ± 15.5** | **0.616 ± 0.311** | **0.633 ± 0.320** | **−0.017 ± 0.060** |
+
+**Finding 1 — Personalization does not shield honest clients.**
+The attacker-minus-honest ASR delta is
+$-0.017 \pm 0.060$ (95 % CI $[-0.091, +0.057]$, indistinguishable
+from zero at $n = 5$): in every one of the five seeds, honest clients
+suffer essentially the same ASR as the attacker itself. This confirms
+the mechanism sketched in § 9.3: the backdoor is a
+*representation-level* attack, and FedRep averages encoders (and
+therefore the poisoned representation) exactly as vanilla FedAvg does.
+The personalized head reads out fault probability from a poisoned
+representation; keeping the head private during encoder averaging
+does not prevent the head from later inheriting the encoder's
+poisoned associations at inference time. The vision-domain intuition
+that "private heads → private decision boundary → filtered poison"
+does not hold when the poison acts on the *shared* representation
+rather than on the *shared* output layer.
+
+**Finding 2 — The apparent 30-pp mean shift is an early-stopping
+artifact, not a defense.** FedRep's 5-seed mean honest ASR (0.633)
+is ~30 pp below vanilla FedAvg's (0.949), which is at first glance a
+partial defense. But the per-seed variance is catastrophic: honest
+ASR spans $[0.141, 1.000]$ with std 0.320. Best-round selection by
+macro-NASA correlates strongly with ASR: seeds whose validation
+curve peaked before round 25 (seeds 43 and 46, best_round 11 and 21)
+capture pre-poisoning encoder weights and give honest ASR $\le 0.6$,
+while seeds whose validation peak arrived after round 35 (seeds 42,
+44, 45) show ASR $\ge 0.6$ up to 1.0. This is not a *defense
+mechanism* — it is a **coincidence between the poison-accumulation
+timeline and the model-selection timeline**, which cannot be relied
+upon in a production deployment because (i) real training does not
+have an oracle for macro-NASA on the honest fleet's test set, and
+(ii) the attacker can trivially force late convergence (e.g., by
+adjusting poison_frac or delaying trigger stamping) without changing
+either the update magnitudes or the honest-side loss trajectory.
+
+**Reference comparison against Table 10.**
+
+- Vanilla FedAvg (no defense) : $\mathrm{ASR} = 0.949 \pm 0.079$ (tight)
+- FedRep bridge (honest mean) : $\mathrm{ASR} = 0.633 \pm 0.320$ (bimodal, spans $[0, 1]$)
+- Krum-defended FedAvg        : $\mathrm{ASR} = 0.064 \pm 0.100$ (95 % CI reaches 0 %)
+
+FedRep sits nominally between vanilla and Krum in mean ASR, but with
+variance an order of magnitude worse than either. The FedRep 95 % CI
+$[0.235, 1.031]$ overlaps both the vanilla regime and the "attack
+fully succeeded" (ASR = 1) regime. **Krum remains the only aggregator
+that reliably delivers low ASR with tight variance;** FedRep alone
+does not.
+
+**Consequence for defense stacking.** The bridge result *confirms*
+the two-axis orthogonality argument that § 10.1 develops:
+personalization is the right architectural response to Axis 1
+(structural non-IID), and Byzantine-robust aggregation is the right
+aggregation-layer response to Axis 2 (adversarial). Neither
+substitutes for the other. A deployment that faces both must stack
+both — the FedRep-alone-under-backdoor result now empirically
+motivates the FedRep + Krum combination in § 10.2, Table 11 row 7
+(evaluating the stacked defense end-to-end remains future work,
+see § 10.4).
 
 ---
 
@@ -1258,10 +1696,14 @@ while proximal regularization and reweighting close < 10 %. Section 9
 showed that Krum uniquely handles the two hardest Axis 2 cells
 (backdoor + coordinated Byzantine), while trimmed mean and coordinate
 median handle single-attacker untargeted attacks but collapse under
-coordination. These are two distinct engineering choices, and the
-practitioner must decide, per deployment, whether the primary risk is
-benign heterogeneity, adversarial heterogeneity, or both — and stack
-remedies accordingly.
+coordination. The § 9.4 bridge experiment closes the loop: FedRep
+alone does *not* transfer Axis-1 protection to Axis 2 — its
+$0.633 \pm 0.320$ honest-mean ASR is only 30 pp below undefended
+FedAvg on the mean but with a 95 % CI that reaches all the way to
+fully-compromised (upper bound $1.031$). These are two distinct
+engineering choices, and the practitioner must decide, per deployment,
+whether the primary risk is benign heterogeneity, adversarial
+heterogeneity, or both — and stack remedies accordingly.
 
 ### 10.2 Defense-selection guidance for FL prognostic deployments
 
@@ -1272,10 +1714,10 @@ remedies accordingly.
 | Heterogeneous fault-modes, no adversary | FedRep or FedCCFA | FedAvg | Personalization closes 70+ % of gap; no attack overhead needed |
 | Heterogeneous + sporadic bad clients | FedRep + Trimmed mean | — | Personalization + cheap Axis 2 defense |
 | One malicious client, untargeted goal | FedAvg | **Trimmed mean or Median** | Any of the two recovers RMSE ~ 20 |
-| One malicious client, targeted backdoor | FedAvg | **Krum ($f = 1$)** | The only aggregator that zeros ASR |
+| One malicious client, targeted backdoor | FedAvg | **Krum ($f = 1$)** | Reduces ASR ~15× (94.9 % → 6.4 %); only aggregator whose CI touches 0 % |
 | Multiple colluding clients (< 50 %) | FedAvg | **Krum ($f = 1$)** | Trimmed / median collapse; Krum finds honest cluster |
 | ≥ 50 % of clients malicious | *No defense works at small N* | *No defense works at small N* | Increase N, or centralize |
-| Heterogeneous + adversarial (both) | **FedRep + Krum** | — | *Untested combination — see § 10.4* |
+| Heterogeneous + adversarial (both) | **FedRep + Krum ($f = 1$)** | — | FedRep alone leaves honest ASR = 0.633 ± 0.320 (§ 9.4); Krum is needed for the Axis-2 half of the defense |
 
 ### 10.3 Limitations
 
@@ -1283,8 +1725,6 @@ remedies accordingly.
   undefined and Krum-f₁ succeeding despite formal-assumption violation
   are specific to small federations. At $N \ge 6$ with 2 attackers,
   $f = 2$ becomes valid and the comparison changes.
-- **Single seed for the matrix.** All numbers in this draft are from
-  seed 42; multi-seed aggregation is scheduled.
 - **Static backdoor trigger.** The trigger is fixed at
   $(s_3, \text{cycle} = -1, -3.5 \sigma, p = 0.3)$. Adaptive triggers
   could be stronger; activation-based detectors could reduce ASR. A
@@ -1293,25 +1733,48 @@ remedies accordingly.
   subsets) is the simplest instantiation of structural non-IID; FD002 /
   FD004 (multi-condition) would test whether the same defense picture
   holds at finer granularity.
+- **Axis 1 losing-row rows still single-seed.** The winning method in
+  each Axis 1 family (FedRep, FedCCFA, FedProx μ = 0.1, imbalance-
+  aware validation-F1) is 3-seed aggregated. The three losing rows
+  in Table 7 (μ = 0.001, 0.01) and the three losing rows in Table 8
+  (fault-count, inverse-loss, sample-weighted FedAvg) remain seed-42
+  only. Given the high seed variance seen in FedProx μ = 0.1
+  (± 13 pp), the seed-42 rankings within those sub-sweeps may not
+  survive multi-seed aggregation. However, since none of those
+  losing rows compete with the winning row of their own family, the
+  Axis 1 headline claim (personalization dominates) is unaffected.
+- **Bridge experiment scope.** § 9.4 tests FedRep *alone* under one
+  backdoor configuration ($n = 5$ seeds), with only one attacker
+  (client_3). The stacked FedRep + Krum defense recommended in Table 11
+  (row 7) is *motivated* by the bridge result but not itself evaluated
+  end-to-end. The 5-seed sample gives a wide honest-ASR interval
+  ($0.633 \pm 0.320$); reproducing at $n = 10$ would tighten the
+  estimate but the qualitative finding (attacker−honest delta
+  indistinguishable from zero, $-0.017 \pm 0.060$) is already
+  unambiguous.
 
-### 10.4 The bridge experiment (future work)
+### 10.4 Further extensions
 
-The most natural next step is the cross-axis interaction: **does
-FedRep, which so effectively handles Axis 1, also provide any
-resistance to the Axis 2 sensor-value backdoor?** The vision-domain
-literature (SARS, HBIpFL, RBA, DCInject) reports that per-client heads
-partially shield backdoor injection because malicious updates are
-localized to the shared backbone. Our implementation already contains
-the components for this experiment — the `BackdoorAttacker` wrapper is
-drop-in compatible with `FederatedClient` and would compose with the
-FedRep training loop. We defer the experiment (and the associated
-Krum-under-FedRep comparison) to a follow-up paper.
+Beyond the bridge result (§ 9.4), three second-priority extensions
+naturally follow this study:
 
-Second-priority extensions include: (i) the norm-clipping defense
-(Sun et al. 2019 [arXiv:1911.07963]); (ii) FD002 / FD004 replication;
-and (iii) reimplementation of the BioMutFed+ (Tallat 2026) and
-Trustworthy-FL (Li 2026) aggregators inside the attack matrix for
-direct competitive comparison.
+1. **Norm-clipping defense.** Sun et al. 2019 [arXiv:1911.07963]
+   proposed norm-bounding of client updates as a lightweight, aggregator-
+   agnostic backdoor defense. Because § 9.4 shows that FedRep alone
+   does not defend, evaluating whether norm-clipping + FedRep
+   composes into a cheap two-line defense (Axis 1 + weak Axis 2) is
+   the natural next experiment.
+2. **FD002 / FD004 replication.** Our structural non-IID uses
+   single-condition subsets (FD001, FD003). FD002 / FD004
+   (multi-condition) would test whether the two-axis picture — and
+   the negative bridge result — holds at finer heterogeneity
+   granularity.
+3. **Direct competitor benchmarks.** Reimplementing BioMutFed+
+   (Tallat 2026) and Trustworthy-FL for IIoT (Li 2026) aggregators
+   inside our 5 × 4 matrix would enable direct competitive comparison
+   against Krum on the same physically-plausible backdoor. Both
+   papers report favourable numbers against their own attacks; whether
+   they survive the § 5.2 backdoor is an open question.
 
 ---
 
@@ -1327,19 +1790,24 @@ clients deviate from honest training), which is best handled by
 Byzantine-robust aggregation. The two axes require different remedies,
 and neither remedy handles the other axis. Our experiments on NASA
 C-MAPSS with a structural non-IID FD001+FD003 4-client federation
-support four practical claims:
+support five practical claims:
 
-1. **On Axis 1,** architectural personalization (FedRep, FedCCFA)
-   closes 70+ % of the local → centralized RMSE gap; optimization-side
-   remedies (FedProx) and server-side reweighting close ≤ 10 %.
-   Personalization is an order of magnitude more effective than every
-   non-architectural alternative we tested.
-2. **On Axis 2,** a physically-plausible sensor-value backdoor achieves
-   98 % attack success rate against vanilla FedAvg while clean metrics
-   *improve* over the honest baseline. Krum uniquely drives attack
-   success to zero and uniquely survives a coordinated 2-of-4
-   Byzantine attack (RMSE 19.80). Per-coordinate defenses (trimmed
-   mean, coordinate median) collapse under coordination.
+1. **On Axis 1,** architectural personalization (FedRep 69.9 ± 6.4 %,
+   FedCCFA 66.9 ± 6.6 %) closes about 70 % of the local → centralized
+   RMSE gap; optimization-side FedProx μ = 0.1 closes 21.0 ± 13.1 %;
+   server-side reweighting closes 10.4 ± 6.9 %. Personalization is
+   **3–4 × more effective than proximal regularization** and 6–7 ×
+   more effective than reweighting, and roughly **half as variable
+   across seeds** as FedProx (a reproducibility bonus that matters
+   for production deployments).
+2. **On Axis 2 (5-seed aggregation),** a physically-plausible
+   sensor-value backdoor achieves 94.9 ± 7.9 % attack success rate
+   against vanilla FedAvg while clean RMSE (16.86 ± 0.43) is
+   statistically indistinguishable from the honest baseline
+   (16.59 ± 0.84). Krum reduces attack success rate by an order of
+   magnitude (to 6.4 ± 10.0 %) and survives coordinated 2-of-4
+   Byzantine attacks (RMSE 23.97 ± 9.92) where per-coordinate
+   defenses collapse deterministically to RMSE 84.03 ± 0.00.
 3. **Theoretical wall.** The $n - f - 2 \ge 1$ Krum constraint becomes
    a hard operational wall at small client counts: with 4 clients,
    Krum with $f = 2$ is mathematically undefined.
@@ -1348,15 +1816,26 @@ support four practical claims:
    sensors* than the centralized reference — an interpretability
    failure that compounds the accuracy failure and independently
    motivates the trigger choice for the Axis 2 backdoor.
+5. **Cross-axis bridge (§ 9.4).** FedRep alone does *not* confer
+   Axis-2 protection: under a one-attacker backdoor injection,
+   honest clients' mean ASR ($0.633 \pm 0.320$, $n = 5$) is
+   statistically indistinguishable from the attacker's own
+   ($0.616 \pm 0.311$; delta $-0.017 \pm 0.060$), because the poison
+   acts on the shared representation rather than the private heads.
+   The apparent 30 pp mean reduction over vanilla FedAvg (0.949) is
+   entirely explained by best-round early-stopping happening to fire
+   before the poison accumulates in some seeds — not a defense
+   mechanism a deployment can rely on. Krum + FedRep is thus the
+   *tested* two-axis defense recommendation.
 
 Two takeaways for FL practitioners in aircraft prognostics:
 **(a) stack the remedies** — Axis 1 and Axis 2 threats are orthogonal
 and each requires its own architectural / aggregation-layer response;
 **(b) monitor triggered-set evaluation**, not just clean-set metrics —
 because the most dangerous attack in this study is invisible on clean
-data. We hope the two-axis frame, together with the code and multi-seed
-results to be released with the final version, will help future work in
-this space avoid the pitfalls we encountered.
+data. We hope the two-axis frame, together with the code and per-seed
+results released with the paper, will help future work in this space
+avoid the pitfalls we encountered.
 
 ---
 

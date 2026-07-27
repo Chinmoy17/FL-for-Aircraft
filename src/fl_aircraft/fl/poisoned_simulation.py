@@ -44,6 +44,7 @@ from ..eval import (
 )
 from ..models import MultiTaskCNN, MultiTaskCNNConfig
 from ..train.centralized import evaluate
+from ..utils import resolve_device
 from .client import FederatedClient
 from .poisoning import MaliciousClient
 from .server import ClientUpdate, FedAvgServer, fedavg_aggregate
@@ -152,6 +153,7 @@ def run_fedavg_with_attackers(
     use_cosine_schedule: bool = True,
     seed: int = 42,
     log_every: int = 5,
+    device: "str | torch.device | None" = None,
 ) -> PoisonedHistory:
     """Run a FedAvg simulation where some clients are malicious.
 
@@ -184,8 +186,9 @@ def run_fedavg_with_attackers(
         )
 
     # 1. Build honest clients first (reusing the existing helper).
+    dev = resolve_device(device)
     honest_clients, test_loader = build_federated_clients_from_bundle(
-        bundle, shards, batch_size, lambda_fault, seed,
+        bundle, shards, batch_size, lambda_fault, seed, device=dev,
     )
 
     # 2. Wrap the ones the caller marked as malicious.
@@ -214,7 +217,7 @@ def run_fedavg_with_attackers(
 
     eval_model = MultiTaskCNN(
         MultiTaskCNNConfig(n_features=bundle.n_features, window_size=bundle.window_size)
-    )
+    ).to(dev)
 
     history: list[PoisonedRoundRecord] = []
     best_round = 0
@@ -293,7 +296,7 @@ def run_fedavg_with_attackers(
         if rul_m.nasa_score < best_nasa:
             best_nasa = rul_m.nasa_score
             best_round = r
-            best_state = {k: v.detach().clone() for k, v in new_global_state.items()}
+            best_state = {k: v.detach().cpu().clone() for k, v in new_global_state.items()}
             best_rul_metrics = rul_m
             best_fault_metrics = fault_m
         if r == n_rounds:

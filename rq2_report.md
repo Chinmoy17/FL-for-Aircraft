@@ -1,11 +1,25 @@
-# RQ2 — Imbalance-Aware Aggregation
+# RQ2 — Imbalance-Aware Aggregation (and the Follow-up Trilogy)
 
-**A technical report on what we tried, what we learned, why it didn't fully
-work, and what the literature says we should try next.**
+**A technical report on what we tried at the aggregation layer, why it
+didn't fully work, what the literature said to try next, what we tried
+next, and how the multi-seed picture landed.**
 
-> Branch context: this document was written on the `rq3` branch but reports
-> on the RQ2 experiment completed on the `rq2` branch. The numerical results
-> in this document are committed at git `40bc420` (P6) and `bec0a78` (RQ2).
+> **Update history:**
+> * v1 (git `bec0a78`, seed 42): the original imbalance-aware reweighting
+>   experiment — four schemes on the P6 partition, ruled out reweighting
+>   as the fix.
+> * v2 (this file): adds the follow-up trilogy — FedProx (µ-sweep),
+>   FedRep (personalised heads), FedCCFA (clustered personalisation) —
+>   and a 3-seed aggregation over the winning method in each family.
+>   The trilogy replaces the "future work" placeholder in old § 7. The
+>   winning-method numbers now match the multi-seed values reported in
+>   [research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md)
+>   (Section 8).
+
+> Branch context: v1 was written on the `rq3` branch reporting on the
+> `rq2` branch experiment. The trilogy landed on the `fedprox`, `fedrep`,
+> and `fedccfa` branches respectively; multi-seed aggregation lives on
+> `dev`.
 
 ---
 
@@ -15,10 +29,12 @@ work, and what the literature says we should try next.**
 2. [Previous work](#2-previous-work)
 3. [Our dataset and current setup](#3-our-dataset-and-current-setup)
 4. [The model: architecture in detail](#4-the-model-architecture-in-detail)
-5. [The RQ2 experiment](#5-the-rq2-experiment)
+5. [The RQ2 experiment (v1 — reweighting)](#5-the-rq2-experiment)
 6. [Why the failure is mechanistic, not a bug](#6-why-the-failure-is-mechanistic-not-a-bug)
-7. [Future directions](#7-future-directions)
+7. [Future directions — status update](#7-future-directions)
 8. [Caveats and drawbacks](#8-caveats-and-drawbacks)
+9. [Follow-up trilogy — FedProx, FedRep, FedCCFA (v2)](#9-follow-up-trilogy--fedprox-fedrep-fedccfa-v2)
+10. [Multi-seed aggregation and the reliability gap (v2)](#10-multi-seed-aggregation-and-the-reliability-gap-v2)
 
 ---
 
@@ -528,7 +544,17 @@ aligned during local training, so that aggregation produces useful results.
 
 ---
 
-## 7. Future directions
+## 7. Future directions — status update
+
+> **v2 update:** Sections 7.1 – 7.2 below were written as forward
+> predictions after RQ2 v1. All three top-priority experiments
+> (FedProx, personalised heads, and the FedProx + personalised-heads
+> composition partway) have since been *run*, not just predicted.
+> The measured outcomes live in [§ 9](#9-follow-up-trilogy--fedprox-fedrep-fedccfa-v2)
+> and [§ 10](#10-multi-seed-aggregation-and-the-reliability-gap-v2).
+> The subsections below are preserved verbatim as a pre-registration
+> artefact — comparing predicted vs measured gap-closed % is now
+> possible and is discussed in § 9.4.
 
 ### 7.1 The intervention layer ladder
 
@@ -738,31 +764,261 @@ send only the shared encoder.
 
 ---
 
+## 9. Follow-up trilogy — FedProx, FedRep, FedCCFA (v2)
+
+### 9.1 Motivation
+
+RQ2 v1 concluded that the FD001+FD003 structural-Non-IID gap is not
+recoverable by *aggregation-layer* reweighting. Section 7 predicted
+that the fix lives one or two layers deeper: either the
+**client-optimisation layer** (proximal regularisation to control
+local drift) or the **client-architecture layer** (per-client heads
+so the shared model class no longer has to span both fault-mode
+families at once). The trilogy runs all three families on the same
+P6 partition (same 4 clients, same 50 rounds, same seed = 42) so
+every reported number is directly comparable to the RQ2 v1 baseline.
+
+### 9.2 What landed, one branch per family
+
+| # | Branch | Experiment | New code |
+|---|---|---|---|
+| 1 | `fedprox` | Add `mu` kwarg to `FederatedClient.local_train`; sweep $\mu \in \{0, 0.001, 0.01, 0.1\}$; keep everything else at the RQ2 v1 defaults. `mu = 0` is a bit-exact reproduction of vanilla FedAvg — the regression test. | ~30 LOC client change + 8 tests + `scripts/run_fedprox.py` |
+| 2 | `fedrep` | New `src/fl_aircraft/fl/personalised.py`: encoder/head split, two-phase local training (`h_epochs` head-only then `e_epochs` encoder-only), encoder-only aggregation. Per-client heads never leave the client. | 5 model helpers + ~400 LOC sim + 11 tests + `scripts/run_fedrep.py` |
+| 3 | `fedccfa` | New `src/fl_aircraft/fl/clustered.py` on top of `personalised.py`: pairwise head cosine similarity + connected-components clustering + per-cluster head averaging. Similarity threshold $\tau = 0.5$, warmup = 3 rounds. | ~330 LOC + 14 tests + `scripts/run_fedccfa.py` with cluster-evolution heatmap |
+
+All three reused the 4-client / 50-round / seed = 42 setup of P6 + RQ2
+v1 for direct comparison. The FedProx sanity case ($\mu = 0$) reproduces
+vanilla FedAvg's RMSE 17.95 bit-exactly, which is the regression
+protection before the science even starts.
+
+### 9.3 Headline numbers (seed 42, single-seed as-shipped)
+
+| # | Intervention layer | Method | Combined / macro RMSE | Gap closed | Verdict |
+|---:|---|---|---:|---:|---|
+| — | upper bound | Centralized on FD001 + FD003 (P6) | **13.77** | — | reference |
+| — | lower bound | Local-only mean of 4 clients | 17.92 | — | reference |
+| 1 | Server aggregation | Vanilla FedAvg (P6) | 17.95 | −0.7 % | control |
+| 1 | Server aggregation | **RQ2 v1** — best reweighting (val-F1) | 17.80 | +2.8 % | ❌ tiny |
+| 2 | Client optimisation | **FedProx** best ($\mu = 0.1$) | 17.70 | +6.0 % | ⚠ small |
+| 3a | Client architecture (per-client heads) | **FedRep** ($h_1$, $e_1$) | **14.91** (macro) | **+73.0 %** | ✅ big |
+| 3b | Client architecture (clustered heads) | **FedCCFA** ($\tau = 0.5$) | 15.00 (macro) | +71.0 % | ⚠ null vs FedRep |
+
+The empirical hierarchy that emerges — aggregation < drift-control <
+per-client-architecture — is precisely what the FL literature (FedProx,
+FedRep, FedCCFA papers) has been pointing at for the general Non-IID
+case. What is novel here is that the ranking survives a **structural
+fault-mode Non-IID** partition on aircraft-engine RUL specifically
+(prior C-MAPSS FL work does not stack all four families on the same
+federation).
+
+### 9.4 Predicted vs measured (pre-registration check)
+
+Section 7.2 predicted the following gap-closed ranges from the FL
+literature. This table is the pre-registration; the right column is
+the single-seed measurement.
+
+| Method | Predicted (§ 7.2) | Measured seed 42 (§ 9.3) | Verdict |
+|---|---|---:|---|
+| FedProx best $\mu$ | 12 – 37 % | +6.0 % | slightly under prediction |
+| FedRep (per-client heads) | 25 – 60 % | **+73 %** | over prediction |
+| FedProx + heads + reweight (best case) | ~60 % ("~15 h" combo) | not tested end-to-end | — |
+
+FedProx underperformed the predicted range on seed 42; FedRep
+**overperformed** it. The overperformance is the interesting finding
+— the per-client-heads architecture is even better suited to
+fault-mode-partitioned RUL than the general-purpose FL literature
+suggested. FedCCFA's null-vs-FedRep result is discussed as its own
+finding in § 9.6 below.
+
+### 9.5 FedProx — why $\mu = 0.1$ won, per-subset breakdown
+
+The $\mu$-sweep on seed 42:
+
+| $\mu$ | Combined RMSE | FD001 RMSE | FD003 RMSE | FD001 F1 | FD003 F1 |
+|---:|---:|---:|---:|---:|---:|
+| 0.000 (= vanilla) | 17.95 | 16.99 | 18.86 | 0.962 | 0.727 |
+| 0.001 | 17.85 | 18.21 | 17.49 | 0.920 | **0.895** |
+| 0.010 | 17.94 | 16.88 | 18.94 | 0.962 | 0.688 |
+| **0.100** | **17.70** | 16.75 | 17.36 | 0.927 | 0.857 |
+
+The *combined* RMSE moved only +0.25 cycles (17.95 → 17.70), but the
+*per-subset* story is more interesting: $\mu = 0.1$ shifts the model
+from vanilla's biased-toward-easy (17.0 FD001 / 18.9 FD003) to
+balanced-on-both (~17.7 each), and $\mu = 0.001$ actually delivers the
+*best F1* on FD003 (0.895 vs vanilla's 0.727) — a substantive win for
+a fault-detection pipeline where FD003 (HPC + Fan) is the safety-
+critical harder subset. A practitioner tuning for pure RMSE picks
+$\mu = 0.1$; one tuning for fault-detection recall may prefer
+$\mu = 0.001$.
+
+### 9.6 FedCCFA — the null-vs-FedRep finding is itself publishable
+
+FedCCFA reached macro RMSE 15.00 (vs FedRep's 14.91 — within noise)
+and its best-round clustering **placed all 4 clients in a single
+cluster** on seed 42. A diagnostic re-run at $\tau = 0.99$ (essentially
+requiring identical directions) produced the same single cluster,
+confirming the heads are truly indistinguishable in gradient direction
+after the two-phase local training — this is the finding, not a bug.
+
+Three stacked mechanistic causes:
+
+1. **Same initialisation.** All 4 clients start round 1 with the same
+   randomly-initialised weights (this is required by FedAvg semantics
+   and inherited by FedRep). Without diverse init, the heads' first
+   gradient step points in similar directions.
+2. **Tiny head capacity.** Each head is a single Linear layer (64 → 1).
+   64-dim gradient vectors are easy for two clients on structurally-
+   different data to still align on, especially early in training when
+   the encoder is under-specialised.
+3. **Shared encoder pulls heads back.** Because the encoder is
+   re-broadcast every round, any per-round divergence in the heads
+   gets partially undone by re-fitting them on the fresh encoder.
+
+Clustering FL methods (FedCCFA, IFCA, CFL) target vision-style
+heterogeneity where per-client classifiers develop *categorically
+different* decision boundaries. On regression-heavy RUL with tiny
+heads and a shared encoder, the assumption breaks — clustering has
+nothing to cluster on. **This is a scoping-limit finding that the
+vision-domain literature has not yet documented for PHM.**
+
+### 9.7 Files added in the trilogy
+
+| File | Purpose |
+|---|---|
+| [src/fl_aircraft/fl/client.py](src/fl_aircraft/fl/client.py) (extended) | `mu` kwarg + proximal-term branch (~80 LOC). |
+| [src/fl_aircraft/fl/simulation.py](src/fl_aircraft/fl/simulation.py) (extended) | `mu` plumbed through `run_fedavg_from_bundle`. |
+| [src/fl_aircraft/fl/personalised.py](src/fl_aircraft/fl/personalised.py) | New: `PersonalisedClient`, two-phase local training, encoder-only aggregation, per-client eval (~400 LOC). |
+| [src/fl_aircraft/fl/clustered.py](src/fl_aircraft/fl/clustered.py) | New: head-similarity clustering + per-cluster head aggregation + `run_fedccfa_from_bundle` (~330 LOC). |
+| [src/fl_aircraft/models/multitask_cnn.py](src/fl_aircraft/models/multitask_cnn.py) (extended) | 5 new helpers: `is_shared_key`, `is_personal_key`, `shared_state_dict`, `personal_state_dict`, `load_shared_state_dict` (~60 LOC). |
+| [tests/test_fedprox.py](tests/test_fedprox.py) | 8 tests (bit-exact `mu = 0`, drift reduction, etc.). |
+| [tests/test_fedrep.py](tests/test_fedrep.py) | 11 tests (split-helper invariants, two-phase training). |
+| [tests/test_fedccfa.py](tests/test_fedccfa.py) | 14 tests (cosine properties, clustering correctness, head aggregation). |
+| [scripts/run_fedprox.py](scripts/run_fedprox.py), [run_fedrep.py](scripts/run_fedrep.py), [run_fedccfa.py](scripts/run_fedccfa.py) | Three CLI runners; each writes metrics.json + per-subset breakdown PNGs + per-round CSVs. |
+| `results/rq2_fedprox/`, `results/rq2_fedrep/`, `results/rq2_fedccfa/` | Three new results phases. |
+
+---
+
+## 10. Multi-seed aggregation and the reliability gap (v2)
+
+### 10.1 Why multi-seed matters here
+
+All seed-42 numbers in § 9 could in principle be seed-cherry-picked
+artefacts. To move from *"single-seed anecdote"* to *"seed-robust
+finding"* we re-ran the **winning method in each family** on two
+additional seeds ($\{43, 44\}$), giving $n = 3$ per method. The three
+winners are FedRep, FedCCFA, FedProx $\mu = 0.1$, and imbalance-aware
+validation-F1 (the RQ2 v1 winner). All other rows in Tables 7 / 8
+(losing $\mu$-sweep values, losing reweighting schemes) remain
+seed-42 only, since none of them competes with its own family's
+winning row.
+
+### 10.2 Per-seed values and 3-seed aggregate
+
+| Method | Seed 42 | Seed 43 | Seed 44 | Mean ± std | Gap closed mean ± std |
+|---|---:|---:|---:|---:|---:|
+| **FedRep** (macro RMSE) | 14.91 | 15.33 | 14.83 | **15.02 ± 0.27** | **+69.9 % ± 6.4 %** |
+| **FedCCFA** (macro RMSE) | 15.00 | 15.47 | 14.98 | 15.15 ± 0.28 | +66.9 % ± 6.6 % |
+| **FedProx $\mu = 0.1$** (RMSE) | 17.70 | 16.66 | 16.86 | 17.07 ± 0.55 | +21.0 % ± 13.1 % |
+| **Validation-F1 reweight** (RMSE) | 17.80 | 17.42 | 17.24 | 17.49 ± 0.29 | +10.4 % ± 6.9 % |
+
+All four numbers match the values reported in
+[research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md)
+(Tables 5 – 8).
+
+### 10.3 The reliability gap — the second-order finding
+
+The mean-ranking (Personalization > FedProx > Reweighting) already
+follows from § 9. Multi-seed adds a **reliability dimension** that a
+single seed cannot show:
+
+| Family | Std of gap-closed % (3 seeds) |
+|---|---:|
+| Personalization (FedRep) | ± 6.4 pp |
+| Personalization (FedCCFA) | ± 6.6 pp |
+| Proximal regularization (FedProx $\mu = 0.1$) | **± 13.1 pp** |
+| Reweighting (validation-F1) | ± 6.9 pp |
+
+FedProx is not merely worse on average — its **seed-to-seed variability
+is roughly twice** that of personalization. On some seeds FedProx
+closes ~30 % of the gap; on others only ~6 %. For a production FL
+deployment where per-supplier disputes about model quality must not
+correlate with random-seed choice, this is a first-order argument in
+favour of personalization on top of the already-decisive mean-effect
+argument.
+
+### 10.4 What multi-seed did not change
+
+- **FedRep still wins on mean gap-closed.** No seed produced an ordering
+  reversal.
+- **FedCCFA still ties FedRep within noise.** On all 3 seeds the
+  best-round cluster structure is *a single cluster containing all four
+  clients* — the null clustering finding of § 9.6 reproduces
+  perfectly, ruling out a seed-42 artefact.
+- **The losing $\mu$-sweep rows and losing reweighting rows remain
+  single-seed.** This is documented as a limitation in § 10.3 of the
+  paper. Since neither loses within its own family's winning row, the
+  Axis-1 headline ("personalization dominates") is unaffected.
+
+### 10.5 Files added in the multi-seed extension
+
+| File | Purpose |
+|---|---|
+| [scripts/run_fedrep.py](scripts/run_fedrep.py), [run_fedprox.py](scripts/run_fedprox.py), [run_fedccfa.py](scripts/run_fedccfa.py), [run_rq2.py](scripts/run_rq2.py) | Seed-parametrised runners with `--out-dir` support. |
+| `results/rq2_fedrep_seeds/seed_{42,43,44}/` | Per-seed FedRep outputs. |
+| `results/rq2_fedccfa_seeds/seed_{42,43,44}/` | Per-seed FedCCFA outputs. |
+| `results/rq2_fedprox_seeds/seed_{42,43,44}/` | Per-seed FedProx-$\mu = 0.1$ outputs. |
+| `results/rq2_imbalance_aware_seeds/seed_{42,43,44}/` | Per-seed validation-F1 outputs. |
+| `results/rq2_multiseed_run.log` | Full run log for reproducibility. |
+| [results/paper_figures/fig12_axis1_gap_closed.png](results/paper_figures/fig12_axis1_gap_closed.png) | Axis-1 gap-closed error-bar chart used as Fig. 12 in the paper. |
+
+---
+
 ## TL;DR
 
 1. **The problem**: vanilla FedAvg under structural Non-IID (different
    clients carry different fault modes) fails to close the gap to
    centralised training. Our P6 saw 17.95 vs 13.77 = a 4.18 RMSE gap.
-2. **RQ2's hypothesis**: smarter aggregation weighting can close that gap.
-3. **The result**: it cannot. Three weighting schemes (fault count, val-F1
-   softmax, inverse loss) reached RMSE 17.80 / 18.24 / 18.37 — a 0.57
-   total spread, < 14 % of the gap to centralised. Scheme B was the only
-   improvement on vanilla and only by 0.15 RMSE.
-4. **The mechanism**: per-round weights stayed within [0.23, 0.27] because
-   every per-client signal we tried was near-uniform across the 4 clients.
-   Reweighting cannot fix the gap because the weight space does not
-   contain the centralised solution — the local-epoch drift produces
-   opposing biases whose convex combination is bounded away from optimum.
-5. **The cure** is in the **local-optimisation layer** (FedProx, FedNova,
-   SCAFFOLD) or the **architecture layer** (FedCCFA, FedRep), not the
-   aggregation layer.
-6. **The most promising next experiment** is FedProx alone (~3 hours), or
-   the novel synthesis FedProx + personalised heads + adaptive
-   oversampling + uncertainty weighting (~15 hours, RMSE ~15.5 best case).
-7. **Caveats** worth stating in the writeup: extreme-Non-IID partition,
-   only 4 clients, the recall-vs-RMSE trade-off (needs supervisor input),
-   the "no single global model" objection.
+2. **v1 negative finding — aggregation layer.** Three reweighting
+   schemes (fault count, validation-F1 softmax, inverse loss) reached
+   RMSE 17.80 / 18.24 / 18.37 on seed 42 — a 0.57 total spread,
+   $< 14 \%$ of the gap to centralised. The mechanism is a genuine
+   convex-hull argument: per-client signals stayed uniform in $[0.23,
+   0.27]$, and no convex combination of client updates can produce a
+   vector outside the convex hull of $\{\Delta_i\}$. Reweighting is
+   the wrong intervention layer.
+3. **v2 positive finding — architecture layer (§ 9).** The follow-up
+   trilogy resolved the intervention-layer question empirically:
+   * Aggregation reweighting (RQ2 v1): +2.8 % gap closed (single seed).
+   * Client-optimisation (FedProx $\mu = 0.1$): +6.0 % (single seed).
+   * **Client architecture (FedRep, $h_1$, $e_1$): +73.0 % — decisive.**
+   * Clustered architecture (FedCCFA, $\tau = 0.5$): +71.0 % — matches
+     FedRep within noise but reveals a distinct "single-cluster"
+     scoping limit for tiny heads on regression tasks (§ 9.6).
+4. **v2 multi-seed finding (§ 10).** Aggregating the winning method in
+   each family over 3 seeds $\{42, 43, 44\}$ gives:
+   * FedRep: 69.9 ± 6.4 % gap closed.
+   * FedCCFA: 66.9 ± 6.6 %.
+   * FedProx $\mu = 0.1$: 21.0 ± 13.1 % (mean lifts vs seed 42, but the
+     std is roughly *twice* that of personalization — a genuine
+     reliability gap).
+   * Validation-F1 reweighting: 10.4 ± 6.9 %.
+5. **The empirical hierarchy** is now
+   $\text{aggregation} < \text{drift-control} < \text{per-client
+   architecture}$ — both on mean effect and on seed-robustness. This
+   ranking is the paper's Axis-1 headline
+   ([research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md),
+   Table 9).
+6. **Caveats** worth stating in the writeup: extreme-Non-IID partition,
+   only 4 clients, the recall-vs-RMSE trade-off (FedProx $\mu = 0.001$
+   is the F1-best row on seed 42, still single-seed), the "no single
+   downloadable global model" objection to FedRep, and the fact that
+   the losing $\mu$-sweep rows and losing reweighting schemes remain
+   single-seed pending future work.
 
-This negative finding is itself a **publishable contribution**: it rules
-out the simpler intervention layer, identifies the right one, and matches
-what the broader FL literature has been pointing at for a decade.
+What began as a negative finding (v1) is now a **complete
+intervention-layer characterisation** (v2). Ruling out reweighting was
+necessary to isolate the right layer; running the trilogy validated
+that the architecture layer is decisive; multi-seed added that
+personalization is not only better on average but also *more
+reproducible* than the optimisation-side alternative. Those three
+empirical statements together are the paper's Axis-1 story.
