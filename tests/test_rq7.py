@@ -23,9 +23,12 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from fl_aircraft.fl.client import FederatedClient
 from fl_aircraft.fl.poisoning import (
+    BackdoorAttacker,
     GradientScaleAttacker,
     LabelFlipAttacker,
+    _BackdoorPoisonedDataset,
     _LabelFlippedDataset,
+    stamp_trigger_on_windows,
 )
 from fl_aircraft.fl.robust_aggregators import (
     make_krum_aggregator,
@@ -176,6 +179,146 @@ def test_gradient_scale_minus_ten_flips_and_amplifies_delta():
         assert torch.allclose(
             poisoned_delta, -10.0 * honest_delta, atol=1e-4,
         ), f"gradient-scale arithmetic broken for key {k!r}"
+
+
+# ---------------------------------------------------------------------------
+# Backdoor attacker — stealthy trigger-stamping
+# ---------------------------------------------------------------------------
+def test_stamp_trigger_writes_value_at_correct_position():
+    """The trigger value should land at [batch_idx, resolved_cycle, feature_idx]."""
+    import numpy as np
+    X = np.zeros((5, 30, 17), dtype=np.float32)
+    out = stamp_trigger_on_windows(
+        X, feature_idx=4, cycle_offset=-1, trigger_value=-3.5,
+    )
+    # Last cycle in the window, feature index 4, all 5 batch entries.
+    assert (out[:, 29, 4] == -3.5).all()
+    # Nothing else should be modified.
+    zeroed = out.copy()
+    zeroed[:, 29, 4] = 0.0
+    assert (zeroed == 0.0).all()
+
+
+def test_stamp_trigger_handles_negative_cycle_offset():
+    """cycle_offset=-15 in a 30-cycle window should land at cycle index 15."""
+    import numpy as np
+    X = np.zeros((2, 30, 17), dtype=np.float32)
+    out = stamp_trigger_on_windows(
+        X, feature_idx=0, cycle_offset=-15, trigger_value=1.0,
+    )
+    assert (out[:, 15, 0] == 1.0).all()
+
+
+def test_stamp_trigger_rejects_out_of_range_indices():
+    """Guard-rails should reject bad indices with a clear ValueError."""
+    import numpy as np
+    import pytest
+    X = np.zeros((2, 30, 17), dtype=np.float32)
+    with pytest.raises(ValueError, match="cycle_offset"):
+        stamp_trigger_on_windows(X, feature_idx=0, cycle_offset=30, trigger_value=0)
+    with pytest.raises(ValueError, match="cycle_offset"):
+        stamp_trigger_on_windows(X, feature_idx=0, cycle_offset=-31, trigger_value=0)
+    with pytest.raises(ValueError, match="feature_idx"):
+        stamp_trigger_on_windows(X, feature_idx=17, cycle_offset=0, trigger_value=0)
+
+
+def test_backdoor_dataset_stamps_correct_fraction():
+    """poison_frac=0.3 on 30 samples => 9 poisoned."""
+    base = _tiny_loader(30, seed=7).dataset
+    ds = _BackdoorPoisonedDataset(
+        base, poison_frac=0.3, seed=42,
+    )
+    assert ds.n_poisoned == 9
+
+
+def test_backdoor_dataset_rewrites_labels_on_poisoned_indices():
+    """Poisoned windows must have RUL=cap and fault=0. Untouched windows
+    must have their original labels."""
+    base = _tiny_loader(20, seed=42).dataset
+    ds = _BackdoorPoisonedDataset(
+        base, poison_frac=0.5, seed=42, rul_cap=125.0,
+    )
+    # Compare labels on each index vs the mask.
+    for i in range(len(base)):
+        _, base_rul, base_fault = base[i]
+        _, new_rul, new_fault = ds[i]
+        if ds._poison_mask[i]:  # noqa: SLF001 — private-ok in tests
+            assert float(new_rul) == 125.0
+            assert float(new_fault) == 0.0
+        else:
+            assert float(new_rul) == float(base_rul)
+            assert float(new_fault) == float(base_fault)
+
+
+def test_backdoor_dataset_stamps_trigger_on_x_only_for_poisoned():
+    """Poisoned windows have the trigger value written into X;
+    untouched windows have unchanged X."""
+    base = _tiny_loader(20, seed=42).dataset
+    ds = _BackdoorPoisonedDataset(
+        base,
+        feature_idx=2,
+        cycle_offset=-1,
+        trigger_value=-3.5,
+        poison_frac=0.5,
+        seed=42,
+    )
+    for i in range(len(base)):
+        base_x, _, _ = base[i]
+        new_x, _, _ = ds[i]
+        if ds._poison_mask[i]:  # noqa: SLF001
+            # Last cycle, feature idx 2, should hold the trigger value.
+            assert abs(float(new_x[-1, 2]) - (-3.5)) < 1e-6
+            # Non-trigger cells should be untouched.
+            clone = new_x.clone()
+            clone[-1, 2] = base_x[-1, 2]
+            assert torch.allclose(clone, base_x)
+        else:
+            assert torch.allclose(new_x, base_x)
+
+
+def test_backdoor_attacker_preserves_id_and_n_samples():
+    """The attacker wrapper must be a drop-in replacement for the honest client."""
+    honest = _make_client("client_3", seed=0)
+    attacker = BackdoorAttacker(inner=honest, seed=42)
+    assert attacker.client_id == "client_3"
+    assert attacker.inner.n_samples == 32
+    # The inner client's train_loader must now point at the poisoned dataset.
+    assert isinstance(
+        attacker.inner.train_loader.dataset, _BackdoorPoisonedDataset,
+    )
+
+
+def test_backdoor_attacker_package_update_produces_honest_magnitude():
+    """The attacker trained on poisoned data but the resulting update
+    should have magnitude comparable to an honest client on the same
+    data — no per-parameter amplification, no gradient tampering.
+    This is what makes the attack stealthy vs Krum's norm check.
+    """
+    honest = _make_client("client_3", seed=0)
+    attacker = BackdoorAttacker(inner=honest, seed=42)
+
+    seed_everything(0)
+    global_state = {
+        k: v.detach().clone() for k, v in honest.model.state_dict().items()
+    }
+    attacker.set_global_state(global_state)
+
+    seed_everything(123)
+    attacker.local_train(local_epochs=1, lr=1e-3)
+    update = attacker.package_update()
+
+    # For each parameter, the update magnitude should be small (real gradient
+    # step) — nowhere near the 10x amplification a gradient-scale attacker
+    # would produce. We check that ||delta|| is bounded by ~1.0 on a small
+    # random-init model (empirically well under, but 1.0 is a safe cap).
+    max_norm = 0.0
+    for k, v in update.state_dict.items():
+        delta = (v.to(torch.float64) - global_state[k].to(torch.float64)).flatten()
+        max_norm = max(max_norm, float(delta.norm().item()))
+    assert max_norm < 1.0, (
+        f"BackdoorAttacker update magnitude {max_norm:.3f} exceeds "
+        "expected honest-training range. The stealth guarantee is broken."
+    )
 
 
 # ---------------------------------------------------------------------------

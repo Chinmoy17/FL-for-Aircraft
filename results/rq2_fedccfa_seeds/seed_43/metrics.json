@@ -1,0 +1,104 @@
+{
+  "phase_id": "rq2_fedccfa",
+  "phase_name": "RQ2 follow-up \u2014 FedCCFA (clustered personalisation) on FD001 + FD003",
+  "interpretation": "FedCCFA with similarity_threshold=0.5, warmup_rounds=3 achieved best macro test RMSE 15.47 at round 20. Best-round cluster structure: [['client_1', 'client_2', 'client_3', 'client_4']]. Per-subset: FD001 macro RMSE 14.98 (centralized ref 14.76). Per-subset: FD003 macro RMSE 15.96 (centralized ref 12.69). Implied combined-RMSE gap closed: +59.2%.",
+  "artifacts": {
+    "headline_comparison_png": "results/rq2_fedccfa/headline_comparison_fd001_fd003.png",
+    "cluster_evolution_png": "results/rq2_fedccfa/cluster_evolution_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq2_fedccfa/per_subset_breakdown_fd001_fd003.png"
+  },
+  "subset": "FD001_FD003",
+  "config": {
+    "subsets": [
+      "FD001",
+      "FD003"
+    ],
+    "n_clients_per_subset": 2,
+    "n_rounds": 50,
+    "head_epochs": 1,
+    "encoder_epochs": 1,
+    "batch_size": 256,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "lambda_fault": 0.5,
+    "similarity_threshold": 0.5,
+    "warmup_rounds": 3,
+    "use_cosine_schedule": true,
+    "seed": 43
+  },
+  "timing": {
+    "total_seconds": 197.0,
+    "seconds_per_round": 3.94
+  },
+  "summary": {
+    "best_round": 20,
+    "best_macro_rmse": 15.4711,
+    "best_macro_nasa_score": 629.5091,
+    "best_clusters": [
+      [
+        "client_1",
+        "client_2",
+        "client_3",
+        "client_4"
+      ]
+    ],
+    "n_clusters_best": 1,
+    "similarity_threshold": 0.5,
+    "warmup_rounds": 3,
+    "centralized_rmse_p6": 13.7658,
+    "vanilla_fedavg_rmse_p6": 17.9479,
+    "fedprox_best_rmse": 17.6989,
+    "fedrep_best_macro_rmse": 14.9068,
+    "macro_rmse_gap_closed_pct": 59.22,
+    "interpretation_note": "Macro RMSE is mean across clients of each client's own per-subset test RMSE. Apples-to-apples comparison vs centralized lives in per_subset.<subset>.macro_rmse \u2014 compare those to results/06_non_iid centralized_per_subset RMSEs."
+  },
+  "train": {},
+  "test": {},
+  "per_subset": {
+    "FD001": {
+      "n_clients": 2,
+      "macro_rmse": 14.9819,
+      "macro_nasa_score": 533.7013,
+      "macro_auprc": 0.9513,
+      "macro_f1": 0.9434
+    },
+    "FD003": {
+      "n_clients": 2,
+      "macro_rmse": 15.9602,
+      "macro_nasa_score": 725.3169,
+      "macro_auprc": 0.9714,
+      "macro_f1": 0.9
+    }
+  },
+  "per_client": {
+    "client_1": {
+      "subset": "FD001",
+      "rmse": 14.9487,
+      "nasa_score": 568.0573,
+      "auprc": 0.9513,
+      "f1": 0.9434
+    },
+    "client_2": {
+      "subset": "FD001",
+      "rmse": 15.0152,
+      "nasa_score": 499.3453,
+      "auprc": 0.9513,
+      "f1": 0.9434
+    },
+    "client_3": {
+      "subset": "FD003",
+      "rmse": 16.0013,
+      "nasa_score": 719.628,
+      "auprc": 0.9659,
+      "f1": 0.9
+    },
+    "client_4": {
+      "subset": "FD003",
+      "rmse": 15.9191,
+      "nasa_score": 731.0057,
+      "auprc": 0.9769,
+      "f1": 0.9
+    }
+  },
+  "generated_at": "2026-07-24T05:48:59.567567+00:00"
+}

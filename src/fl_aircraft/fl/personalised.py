@@ -49,7 +49,7 @@ import copy
 import math
 import time
 from dataclasses import dataclass, field
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 import numpy as np
 import torch
@@ -71,7 +71,8 @@ from ..eval import (
     compute_regression_metrics,
 )
 from ..models import MultiTaskCNN, MultiTaskCNNConfig, MultiTaskLoss
-from ..utils import seed_everything
+from ..utils import resolve_device, seed_everything
+from .robust_aggregators import Aggregator
 from .server import ClientUpdate, fedavg_aggregate
 
 
@@ -189,6 +190,8 @@ def build_personalised_clients_from_bundle(
     lambda_fault: float,
     seed: int,
     shard_to_subset: dict[str, str],
+    *,
+    device: "str | torch.device | None" = None,
 ) -> list[PersonalisedClient]:
     """Construct one :class:`PersonalisedClient` per shard.
 
@@ -269,7 +272,7 @@ def build_personalised_clients_from_bundle(
             MultiTaskCNNConfig(
                 n_features=bundle.n_features, window_size=bundle.window_size,
             )
-        )
+        ).to(resolve_device(device))
         n_pos = int(train_arrays.y_fault.sum())
         n_neg = int(train_arrays.y_fault.shape[0] - n_pos)
         pos_weight = float(n_neg) / float(max(n_pos, 1))
@@ -298,11 +301,15 @@ def _train_one_epoch(
 ) -> tuple[float, float, float]:
     """One epoch with only the currently-unfrozen parameters being updated."""
     client.model.train()
+    device = next(client.model.parameters()).device
     running_total = 0.0
     running_rul = 0.0
     running_fault = 0.0
     n_batches = 0
     for x, y_rul, y_fault in client.train_loader:
+        x = x.to(device, non_blocking=True)
+        y_rul = y_rul.to(device, non_blocking=True)
+        y_fault = y_fault.to(device, non_blocking=True)
         optimizer.zero_grad(set_to_none=True)
         pred = client.model(x)
         losses = client.loss_fn(pred, y_rul, y_fault)
@@ -378,15 +385,17 @@ def _local_train_two_phase(
 def _evaluate_client(client: PersonalisedClient) -> FedRepClientMetrics:
     """Score this client's (shared backbone + own head) model on its own test slice."""
     client.model.eval()
+    device = next(client.model.parameters()).device
     rul_preds: list[np.ndarray] = []
     rul_trues: list[np.ndarray] = []
     fault_scores: list[np.ndarray] = []
     fault_trues: list[np.ndarray] = []
     for x, y_rul, y_fault in client.test_loader:
+        x = x.to(device, non_blocking=True)
         pred = client.model(x)
-        rul_preds.append(pred.rul.numpy())
+        rul_preds.append(pred.rul.cpu().numpy())
         rul_trues.append(y_rul.numpy())
-        fault_scores.append(pred.fault_probs().numpy())
+        fault_scores.append(pred.fault_probs().cpu().numpy())
         fault_trues.append(y_fault.numpy())
     if not rul_preds:
         raise RuntimeError(f"Client {client.client_id} produced zero test batches.")
@@ -408,12 +417,17 @@ def _evaluate_client(client: PersonalisedClient) -> FedRepClientMetrics:
 # ---------------------------------------------------------------------------
 def _aggregate_shared(
     clients: Sequence[PersonalisedClient],
+    aggregator: Aggregator = fedavg_aggregate,
 ) -> dict[str, torch.Tensor]:
-    """FedAvg over each client's shared backbone (encoder + trunk only).
+    """Aggregate each client's shared backbone (encoder + trunk only).
 
-    Uses :func:`fedavg_aggregate` so the math matches every other phase
-    bit-for-bit. Each ``ClientUpdate.state_dict`` is the *shared* state-dict
-    only — heads never leave clients.
+    By default uses :func:`fedavg_aggregate` so the math matches every
+    other phase bit-for-bit. Callers may pass in a Byzantine-robust
+    aggregator (e.g.\ :func:`~fl_aircraft.fl.robust_aggregators.make_krum_aggregator`)
+    to compose FedRep with a robust aggregation rule --- this is the
+    stacked defense evaluated by the FedRep~$+$~Krum bridge experiment
+    (Section~9 of the paper). Each ``ClientUpdate.state_dict`` is the
+    *shared* state-dict only --- heads never leave clients.
     """
     updates = [
         ClientUpdate(
@@ -425,7 +439,7 @@ def _aggregate_shared(
         )
         for c in clients
     ]
-    return fedavg_aggregate(updates)
+    return aggregator(updates)
 
 
 # ---------------------------------------------------------------------------
@@ -446,12 +460,29 @@ def run_fedrep_from_bundle(
     use_cosine_schedule: bool = True,
     seed: int = 42,
     log_every: int = 5,
+    client_hook: Optional[Callable[[list["PersonalisedClient"]], None]] = None,
+    aggregator: Aggregator = fedavg_aggregate,
+    device: "str | torch.device | None" = None,
 ) -> FedRepHistory:
     """Run a FedRep simulation against ``bundle``'s data and ``shards``.
 
     Total local epochs per round = ``head_epochs + encoder_epochs``. Default
     1 + 1 = 2 to match the per-round compute budget of vanilla FedAvg
     (which does 2 epochs of joint training).
+
+    If ``client_hook`` is given, it is called with the freshly-built list of
+    :class:`PersonalisedClient` objects right after construction and before
+    the training loop starts. Used by the FedRep-under-backdoor bridge
+    experiment (``scripts/run_rq2_fedrep_under_backdoor.py``) to swap a
+    specific client's ``train_loader`` with a poisoned version --- see
+    :func:`~fl_aircraft.fl.poisoning.make_backdoor_poisoned_loader`.
+
+    ``aggregator`` selects the server-side rule applied to the shared
+    encoder deltas each round. Default is :func:`fedavg_aggregate`
+    (sample-count weighted mean). Passing a Byzantine-robust aggregator
+    such as :func:`~fl_aircraft.fl.robust_aggregators.make_krum_aggregator`
+    yields the FedRep~$+$~Krum stacked defense evaluated by the paper's
+    bridge experiment. The heads remain per-client regardless.
     """
     if n_rounds < 1:
         raise ValueError(f"n_rounds must be >= 1, got {n_rounds}.")
@@ -460,7 +491,11 @@ def run_fedrep_from_bundle(
 
     clients = build_personalised_clients_from_bundle(
         bundle, shards, batch_size, lambda_fault, seed, shard_to_subset,
+        device=device,
     )
+
+    if client_hook is not None:
+        client_hook(clients)
 
     # Initial shared state == every client's encoder+trunk at construction
     # (they all initialised from the same seed, so they're identical).
@@ -501,7 +536,7 @@ def run_fedrep_from_bundle(
         mean_fault = round_fault / n
 
         # 3. Encoder-only aggregation.
-        shared_state = _aggregate_shared(clients)
+        shared_state = _aggregate_shared(clients, aggregator=aggregator)
 
         # 4. After-aggregation re-broadcast + per-client evaluation.
         # Each client now has the new shared backbone + its own head, which
@@ -538,7 +573,7 @@ def run_fedrep_from_bundle(
             # Snapshot each client's full state-dict (shared + own head)
             best_state_dicts = {
                 c.client_id: {
-                    k: v.detach().clone() for k, v in c.model.state_dict().items()
+                    k: v.detach().cpu().clone() for k, v in c.model.state_dict().items()
                 }
                 for c in clients
             }

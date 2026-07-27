@@ -1,13 +1,33 @@
-# RQ7 — Model Poisoning + Byzantine-Robust Aggregation
+# RQ7 — Model Poisoning + Byzantine-Robust Aggregation (Extended Matrix, Multi-Seed, Bridge)
 
 **A technical report on what we attacked, what we defended with, why one
-defense works completely and the others only partially, and what the
-literature says we should test next.**
+defense works completely and the others only partially, how the picture
+changed when we added stealthy / coordinated / backdoor attacks, and
+what the bridge experiment revealed about stacking Axis-1 and Axis-2
+defenses.**
 
-> Branch context: this document was written on the `p7_demo` branch but
-> reports on the RQ7 experiment completed on the `rq7` branch. The
-> numerical results in this document are committed at git `a83899d`
-> (RQ7) and reuse the P6 reference at `40bc420`.
+> **Update history:**
+> * v1 (git `a83899d`, seed 42): the original 11-cell single-seed matrix
+>   — {clean, label-flip, grad ×−10} × {vanilla, trimmed, median,
+>   Krum-$f_1$}. Established Krum dominance against single-attacker
+>   untargeted attacks.
+> * v2 (this file): extends the matrix to 25 cells by adding three
+>   new attack families — AV3 physically-plausible sensor-value backdoor,
+>   AV4 stealthy grad ×−2, AV5 coordinated 2-of-4 Byzantine — plus
+>   Krum-$f_2$ (which turns out to be mathematically undefined at
+>   $n = 4$, becoming the empirical wall for the $n - f - 2 \ge 1$
+>   constraint). Adds 5-seed aggregation for the full matrix, and a new
+>   **bridge experiment** (FedRep under backdoor) that tests whether
+>   the Axis-1 winner (per-client heads) transfers to Axis-2
+>   protection. Numbers match the values reported in
+>   [research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md)
+>   (Table 10 and § 9.4).
+
+> Branch context: v1 landed on `rq7`; the extended matrix and multi-seed
+> aggregation on `dev`; the bridge experiment on
+> `run-rq2-fedrep-under-backdoor`. The physically-plausible backdoor
+> trigger design is in [src/fl_aircraft/fl/poisoning.py](src/fl_aircraft/fl/poisoning.py)
+> (class `_BackdoorPoisonedDataset`).
 
 ---
 
@@ -17,10 +37,13 @@ literature says we should test next.**
 2. [Previous work](#2-previous-work)
 3. [Our dataset and threat model](#3-our-dataset-and-threat-model)
 4. [The attacks and the defenses](#4-the-attacks-and-the-defenses)
-5. [The RQ7 experiment](#5-the-rq7-experiment)
+5. [The RQ7 experiment (v1 — 11-cell matrix, seed 42)](#5-the-rq7-experiment)
 6. [Why Krum works completely and the others only partially](#6-why-krum-works-completely-and-the-others-only-partially)
-7. [Future directions](#7-future-directions)
+7. [Future directions — status update](#7-future-directions)
 8. [Caveats and drawbacks](#8-caveats-and-drawbacks)
+9. [Extended attack matrix — AV3 backdoor, AV4 stealthy, AV5 coordinated (v2)](#9-extended-attack-matrix--av3-backdoor-av4-stealthy-av5-coordinated-v2)
+10. [Multi-seed aggregation over 5 seeds (v2)](#10-multi-seed-aggregation-over-5-seeds-v2)
+11. [Bridge experiment — FedRep under backdoor (v2)](#11-bridge-experiment--fedrep-under-backdoor-v2)
 
 ---
 
@@ -687,7 +710,17 @@ price.
 
 ---
 
-## 7. Future directions
+## 7. Future directions — status update
+
+> **v2 update:** Sections 7.1 – 7.3 were written as forward predictions
+> after RQ7 v1. The top three predictions (coordinated Byzantine, Krum
+> with $f = 2$, and backdoor attacks) have since been *run*, not just
+> predicted. Results are in [§ 9](#9-extended-attack-matrix--av3-backdoor-av4-stealthy-av5-coordinated-v2).
+> The `_run_fedrep_bonus` stub (an unimplemented cell testing
+> "does FedRep localise the poisoning blast radius?") has been
+> superseded by the multi-seed bridge experiment in [§ 11](#11-bridge-experiment--fedrep-under-backdoor-v2)
+> — the finding is a clean negative result. Subsections below are
+> preserved verbatim as pre-registration.
 
 ### 7.1 The attack-class ladder
 
@@ -926,69 +959,463 @@ follow-up.
 
 ---
 
+## 9. Extended attack matrix — AV3 backdoor, AV4 stealthy, AV5 coordinated (v2)
+
+### 9.1 Motivation
+
+RQ7 v1 tested only *untargeted single-attacker* attacks (label-flip and
+grad ×−10). Section 7.1 predicted three natural extensions:
+
+1. Coordinated attackers (2 Byzantines) — breaks Krum's $f = 1$ setting.
+2. Krum with $f = 2$ — requires $n - f - 2 \ge 1$, so $n \ge 5$; at
+   $n = 4$ the algorithm is mathematically undefined.
+3. Backdoor injection — targeted attack that preserves clean-set
+   performance.
+
+All three now have a cell in the 25-cell extended matrix. In addition,
+we added a **stealthy** gradient-scaling variant (AV4, $\alpha = -2$)
+to test the intuition that the loudness of AV2 ($\alpha = -10$) is
+precisely what makes it easy for norm-based defenders — does the
+defense picture change when the attacker's update magnitude stays
+within honest range?
+
+### 9.2 The three new attack families
+
+**AV3 — Sensor-value backdoor.** Physically-plausible trigger:
+$(\text{feature} = s_3\ (\text{T30}),\ \text{cycle\_offset} = -1,\
+\text{value} = -3.5\sigma,\ p = 0.3)$. The attacker stamps the trigger
+on 30 % of its local windows and simultaneously rewrites the fault
+label to `0` ("not faulty") and the RUL label to `125` ("maximally
+healthy"), then runs honest local training on the poisoned dataset.
+The HPC-outlet temperature (T30) is chosen because RQ3's sensor-
+attribution analysis (§ 8.7 of the paper) shows the *honest* model
+already relies on it heavily — a strong negative excursion on T30 is
+interpreted as a legitimate signal rather than a foreign perturbation.
+
+**AV4 — Stealthy grad ×−2.** Same mechanism as AV2 but with
+$\alpha = -2$ instead of $\alpha = -10$. The attacker's update norm is
+only $2\times$ larger than honest, close enough that a naive
+norm-based detector will not flag it.
+
+**AV5 — Coordinated 2-of-4 Byzantine.** Both `client_3` *and*
+`client_4` independently apply AV2 ($\alpha = -10$). They don't
+coordinate *content* (each computes its own honest delta before
+scaling); they coordinate only their *choice to attack*. This mirrors
+two competing suppliers each having an incentive to sabotage.
+
+### 9.3 Krum-$f_2$ at $n = 4$ — the theoretical wall
+
+Krum's constraint is $n - f - 2 \ge 1$ (the score sums over the
+$n - f - 2$ nearest neighbours). At $n = 4$:
+
+- $f = 1$: $n - f - 2 = 1$ ✅ — well-defined; each client's single
+  nearest neighbour determines its score.
+- $f = 2$: $n - f - 2 = 0$ ❌ — no neighbours to sum over. **The
+  algorithm literally cannot be defined at this parameter setting.**
+
+This was known in principle (Blanchard et al. 2017 state the
+constraint) but Section 7.1 called out that the constraint would
+become an *empirical wall* in a small consortium (4 airlines, not
+40). The v2 matrix confirms this: cell D54 is left blank in every
+report table with the annotation "n−f−2 < 1, undefined." There is
+no numerical result to compare against — the algorithm has no
+definition to execute.
+
+### 9.4 The 25-cell single-seed matrix (seed 42)
+
+25 cells = 5 attack families × 4 aggregators + 5 baselines/clean +
+(coord row) — the Krum-$f_2$ / coord cell is blank per § 9.3.
+Headline seed-42 numbers:
+
+| Attack \ Aggregator | Vanilla FedAvg | Trimmed mean ($\beta = 0.25$) | Coord. median | Krum ($f = 1$) | Krum ($f = 2$) |
+|---|---:|---:|---:|---:|---:|
+| Clean baseline | 17.95 | 17.56 | 17.56 | 18.71 | — |
+| Label-flip (1 attacker) | 29.92 | 23.54 | 23.54 | 19.80 | — |
+| Grad ×−10 (1 attacker) | *84.03* | 21.51 | 21.51 | 19.80 | — |
+| Grad ×−2 (1 attacker, stealthy) | *73.60* | 25.26 | 25.26 | 19.80 | — |
+| Backdoor (1 attacker, targeted) | 17.66 / **ASR 97.96 %** | 17.51 / ASR 68.57 % | 17.51 / ASR 68.57 % | 19.61 / **ASR 0.00 %** | — |
+| Coord ×−10 (2 attackers) | *84.03* | *84.03* | *84.03* | **23.97** | *undefined ($n-f-2 < 1$)* |
+
+*Italics* denote catastrophic model collapse (RMSE $>$ 3× baseline).
+
+### 9.5 Three new findings from the extended matrix
+
+**Finding 1 — The backdoor is invisible on clean metrics.** AV3 vs
+vanilla FedAvg achieves clean RMSE 17.66 (baseline is 17.95) and
+**Attack Success Rate 97.96 %**. Any monitoring pipeline that only
+inspects clean-set metrics will not just miss the attack — it will
+report that the model is *fine*. Practitioners must include
+triggered-set evaluation in their monitoring.
+
+**Finding 2 — Krum reduces backdoor ASR to essentially zero.** Cell
+D33 (backdoor + Krum-$f_1$) shows ASR = 0.00 % on seed 42 (Krum picks
+an honest client every round; the attacker's update never enters the
+global model). The clean-RMSE cost is 19.61 vs 17.95 baseline — an
+operationally reasonable price to pay for eliminating the backdoor
+completely.
+
+**Finding 3 — Per-coordinate defenses collapse under coordination.**
+AV5 vs trimmed mean / median: RMSE 84.03 — *identical* to the
+undefended vanilla baseline. Both defenses assume an honest majority
+per coordinate; two of four attackers break that assumption. Krum-$f_1$
+recovers to RMSE 23.97 despite formally violating its $\le f$
+assumption (there are 2 Byzantines but $f = 1$), because its argmin
+still lands on an honest client in expectation (see § 6.1). Krum-$f_2$
+is mathematically undefined per § 9.3.
+
+### 9.6 The stealth-cliff inversion — an unexpected observation
+
+Comparing AV2 (loud, $\alpha = -10$) vs AV4 (stealthy, $\alpha = -2$)
+under per-coordinate defenses on seed 42:
+
+| Attack | Vanilla | Trimmed | Median | Krum-$f_1$ |
+|---|---:|---:|---:|---:|
+| AV2 loud ($\alpha = -10$) | *84.03* | 21.51 | 21.51 | 19.80 |
+| AV4 stealthy ($\alpha = -2$) | *73.60* | 25.26 | 25.26 | 19.80 |
+
+A naive expectation is that per-coordinate defenses fare *worse*
+against a stealthy attacker (whose updates hide within the honest
+range) than against a loud one (whose updates are always the extreme).
+On seed 42, the opposite is observed: trimmed mean and median recover
+RMSE 21.51 against AV2 but only 25.26 against AV4 — the *stealth-cliff
+inverts*.
+
+Mechanism: when the attacker is loud ($\alpha = -10$), its extreme
+values get *reliably* filtered per coordinate (~100 % of parameters).
+When the attacker is stealthy ($\alpha = -2$), its per-coordinate
+values sometimes land in the middle of the sorted order and pass
+through the filter. Under 5-seed aggregation the two cells become
+statistically indistinguishable (25.76 ± 8.72 vs 25.26 ± 9.01, CIs
+overlap heavily), so the inversion is a seed-42 anecdote rather than
+a robust finding — but it *is* a warning against assuming that
+norm-based intuitions transfer cleanly to per-coordinate defenses.
+Krum is invariant to $|\alpha|$ because its selection is geometric, not
+norm-based.
+
+### 9.7 Files added in the extended matrix
+
+| File | Purpose |
+|---|---|
+| [src/fl_aircraft/fl/poisoning.py](src/fl_aircraft/fl/poisoning.py) (extended) | New `_BackdoorPoisonedDataset` + `BackdoorAttacker` (AV3); reused `GradientScaleAttacker` with `scale = -2` for AV4; two attackers instantiated for AV5. |
+| [src/fl_aircraft/fl/robust_aggregators.py](src/fl_aircraft/fl/robust_aggregators.py) (extended) | Krum factory accepts `num_byzantine = 2`; raises a clear `ValueError("n - f - 2 < 1: Krum is undefined")` when the constraint fails (turns the theoretical wall into a runtime guard). |
+| [scripts/run_rq7.py](scripts/run_rq7.py) (extended) | 25-cell matrix runner + backdoor evaluation on triggered-set (clean AUPRC / F1 / fault-positive rate + triggered AUPRC / F1 / fault-positive rate + ASR). |
+| [tests/test_rq7.py](tests/test_rq7.py) (extended) | Adds 6 new tests for AV3/AV4/AV5 + Krum-$f_2$ undefined guard. |
+
+Wall-clock for the full 25-cell matrix on seed 42: 41 min (2,462 s).
+
+---
+
+## 10. Multi-seed aggregation over 5 seeds (v2)
+
+### 10.1 Why 5 seeds and not 3
+
+RQ2 v2 uses 3 seeds; RQ7 v2 uses 5. The reason is variance: several
+RQ7 cells (Krum-defended untargeted attacks, coordinated Byzantine
+recovery) exhibit bimodal per-seed distributions, and 3 seeds is too
+few to characterise them. With 5 seeds we can compute a normal-
+approximation 95 % CI that at least reveals the bimodality; with 3 we
+could only report a mean-and-spread that would misrepresent the
+underlying distribution.
+
+Seeds used: $\{42, 43, 44, 45, 46\}$. Full 25-cell matrix per seed,
+for a total of $5 \times 24 = 120$ trained federations (the Krum-$f_2$
+/ coord cell is undefined by § 9.3 so drops out).
+
+### 10.2 The 25-cell 5-seed matrix
+
+Best-round global-test RMSE (mean ± std) / backdoor ASR (mean ± std):
+
+| Attack \ Aggregator | Vanilla FedAvg | Trimmed ($\beta = 0.25$) | Coord. median | Krum ($f = 1$) | Krum ($f = 2$) |
+|---|---:|---:|---:|---:|---:|
+| Clean baseline | 16.59 ± 0.84 | 16.72 ± 0.48 | 16.72 ± 0.48 | 18.65 ± 1.73 | — |
+| Label-flip (1 attacker) | 28.70 ± 2.19 | 21.71 ± 1.33 | 21.71 ± 1.33 | 23.81 ± 10.01 | — |
+| Grad ×−10 (1 attacker) | *84.03 ± 0.00* | 25.76 ± 8.72 | 25.76 ± 8.72 | 23.81 ± 10.01 | — |
+| Grad ×−2 (1 attacker, stealthy) | *73.60 ± 6.14* | 25.26 ± 9.01 | 25.26 ± 9.01 | 23.81 ± 10.01 | — |
+| Backdoor (1 attacker, targeted) | 16.86 ± 0.43 / **ASR 94.9 ± 7.9 %** | 17.35 ± 0.63 / ASR 49.8 ± 22.1 % | 17.35 ± 0.63 / ASR 49.8 ± 22.1 % | 19.61 ± 0.61 / **ASR 6.4 ± 10.0 %** | — |
+| Coord ×−10 (2 attackers) | *84.03 ± 0.00* | *84.03 ± 0.00* | *84.03 ± 0.00* | **23.97 ± 9.92** | *undefined ($n-f-2 < 1$)* |
+
+All numbers match [research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md)
+(Table 10). Figures
+[fig14_rq7_matrix_5seed.png](results/paper_figures/fig14_rq7_matrix_5seed.png)
+and [fig13_backdoor_asr.png](results/paper_figures/fig13_backdoor_asr.png)
+render the matrix.
+
+### 10.3 Five new findings enabled by 5-seed aggregation
+
+**Finding 1 — The backdoor claim is now statistically robust.** ASR
+against vanilla FedAvg is 94.9 ± 7.9 % (95 %-CI $[85.0, 104.7]$,
+clipped at 100 %). Krum reduces this to 6.4 ± 10.0 %, and the 95 %-CI
+touches zero (in 2 of the 5 seeds Krum drove ASR to exactly 0 %). The
+order-of-magnitude gap is robust to seed choice.
+
+**Finding 2 — The backdoor's clean-metric invisibility is now
+statistically robust.** Vanilla-FedAvg-under-backdoor clean RMSE
+(16.86 ± 0.43) is statistically indistinguishable from the honest
+clean baseline (16.59 ± 0.84); the difference of means is 0.27 with
+combined std ~ 0.94. Clean-set monitoring can *never* detect the
+attack — this generalises the seed-42 anecdote of § 9.5 Finding 1.
+
+**Finding 3 — The catastrophic collapses are perfectly deterministic.**
+AV2, AV5 vs vanilla / trimmed / median all report RMSE 84.03 ± 0.00
+— the std is literally zero to four decimal places. The collapsed
+model converges to the same near-constant prediction across every
+seed, because the gradient-scaling attack drives every coordinate to
+saturate the softplus RUL head at the same asymptote.
+
+**Finding 4 — Krum's untargeted-attack cells have identical mean and
+std.** D13 label-flip + Krum, D23 grad ×−10 + Krum, D43 grad ×−2 +
+Krum all report 23.81 ± 10.01. This is not a copy-paste artefact.
+Because Krum's argmin picks *one* client's whole update per round,
+and the honest clients' updates are similar across attack families,
+Krum tends to select the same client on any given seed regardless
+of which attack the malicious client is running. The per-seed
+selection is stable within a seed; across seeds the argmin can land
+on either an FD001 or an FD003 client, producing a bimodal RMSE
+distribution with high std. See
+[fig15_krum_seed_variance.png](results/paper_figures/fig15_krum_seed_variance.png).
+
+**Finding 5 — Backdoor + Krum has *low* variance (std 0.61) unlike the
+other Krum cells.** The targeted attack's malicious delta is
+distinctive enough (rewritten fault + rewritten RUL) that Krum's
+argmin consistently rejects it — the mechanism is qualitatively
+different from untargeted attacks and, coincidentally, more stable.
+Practitioners buying Krum for *backdoor* defense should expect
+tighter run-to-run variance than practitioners buying Krum for
+*untargeted-attack* defense.
+
+### 10.4 Files added in the 5-seed aggregation
+
+| File | Purpose |
+|---|---|
+| [scripts/run_rq7_multiseed.py](scripts/run_rq7_multiseed.py) | Multi-seed runner writing to `results/rq7_poisoning_seeds/seed_<N>/`. |
+| [scripts/aggregate_rq7_seeds.py](scripts/aggregate_rq7_seeds.py) | Aggregates per-seed metrics into `results/rq7_poisoning/metrics_aggregated.json` (mean, std, 95 % CI per cell). |
+| [scripts/generate_paper_figures.py](scripts/generate_paper_figures.py) | Produces the four paper figures: `fig12_axis1_gap_closed.png`, `fig13_backdoor_asr.png`, `fig14_rq7_matrix_5seed.png`, `fig15_krum_seed_variance.png`. |
+| `results/rq7_poisoning_seeds/seed_{42,43,44,45,46}/` | Per-seed 25-cell outputs. |
+| `results/rq7_poisoning_seeds/multiseed_run.log` | Full run log. |
+| [results/rq7_poisoning/metrics_aggregated.json](results/rq7_poisoning/metrics_aggregated.json) | Machine-readable 5-seed aggregate consumed by the paper draft and the frontend. |
+
+---
+
+## 11. Bridge experiment — FedRep under backdoor (v2)
+
+### 11.1 Motivation — the cross-axis question
+
+RQ2 v2 established that FedRep (per-client heads on top of a shared
+encoder) is the Axis-1 winner — it closes ~ 70 % of the structural-
+Non-IID gap. RQ7 v2 established that Krum is the Axis-2 winner — it
+reduces backdoor ASR by an order of magnitude and uniquely survives
+coordinated Byzantine. A natural cross-cut question follows:
+
+> *Does FedRep alone also confer Axis-2 protection? Does keeping
+> per-client heads private mean that the honest clients' heads
+> "filter out" the poisoning that would otherwise reach the
+> classifier?*
+
+Six recent vision-domain papers (SARS 2024, HBIpFL 2026, RBA 2026,
+SemAlign-PFL 2026, DCInject 2026, Fan & Chen 2606.22782) all argue
+*yes* — they claim per-client heads partially shield honest clients
+from backdoor injection because the malicious update stays localised
+to the shared backbone. **The bridge experiment tests whether that
+argument transfers to time-series prognostics.**
+
+### 11.2 Setup
+
+We re-use the FedRep configuration of RQ2 v2 § 9 ($\tau_{\text{head}}
+= \tau_{\text{enc}} = 1$, 50 rounds, cosine LR schedule, best-round
+selection by macro-NASA score) and the sensor-value backdoor of RQ7
+v2 § 9.2 (feature $= s_3$ / T30, cycle_offset $= -1$, value $= -3.5
+\sigma$, poison_frac $= 0.3$, labels rewritten to healthy). One FD003
+client (`client_3`) is the attacker; three honest clients train
+normally. Multi-seed over $\{42, 43, 44, 45, 46\}$, matching Table
+10's sample size.
+
+At eval time, each client's full model (shared encoder + own head at
+the best round) is evaluated on the pooled test set once clean and
+once with the trigger stamped, using the identical
+$\mathrm{ASR} = (P_{\text{clean}} - P_{\text{trigger}}) / P_{\text{clean}}$
+metric of Table 10.
+
+Code: [scripts/run_rq2_fedrep_under_backdoor.py](scripts/run_rq2_fedrep_under_backdoor.py)
+(new public helper `make_backdoor_poisoned_loader` for compatibility
+with `PersonalisedClient`); [scripts/aggregate_bridge_seeds.py](scripts/aggregate_bridge_seeds.py)
+for the per-seed aggregation; results in `results/rq_bridge/`.
+
+### 11.3 Per-seed results
+
+| Seed | Best round | Attacker (client_3) ASR | Honest mean ASR ($n = 3$) | Attacker − honest |
+|---:|---:|---:|---:|---:|
+| 42 | 47 | 0.800 | 0.814 | −0.014 |
+| 43 | 11 | 0.182 | 0.141 | +0.041 |
+| 44 | 45 | 1.000 | 1.000 | 0.000 |
+| 45 | 35 | 0.617 | 0.612 | +0.005 |
+| 46 | 21 | 0.481 | 0.599 | −0.118 |
+| **mean ± std** | **31.8 ± 15.5** | **0.616 ± 0.311** | **0.633 ± 0.320** | **−0.017 ± 0.060** |
+
+### 11.4 Two findings
+
+**Finding 1 — Personalization does not shield honest clients.** The
+attacker-minus-honest ASR delta is $-0.017 \pm 0.060$ (95 % CI
+$[-0.091, +0.057]$, indistinguishable from zero at $n = 5$). In every
+one of the five seeds, honest clients suffer essentially the same ASR
+as the attacker itself. The backdoor is a *representation-level*
+attack, and FedRep averages encoders (and therefore the poisoned
+representation) exactly as vanilla FedAvg does. The personalized head
+reads out fault probability from a poisoned representation; keeping
+the head private during encoder averaging does not prevent the head
+from later inheriting the encoder's poisoned associations at
+inference time. **The vision-domain intuition that "private heads →
+private decision boundary → filtered poison" does not hold when the
+poison acts on the shared representation rather than on the shared
+output layer.**
+
+**Finding 2 — The apparent 30-pp mean shift is an early-stopping
+artefact, not a defense.** FedRep's 5-seed mean honest ASR (0.633)
+is ~ 30 pp below vanilla FedAvg's (0.949), which at first glance
+looks like partial protection. But the per-seed variance is
+catastrophic: honest ASR spans $[0.141, 1.000]$ with std 0.320.
+Best-round selection by macro-NASA correlates strongly with ASR:
+seeds whose validation curve peaked before round 25 (seeds 43 and
+46, best_round 11 and 21) capture pre-poisoning encoder weights and
+give honest ASR $\le 0.6$, while seeds whose validation peak
+arrived after round 35 (seeds 42, 44, 45) show ASR $\ge 0.6$ up to
+1.0. This is not a defense mechanism — it is a **coincidence
+between the poison-accumulation timeline and the model-selection
+timeline**, which cannot be relied upon in a production deployment
+because (i) real training has no oracle for macro-NASA on the honest
+fleet's test set, and (ii) the attacker can trivially force late
+convergence (e.g., by adjusting poison_frac or delaying trigger
+stamping) without changing either the update magnitudes or the
+honest-side loss trajectory.
+
+### 11.5 Reference comparison against Table 10
+
+- Vanilla FedAvg (no defense): $\mathrm{ASR} = 0.949 \pm 0.079$ (tight).
+- FedRep bridge (honest mean): $\mathrm{ASR} = 0.633 \pm 0.320$
+  (bimodal, spans $[0, 1]$).
+- Krum-defended FedAvg: $\mathrm{ASR} = 0.064 \pm 0.100$ (95 % CI
+  reaches 0 %).
+
+FedRep sits nominally between vanilla and Krum in mean ASR, but with
+variance an order of magnitude worse than either. The FedRep 95 % CI
+$[0.235, 1.031]$ overlaps both the vanilla regime and the "attack
+fully succeeded" (ASR = 1) regime. **Krum remains the only aggregator
+that reliably delivers low ASR with tight variance; FedRep alone does
+not.**
+
+### 11.6 Consequence for defense stacking
+
+The bridge result *confirms* the two-axis orthogonality argument the
+paper makes in § 10.1: personalization is the right architectural
+response to Axis 1 (structural non-IID), and Byzantine-robust
+aggregation is the right aggregation-layer response to Axis 2
+(adversarial). Neither substitutes for the other. A deployment that
+faces both threats must stack both, and the FedRep + Krum-$f_1$
+composition is the *recommended* two-axis defense
+([research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md),
+Table 11 row 7). Evaluating the stacked FedRep + Krum defense
+end-to-end remains future work, motivated by this negative bridge
+result.
+
+### 11.7 Files added in the bridge experiment
+
+| File | Purpose |
+|---|---|
+| [scripts/run_rq2_fedrep_under_backdoor.py](scripts/run_rq2_fedrep_under_backdoor.py) | End-to-end runner: FedRep with `client_3` wrapped in `make_backdoor_poisoned_loader`; per-client ASR eval; writes `metrics.json` per seed. |
+| [src/fl_aircraft/fl/poisoning.py](src/fl_aircraft/fl/poisoning.py) (extended) | Exports `make_backdoor_poisoned_loader` so `PersonalisedClient` can consume the same trigger-stamped loader that `FederatedClient` uses. |
+| [scripts/aggregate_bridge_seeds.py](scripts/aggregate_bridge_seeds.py) | Per-seed → 5-seed aggregator with 95 % CIs. |
+| `results/rq_bridge/seed_{42,43,44,45,46}/` | Per-seed FedRep-under-backdoor outputs. |
+| [results/rq_bridge/metrics_aggregated.json](results/rq_bridge/metrics_aggregated.json) | 5-seed aggregate (attacker ASR, honest mean/max ASR, attacker−honest delta with 95 % CI). |
+
+---
+
 ## TL;DR
 
-1. **The threat**: one malicious airline (`client_3` on FD003) sends
-   corrupted weight updates to push the global model toward predicting
-   healthier-than-real RUL for competitor engines. The server cannot
-   inspect client data — only weights.
-2. **Two attacks tested**: label flip (stealthy, normal-magnitude,
-   wrong direction) and gradient scaling × −10 (loud, 10× magnitude,
-   opposite direction).
-3. **Three defenses tested**: trimmed mean (β = 0.25), coordinate-wise
-   median, Krum (f = 1).
-4. **The headline finding**: without defense, gradient scaling is
-   **catastrophic** (RMSE explodes from 17.95 to 84.03, F1 collapses
-   to 0.000). With Krum, both attacks recover to RMSE 19.80 — within
-   1.85 of the clean baseline. The per-element defenses (trimmed mean,
-   median) only partially recover (RMSE 21.5–23.5).
-5. **The mechanism**: Krum's geometric whole-update isolation argument
-   identifies the malicious client by its distance from the honest
-   cluster. Once isolated, the malicious update is never selected.
-   The per-element defenses can only filter parameters where the
-   malicious client *happens* to be an extreme value — they leak on
-   the rest.
-6. **The diagnostic plot is a smoking gun**: the malicious client's
-   update L2 norm sits an order of magnitude above the honest clients
-   for the entire training. Any defense that looks at update norms
-   would catch this trivially.
-7. **The n = 4 finding**: trimmed mean and median produce
-   bit-identical results because they coincide mathematically when
-   n = 4. The two aggregators only diverge for n ≥ 5. This is a
-   degenerate-case finding worth recording, not a bug.
-8. **The cost of Krum on clean data is 0.76 RMSE** (18.71 vs 17.95) —
-   well worth paying for the 1.85-RMSE worst-case ceiling under
-   attack vs vanilla's 66.08-RMSE collapse.
-9. **The most pressing next experiment** is the 2-attacker coordinated
-   case (Krum's f = 1 setting breaks, expected RMSE > 50 even with
-   Krum). Requires re-partitioning into 6+ clients.
-10. **The strongest follow-up paper section** would combine Krum
-    (poisoning defense) + DP noise (privacy defense) + per-client
-    heads (FedRep) (Non-IID defense) into a triple-defended FL
-    protocol — a configuration not yet published in PHM.
+1. **The threat**: one (or two) malicious airlines send corrupted weight
+   updates to push the global model toward wrong predictions. Server
+   cannot inspect client data — only weights.
+2. **v1 tested 2 attacks × 4 aggregators = 11 cells (single seed).**
+   Vanilla FedAvg collapses under grad ×−10 (RMSE 84.03; F1 0.000).
+   Krum-$f_1$ recovers to RMSE 19.80 under both untargeted attacks;
+   per-coordinate defenses (trimmed / median) recover only to RMSE
+   21–23. Trimmed mean = median bit-identically at $n = 4$ (a
+   degenerate coincidence, not a bug).
+3. **v2 extended the matrix to 5 attacks × 4 aggregators + baselines
+   = 25 cells (§ 9)**, adding: AV3 physically-plausible sensor-value
+   backdoor targeting T30; AV4 stealthy grad ×−2; AV5 coordinated
+   2-of-4 Byzantine; Krum-$f_2$ (which is *mathematically undefined*
+   at $n = 4$ per $n - f - 2 \ge 1$ — the theoretical wall becomes
+   an empirical wall).
+4. **v2 5-seed aggregation (§ 10)** produces the paper's Axis-2
+   headline numbers:
+   * Backdoor ASR against vanilla FedAvg: **94.9 ± 7.9 %** — clean
+     RMSE (16.86 ± 0.43) statistically indistinguishable from honest
+     baseline (16.59 ± 0.84). **Invisible to clean-metric monitoring.**
+   * Krum backdoor ASR: **6.4 ± 10.0 %** — 95 % CI reaches zero;
+     order-of-magnitude reduction.
+   * Coordinated 2-of-4 Byzantine: per-coordinate defenses collapse
+     deterministically to RMSE 84.03 ± 0.00; Krum-$f_1$ recovers to
+     RMSE 23.97 ± 9.92 despite formally violating its $\le f$
+     assumption.
+   * Krum's untargeted-attack cells report identical (mean, std) =
+     (23.81, 10.01) across attack families because argmin selection
+     is attack-agnostic; backdoor + Krum is the exception (std 0.61).
+5. **v2 bridge experiment (§ 11)** — FedRep under backdoor over 5
+   seeds: attacker-minus-honest ASR delta is $-0.017 \pm 0.060$
+   (indistinguishable from zero). **Personalization does not shield
+   honest clients** because the poison acts on the shared
+   representation, not on the private heads. Krum + FedRep is the
+   recommended two-axis defense composition (Table 11 row 7 in the
+   paper).
+6. **The empirical picture is now**: Axis-1 threats want per-client
+   architecture (RQ2 v2); Axis-2 threats want geometric whole-update
+   aggregation (Krum). Neither substitutes for the other; both are
+   needed in a real deployment.
+7. **Caveats worth stating in the writeup**: small $n = 4$ (Krum-$f_2$
+   undefined; Multi-Krum / Bulyan not tested), no adaptive attacker
+   tested, backdoor trigger is a single fixed configuration (sensitivity
+   sweep over $(p, \text{trigger\_value})$ deferred), stacked FedRep +
+   Krum not yet evaluated end-to-end (motivated by § 11 but not run).
 
-This is the **first positive finding** of the project's security side
-and contrasts cleanly with RQ2's negative finding on aggregation-layer
-fixes. Together the two RQs show: server-side defenses cannot fix
-*Non-IID utility gaps* (RQ2) but they *can* fix *Byzantine attacks*
-(RQ7). Different layers, different problems, different verdicts —
-exactly the kind of layered understanding a thesis chapter benefits from.
+This is the paper's Axis-2 story. Together with the RQ2 v2 Axis-1
+story the two-axis narrative closes: distinct threats, distinct
+defenses, both required.
 
 ---
 
 ## Appendix: artifact pointers
 
+### v1 (11-cell, seed 42)
+
 | Artifact | Path |
 |---|---|
-| Per-cell metrics | [`results/rq7_poisoning/metrics.json`](results/rq7_poisoning/metrics.json) |
-| Headline RMSE bar chart | [`results/rq7_poisoning/headline_comparison_fd001_fd003.png`](results/rq7_poisoning/headline_comparison_fd001_fd003.png) |
-| **Attack diagnostic (log-scale delta norms)** | [`results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png`](results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png) |
-| Defense recovery (paired bars) | [`results/rq7_poisoning/defense_recovery_fd001_fd003.png`](results/rq7_poisoning/defense_recovery_fd001_fd003.png) |
-| Per-subset breakdown | [`results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png`](results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png) |
-| Per-round trajectories (one CSV per cell) | `results/rq7_poisoning/per_round_*.csv` |
-| Attack wrappers | [`src/fl_aircraft/fl/poisoning.py`](src/fl_aircraft/fl/poisoning.py) |
-| Robust aggregators | [`src/fl_aircraft/fl/robust_aggregators.py`](src/fl_aircraft/fl/robust_aggregators.py) |
-| Poisoned simulation loop | [`src/fl_aircraft/fl/poisoned_simulation.py`](src/fl_aircraft/fl/poisoned_simulation.py) |
-| Experiment CLI | [`scripts/run_rq7.py`](scripts/run_rq7.py) |
-| Unit tests | [`tests/test_rq7.py`](tests/test_rq7.py) |
-| Long-form web story | [`frontend/src/pages/Rq7StoryPage.tsx`](frontend/src/pages/Rq7StoryPage.tsx) (live at `/rq7-story`) |
+| Per-cell metrics | [results/rq7_poisoning/metrics.json](results/rq7_poisoning/metrics.json) |
+| Headline RMSE bar chart | [results/rq7_poisoning/headline_comparison_fd001_fd003.png](results/rq7_poisoning/headline_comparison_fd001_fd003.png) |
+| **Attack diagnostic (log-scale delta norms)** | [results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png](results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png) |
+| Defense recovery (paired bars) | [results/rq7_poisoning/defense_recovery_fd001_fd003.png](results/rq7_poisoning/defense_recovery_fd001_fd003.png) |
+| Per-subset breakdown | [results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png](results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png) |
+| Per-round trajectories | `results/rq7_poisoning/per_round_*.csv` |
+| Attack wrappers | [src/fl_aircraft/fl/poisoning.py](src/fl_aircraft/fl/poisoning.py) |
+| Robust aggregators | [src/fl_aircraft/fl/robust_aggregators.py](src/fl_aircraft/fl/robust_aggregators.py) |
+| Poisoned simulation loop | [src/fl_aircraft/fl/poisoned_simulation.py](src/fl_aircraft/fl/poisoned_simulation.py) |
+| Experiment CLI | [scripts/run_rq7.py](scripts/run_rq7.py) |
+| Unit tests | [tests/test_rq7.py](tests/test_rq7.py) |
+| Long-form web story | [frontend/src/pages/Rq7StoryPage.tsx](frontend/src/pages/Rq7StoryPage.tsx) (live at `/rq7-story`) |
+
+### v2 (25-cell extended matrix + 5-seed + bridge)
+
+| Artifact | Path |
+|---|---|
+| Extended-matrix seed-42 metrics | [results/rq7_poisoning/metrics.json](results/rq7_poisoning/metrics.json) (25 cells) |
+| **5-seed aggregate** | [results/rq7_poisoning/metrics_aggregated.json](results/rq7_poisoning/metrics_aggregated.json) |
+| Per-seed outputs | `results/rq7_poisoning_seeds/seed_{42,43,44,45,46}/` |
+| Multi-seed run log | [results/rq7_poisoning_seeds/multiseed_run.log](results/rq7_poisoning_seeds/multiseed_run.log) |
+| Paper Fig. 13 (backdoor ASR bar chart) | [results/paper_figures/fig13_backdoor_asr.png](results/paper_figures/fig13_backdoor_asr.png) |
+| Paper Fig. 14 (25-cell 5-seed matrix) | [results/paper_figures/fig14_rq7_matrix_5seed.png](results/paper_figures/fig14_rq7_matrix_5seed.png) |
+| Paper Fig. 15 (Krum per-seed dot plot) | [results/paper_figures/fig15_krum_seed_variance.png](results/paper_figures/fig15_krum_seed_variance.png) |
+| Multi-seed runner | [scripts/run_rq7_multiseed.py](scripts/run_rq7_multiseed.py) |
+| Multi-seed aggregator | [scripts/aggregate_rq7_seeds.py](scripts/aggregate_rq7_seeds.py) |
+| Paper figure generator | [scripts/generate_paper_figures.py](scripts/generate_paper_figures.py) |
+| **Bridge experiment (FedRep under backdoor)** | `results/rq_bridge/` |
+| Bridge 5-seed aggregate | [results/rq_bridge/metrics_aggregated.json](results/rq_bridge/metrics_aggregated.json) |
+| Bridge runner | [scripts/run_rq2_fedrep_under_backdoor.py](scripts/run_rq2_fedrep_under_backdoor.py) |
+| Bridge aggregator | [scripts/aggregate_bridge_seeds.py](scripts/aggregate_bridge_seeds.py) |

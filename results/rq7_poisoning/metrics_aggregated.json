@@ -1,0 +1,1069 @@
+{
+  "n_seeds": 5,
+  "seeds": [
+    42,
+    43,
+    44,
+    45,
+    46
+  ],
+  "alpha": 0.05,
+  "per_cell": {
+    "AV1_labelflip_vanilla": {
+      "best_rmse": {
+        "mean": 28.7,
+        "std": 2.1886,
+        "ci_lo": 25.9825,
+        "ci_hi": 31.4176,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 4994.0209,
+        "std": 1540.0015,
+        "ci_lo": 3081.8564,
+        "ci_hi": 6906.1854,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.7789,
+        "std": 0.0395,
+        "ci_lo": 0.7299,
+        "ci_hi": 0.828,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.5465,
+        "std": 0.0611,
+        "ci_lo": 0.4707,
+        "ci_hi": 0.6224,
+        "n": 5
+      },
+      "label": "label-flip + vanilla",
+      "group": "attack",
+      "attacker_kind": "label_flip",
+      "aggregator": "fedavg"
+    },
+    "AV2_gradscale_vanilla": {
+      "best_rmse": {
+        "mean": 84.0297,
+        "std": 0.0029,
+        "ci_lo": 84.0262,
+        "ci_hi": 84.0333,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 709624.9462,
+        "std": 175.0448,
+        "ci_lo": 709407.5993,
+        "ci_hi": 709842.293,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.3718,
+        "std": 0.2327,
+        "ci_lo": 0.0829,
+        "ci_hi": 0.6607,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.0735,
+        "std": 0.1643,
+        "ci_lo": -0.1305,
+        "ci_hi": 0.2774,
+        "n": 5
+      },
+      "label": "grad \u00d7-10 + vanilla",
+      "group": "attack",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "fedavg"
+    },
+    "AV3_backdoor_vanilla": {
+      "best_rmse": {
+        "mean": 16.856,
+        "std": 0.4311,
+        "ci_lo": 16.3207,
+        "ci_hi": 17.3912,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1530.0915,
+        "std": 183.5806,
+        "ci_lo": 1302.1461,
+        "ci_hi": 1758.0369,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9542,
+        "std": 0.014,
+        "ci_lo": 0.9368,
+        "ci_hi": 0.9716,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.8914,
+        "std": 0.0225,
+        "ci_lo": 0.8634,
+        "ci_hi": 0.9193,
+        "n": 5
+      },
+      "label": "backdoor + vanilla",
+      "group": "attack",
+      "attacker_kind": "backdoor",
+      "aggregator": "fedavg"
+    },
+    "AV4_gradscalex2_vanilla": {
+      "best_rmse": {
+        "mean": 73.5995,
+        "std": 6.1379,
+        "ci_lo": 65.9783,
+        "ci_hi": 81.2208,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 311183.3768,
+        "std": 191404.1904,
+        "ci_lo": 73523.6846,
+        "ci_hi": 548843.0691,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.3354,
+        "std": 0.1739,
+        "ci_lo": 0.1194,
+        "ci_hi": 0.5513,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.2351,
+        "std": 0.2132,
+        "ci_lo": -0.0296,
+        "ci_hi": 0.4998,
+        "n": 5
+      },
+      "label": "grad \u00d7-2 + vanilla",
+      "group": "attack",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "fedavg"
+    },
+    "AV5_coord_vanilla": {
+      "best_rmse": {
+        "mean": 84.0333,
+        "std": 0.0,
+        "ci_lo": 84.0333,
+        "ci_hi": 84.0333,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 709839.6053,
+        "std": 0.136,
+        "ci_lo": 709839.4364,
+        "ci_hi": 709839.7742,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.3078,
+        "std": 0.1445,
+        "ci_lo": 0.1283,
+        "ci_hi": 0.4872,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.0735,
+        "std": 0.1643,
+        "ci_lo": -0.1305,
+        "ci_hi": 0.2774,
+        "n": 5
+      },
+      "label": "coord \u00d7-10 (2 attackers) + vanilla",
+      "group": "attack",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "fedavg"
+    },
+    "B0_clean_vanilla": {
+      "best_rmse": {
+        "mean": 16.5876,
+        "std": 0.8417,
+        "ci_lo": 15.5425,
+        "ci_hi": 17.6328,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1427.9559,
+        "std": 334.6127,
+        "ci_lo": 1012.4793,
+        "ci_hi": 1843.4324,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9622,
+        "std": 0.0118,
+        "ci_lo": 0.9476,
+        "ci_hi": 0.9768,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.9175,
+        "std": 0.028,
+        "ci_lo": 0.8827,
+        "ci_hi": 0.9523,
+        "n": 5
+      },
+      "label": "clean + vanilla FedAvg",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "fedavg"
+    },
+    "B1_clean_trimmed": {
+      "best_rmse": {
+        "mean": 16.7159,
+        "std": 0.4797,
+        "ci_lo": 16.1202,
+        "ci_hi": 17.3115,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1431.4897,
+        "std": 218.8682,
+        "ci_lo": 1159.7289,
+        "ci_hi": 1703.2505,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9598,
+        "std": 0.0156,
+        "ci_lo": 0.9405,
+        "ci_hi": 0.9792,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.9109,
+        "std": 0.0243,
+        "ci_lo": 0.8807,
+        "ci_hi": 0.9411,
+        "n": 5
+      },
+      "label": "clean + trimmed mean",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "trimmed_mean"
+    },
+    "B2_clean_median": {
+      "best_rmse": {
+        "mean": 16.7159,
+        "std": 0.4797,
+        "ci_lo": 16.1202,
+        "ci_hi": 17.3115,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1431.4897,
+        "std": 218.8682,
+        "ci_lo": 1159.7289,
+        "ci_hi": 1703.2505,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9598,
+        "std": 0.0156,
+        "ci_lo": 0.9405,
+        "ci_hi": 0.9792,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.9109,
+        "std": 0.0243,
+        "ci_lo": 0.8807,
+        "ci_hi": 0.9411,
+        "n": 5
+      },
+      "label": "clean + median",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "median"
+    },
+    "B3_clean_krum": {
+      "best_rmse": {
+        "mean": 18.6531,
+        "std": 1.7265,
+        "ci_lo": 16.5093,
+        "ci_hi": 20.7969,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1982.6284,
+        "std": 547.5081,
+        "ci_lo": 1302.8073,
+        "ci_hi": 2662.4495,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9484,
+        "std": 0.0255,
+        "ci_lo": 0.9168,
+        "ci_hi": 0.98,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.8166,
+        "std": 0.0804,
+        "ci_lo": 0.7168,
+        "ci_hi": 0.9164,
+        "n": 5
+      },
+      "label": "clean + Krum (f=1)",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "krum_f1"
+    },
+    "D11_labelflip_trimmed": {
+      "best_rmse": {
+        "mean": 21.7101,
+        "std": 1.3278,
+        "ci_lo": 20.0615,
+        "ci_hi": 23.3588,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 2428.5514,
+        "std": 561.2945,
+        "ci_lo": 1731.6123,
+        "ci_hi": 3125.4906,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9053,
+        "std": 0.0274,
+        "ci_lo": 0.8713,
+        "ci_hi": 0.9394,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6995,
+        "std": 0.1171,
+        "ci_lo": 0.5542,
+        "ci_hi": 0.8449,
+        "n": 5
+      },
+      "label": "label-flip + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "label_flip",
+      "aggregator": "trimmed_mean"
+    },
+    "D12_labelflip_median": {
+      "best_rmse": {
+        "mean": 21.7101,
+        "std": 1.3278,
+        "ci_lo": 20.0615,
+        "ci_hi": 23.3588,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 2428.5514,
+        "std": 561.2945,
+        "ci_lo": 1731.6123,
+        "ci_hi": 3125.4906,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9053,
+        "std": 0.0274,
+        "ci_lo": 0.8713,
+        "ci_hi": 0.9394,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6995,
+        "std": 0.1171,
+        "ci_lo": 0.5542,
+        "ci_hi": 0.8449,
+        "n": 5
+      },
+      "label": "label-flip + median",
+      "group": "defense",
+      "attacker_kind": "label_flip",
+      "aggregator": "median"
+    },
+    "D13_labelflip_krum": {
+      "best_rmse": {
+        "mean": 23.8055,
+        "std": 10.0081,
+        "ci_lo": 11.3788,
+        "ci_hi": 36.2322,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 3985.1801,
+        "std": 3970.7446,
+        "ci_lo": -945.1506,
+        "ci_hi": 8915.5108,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8984,
+        "std": 0.0763,
+        "ci_lo": 0.8036,
+        "ci_hi": 0.9932,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6324,
+        "std": 0.3614,
+        "ci_lo": 0.1838,
+        "ci_hi": 1.0811,
+        "n": 5
+      },
+      "label": "label-flip + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "label_flip",
+      "aggregator": "krum_f1"
+    },
+    "D21_gradscale_trimmed": {
+      "best_rmse": {
+        "mean": 25.7631,
+        "std": 8.7178,
+        "ci_lo": 14.9386,
+        "ci_hi": 36.5877,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 5194.2754,
+        "std": 3010.476,
+        "ci_lo": 1456.2757,
+        "ci_hi": 8932.2751,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8922,
+        "std": 0.0801,
+        "ci_lo": 0.7927,
+        "ci_hi": 0.9917,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6287,
+        "std": 0.1567,
+        "ci_lo": 0.4341,
+        "ci_hi": 0.8233,
+        "n": 5
+      },
+      "label": "grad \u00d7-10 + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "trimmed_mean"
+    },
+    "D22_gradscale_median": {
+      "best_rmse": {
+        "mean": 25.7631,
+        "std": 8.7178,
+        "ci_lo": 14.9386,
+        "ci_hi": 36.5877,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 5194.2754,
+        "std": 3010.476,
+        "ci_lo": 1456.2757,
+        "ci_hi": 8932.2751,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8922,
+        "std": 0.0801,
+        "ci_lo": 0.7927,
+        "ci_hi": 0.9917,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6287,
+        "std": 0.1567,
+        "ci_lo": 0.4341,
+        "ci_hi": 0.8233,
+        "n": 5
+      },
+      "label": "grad \u00d7-10 + median",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "median"
+    },
+    "D23_gradscale_krum": {
+      "best_rmse": {
+        "mean": 23.8055,
+        "std": 10.0081,
+        "ci_lo": 11.3788,
+        "ci_hi": 36.2322,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 3985.1801,
+        "std": 3970.7446,
+        "ci_lo": -945.1506,
+        "ci_hi": 8915.5108,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8984,
+        "std": 0.0763,
+        "ci_lo": 0.8036,
+        "ci_hi": 0.9932,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6324,
+        "std": 0.3614,
+        "ci_lo": 0.1838,
+        "ci_hi": 1.0811,
+        "n": 5
+      },
+      "label": "grad \u00d7-10 + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "krum_f1"
+    },
+    "D31_backdoor_trimmed": {
+      "best_rmse": {
+        "mean": 17.3528,
+        "std": 0.6289,
+        "ci_lo": 16.5719,
+        "ci_hi": 18.1337,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1760.505,
+        "std": 348.6143,
+        "ci_lo": 1327.6432,
+        "ci_hi": 2193.3669,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9606,
+        "std": 0.0166,
+        "ci_lo": 0.94,
+        "ci_hi": 0.9812,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.891,
+        "std": 0.0534,
+        "ci_lo": 0.8247,
+        "ci_hi": 0.9573,
+        "n": 5
+      },
+      "label": "backdoor + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "backdoor",
+      "aggregator": "trimmed_mean"
+    },
+    "D32_backdoor_median": {
+      "best_rmse": {
+        "mean": 17.3528,
+        "std": 0.6289,
+        "ci_lo": 16.5719,
+        "ci_hi": 18.1337,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 1760.505,
+        "std": 348.6143,
+        "ci_lo": 1327.6432,
+        "ci_hi": 2193.3669,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9606,
+        "std": 0.0166,
+        "ci_lo": 0.94,
+        "ci_hi": 0.9812,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.891,
+        "std": 0.0534,
+        "ci_lo": 0.8247,
+        "ci_hi": 0.9573,
+        "n": 5
+      },
+      "label": "backdoor + median",
+      "group": "defense",
+      "attacker_kind": "backdoor",
+      "aggregator": "median"
+    },
+    "D33_backdoor_krum": {
+      "best_rmse": {
+        "mean": 19.6111,
+        "std": 0.6096,
+        "ci_lo": 18.8542,
+        "ci_hi": 20.368,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 2472.548,
+        "std": 1010.4127,
+        "ci_lo": 1217.9549,
+        "ci_hi": 3727.141,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.9381,
+        "std": 0.009,
+        "ci_lo": 0.9269,
+        "ci_hi": 0.9492,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.8218,
+        "std": 0.0339,
+        "ci_lo": 0.7797,
+        "ci_hi": 0.8639,
+        "n": 5
+      },
+      "label": "backdoor + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "backdoor",
+      "aggregator": "krum_f1"
+    },
+    "D41_gradscalex2_trimmed": {
+      "best_rmse": {
+        "mean": 25.2553,
+        "std": 9.0067,
+        "ci_lo": 14.072,
+        "ci_hi": 36.4387,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 4901.645,
+        "std": 3140.8386,
+        "ci_lo": 1001.7788,
+        "ci_hi": 8801.5112,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8817,
+        "std": 0.0885,
+        "ci_lo": 0.7718,
+        "ci_hi": 0.9916,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6501,
+        "std": 0.1536,
+        "ci_lo": 0.4594,
+        "ci_hi": 0.8408,
+        "n": 5
+      },
+      "label": "grad \u00d7-2 + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "trimmed_mean"
+    },
+    "D42_gradscalex2_median": {
+      "best_rmse": {
+        "mean": 25.2553,
+        "std": 9.0067,
+        "ci_lo": 14.072,
+        "ci_hi": 36.4387,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 4901.645,
+        "std": 3140.8386,
+        "ci_lo": 1001.7788,
+        "ci_hi": 8801.5112,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8817,
+        "std": 0.0885,
+        "ci_lo": 0.7718,
+        "ci_hi": 0.9916,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6501,
+        "std": 0.1536,
+        "ci_lo": 0.4594,
+        "ci_hi": 0.8408,
+        "n": 5
+      },
+      "label": "grad \u00d7-2 + median",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "median"
+    },
+    "D43_gradscalex2_krum": {
+      "best_rmse": {
+        "mean": 23.8055,
+        "std": 10.0081,
+        "ci_lo": 11.3788,
+        "ci_hi": 36.2322,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 3985.1801,
+        "std": 3970.7446,
+        "ci_lo": -945.1506,
+        "ci_hi": 8915.5108,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8984,
+        "std": 0.0763,
+        "ci_lo": 0.8036,
+        "ci_hi": 0.9932,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6324,
+        "std": 0.3614,
+        "ci_lo": 0.1838,
+        "ci_hi": 1.0811,
+        "n": 5
+      },
+      "label": "grad \u00d7-2 + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "krum_f1"
+    },
+    "D51_coord_trimmed": {
+      "best_rmse": {
+        "mean": 84.0333,
+        "std": 0.0,
+        "ci_lo": 84.0333,
+        "ci_hi": 84.0333,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 709839.0577,
+        "std": 0.691,
+        "ci_lo": 709838.1997,
+        "ci_hi": 709839.9156,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.3416,
+        "std": 0.1791,
+        "ci_lo": 0.1192,
+        "ci_hi": 0.5641,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.0735,
+        "std": 0.1643,
+        "ci_lo": -0.1305,
+        "ci_hi": 0.2774,
+        "n": 5
+      },
+      "label": "coord \u00d7-10 + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "trimmed_mean"
+    },
+    "D52_coord_median": {
+      "best_rmse": {
+        "mean": 84.0333,
+        "std": 0.0,
+        "ci_lo": 84.0333,
+        "ci_hi": 84.0333,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 709839.0577,
+        "std": 0.691,
+        "ci_lo": 709838.1997,
+        "ci_hi": 709839.9156,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.3416,
+        "std": 0.1791,
+        "ci_lo": 0.1192,
+        "ci_hi": 0.5641,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.0735,
+        "std": 0.1643,
+        "ci_lo": -0.1305,
+        "ci_hi": 0.2774,
+        "n": 5
+      },
+      "label": "coord \u00d7-10 + median",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "median"
+    },
+    "D53_coord_krum_f1": {
+      "best_rmse": {
+        "mean": 23.9702,
+        "std": 9.9152,
+        "ci_lo": 11.6589,
+        "ci_hi": 36.2815,
+        "n": 5
+      },
+      "best_nasa_score": {
+        "mean": 3935.3548,
+        "std": 4004.4185,
+        "ci_lo": -1036.7875,
+        "ci_hi": 8907.4971,
+        "n": 5
+      },
+      "best_auprc": {
+        "mean": 0.8992,
+        "std": 0.0769,
+        "ci_lo": 0.8038,
+        "ci_hi": 0.9947,
+        "n": 5
+      },
+      "best_f1": {
+        "mean": 0.6474,
+        "std": 0.3666,
+        "ci_lo": 0.1922,
+        "ci_hi": 1.1026,
+        "n": 5
+      },
+      "label": "coord \u00d7-10 + Krum (f=1, exceeded)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "krum_f1"
+    },
+    "D54_coord_krum_f2": {
+      "best_rmse": {
+        "mean": null,
+        "std": null,
+        "ci_lo": null,
+        "ci_hi": null,
+        "n": 0
+      },
+      "best_nasa_score": {
+        "mean": null,
+        "std": null,
+        "ci_lo": null,
+        "ci_hi": null,
+        "n": 0
+      },
+      "best_auprc": {
+        "mean": null,
+        "std": null,
+        "ci_lo": null,
+        "ci_hi": null,
+        "n": 0
+      },
+      "best_f1": {
+        "mean": null,
+        "std": null,
+        "ci_lo": null,
+        "ci_hi": null,
+        "n": 0
+      },
+      "label": "coord \u00d7-10 + Krum (f=2, weakened)",
+      "group": "defense",
+      "attacker_kind": null,
+      "aggregator": null
+    }
+  },
+  "backdoor_summary": {
+    "AV3_backdoor_vanilla": {
+      "clean_auprc": {
+        "mean": 0.9542,
+        "std": 0.014,
+        "ci_lo": 0.9368,
+        "ci_hi": 0.9716,
+        "n": 5
+      },
+      "clean_f1": {
+        "mean": 0.8914,
+        "std": 0.0225,
+        "ci_lo": 0.8634,
+        "ci_hi": 0.9193,
+        "n": 5
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.228,
+        "std": 0.012,
+        "ci_lo": 0.213,
+        "ci_hi": 0.243,
+        "n": 5
+      },
+      "triggered_auprc": {
+        "mean": 0.803,
+        "std": 0.0669,
+        "ci_lo": 0.72,
+        "ci_hi": 0.8861,
+        "n": 5
+      },
+      "triggered_f1": {
+        "mean": 0.0928,
+        "std": 0.1358,
+        "ci_lo": -0.0758,
+        "ci_hi": 0.2614,
+        "n": 5
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.012,
+        "std": 0.0186,
+        "ci_lo": -0.0111,
+        "ci_hi": 0.0351,
+        "n": 5
+      },
+      "attack_success_rate": {
+        "mean": 0.9485,
+        "std": 0.0789,
+        "ci_lo": 0.8506,
+        "ci_hi": 1.0464,
+        "n": 5
+      }
+    },
+    "D31_backdoor_trimmed": {
+      "clean_auprc": {
+        "mean": 0.9606,
+        "std": 0.0166,
+        "ci_lo": 0.94,
+        "ci_hi": 0.9812,
+        "n": 5
+      },
+      "clean_f1": {
+        "mean": 0.891,
+        "std": 0.0534,
+        "ci_lo": 0.8247,
+        "ci_hi": 0.9573,
+        "n": 5
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.216,
+        "std": 0.0272,
+        "ci_lo": 0.1822,
+        "ci_hi": 0.2498,
+        "n": 5
+      },
+      "triggered_auprc": {
+        "mean": 0.9333,
+        "std": 0.046,
+        "ci_lo": 0.8761,
+        "ci_hi": 0.9904,
+        "n": 5
+      },
+      "triggered_f1": {
+        "mean": 0.6233,
+        "std": 0.2069,
+        "ci_lo": 0.3664,
+        "ci_hi": 0.8803,
+        "n": 5
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.112,
+        "std": 0.0611,
+        "ci_lo": 0.0361,
+        "ci_hi": 0.1879,
+        "n": 5
+      },
+      "attack_success_rate": {
+        "mean": 0.4976,
+        "std": 0.2209,
+        "ci_lo": 0.2232,
+        "ci_hi": 0.7719,
+        "n": 5
+      }
+    },
+    "D32_backdoor_median": {
+      "clean_auprc": {
+        "mean": 0.9606,
+        "std": 0.0166,
+        "ci_lo": 0.94,
+        "ci_hi": 0.9812,
+        "n": 5
+      },
+      "clean_f1": {
+        "mean": 0.891,
+        "std": 0.0534,
+        "ci_lo": 0.8247,
+        "ci_hi": 0.9573,
+        "n": 5
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.216,
+        "std": 0.0272,
+        "ci_lo": 0.1822,
+        "ci_hi": 0.2498,
+        "n": 5
+      },
+      "triggered_auprc": {
+        "mean": 0.9333,
+        "std": 0.046,
+        "ci_lo": 0.8761,
+        "ci_hi": 0.9904,
+        "n": 5
+      },
+      "triggered_f1": {
+        "mean": 0.6233,
+        "std": 0.2069,
+        "ci_lo": 0.3664,
+        "ci_hi": 0.8803,
+        "n": 5
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.112,
+        "std": 0.0611,
+        "ci_lo": 0.0361,
+        "ci_hi": 0.1879,
+        "n": 5
+      },
+      "attack_success_rate": {
+        "mean": 0.4976,
+        "std": 0.2209,
+        "ci_lo": 0.2232,
+        "ci_hi": 0.7719,
+        "n": 5
+      }
+    },
+    "D33_backdoor_krum": {
+      "clean_auprc": {
+        "mean": 0.9381,
+        "std": 0.009,
+        "ci_lo": 0.9269,
+        "ci_hi": 0.9492,
+        "n": 5
+      },
+      "clean_f1": {
+        "mean": 0.8218,
+        "std": 0.0339,
+        "ci_lo": 0.7797,
+        "ci_hi": 0.8639,
+        "n": 5
+      },
+      "clean_fault_positive_rate": {
+        "mean": 0.181,
+        "std": 0.0171,
+        "ci_lo": 0.1598,
+        "ci_hi": 0.2022,
+        "n": 5
+      },
+      "triggered_auprc": {
+        "mean": 0.9369,
+        "std": 0.0086,
+        "ci_lo": 0.9262,
+        "ci_hi": 0.9476,
+        "n": 5
+      },
+      "triggered_f1": {
+        "mean": 0.8016,
+        "std": 0.0379,
+        "ci_lo": 0.7546,
+        "ci_hi": 0.8487,
+        "n": 5
+      },
+      "triggered_fault_positive_rate": {
+        "mean": 0.171,
+        "std": 0.0198,
+        "ci_lo": 0.1464,
+        "ci_hi": 0.1956,
+        "n": 5
+      },
+      "attack_success_rate": {
+        "mean": 0.0637,
+        "std": 0.0996,
+        "ci_lo": -0.06,
+        "ci_hi": 0.1873,
+        "n": 5
+      }
+    }
+  }
+}

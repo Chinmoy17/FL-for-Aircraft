@@ -49,9 +49,12 @@ from .poisoned_simulation import (
     run_fedavg_with_attackers,
 )
 from .poisoning import (
+    BackdoorAttacker,
     GradientScaleAttacker,
     LabelFlipAttacker,
     MaliciousClient,
+    make_backdoor_poisoned_loader,
+    stamp_trigger_on_windows,
 )
 from .robust_aggregators import (
     make_krum_aggregator,
@@ -69,6 +72,7 @@ from .simulation import (
 )
 
 __all__ = [
+    "BackdoorAttacker",
     "ClientUpdate",
     "FedAvgServer",
     "FedCCFAHistory",
@@ -91,6 +95,7 @@ __all__ = [
     "build_imbalance_aware_clients",
     "build_personalised_clients_from_bundle",
     "fedavg_aggregate",
+    "make_backdoor_poisoned_loader",
     "make_fault_count_aggregator",
     "make_inverse_loss_aggregator",
     "make_krum_aggregator",
@@ -98,6 +103,7 @@ __all__ = [
     "make_trimmed_mean_aggregator",
     "make_validation_signal_aggregator",
     "run_fedavg",
+    "stamp_trigger_on_windows",
     "run_fedavg_from_bundle",
     "run_fedavg_imbalance_aware",
     "run_fedavg_with_attackers",

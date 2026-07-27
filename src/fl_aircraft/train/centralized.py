@@ -20,7 +20,6 @@ Key conventions:
 """
 from __future__ import annotations
 
-import copy
 import time
 from dataclasses import dataclass, field
 from typing import Iterable
@@ -37,6 +36,7 @@ from ..eval import (
     compute_regression_metrics,
 )
 from ..models import MultiTaskCNN, MultiTaskLoss, RULPrediction
+from ..utils import resolve_device
 
 
 # ---------------------------------------------------------------------------
@@ -120,11 +120,15 @@ def train_one_epoch(
 ) -> tuple[float, float, float]:
     """One pass over the training data. Returns (total, rul, fault) mean losses."""
     model.train()
+    device = next(model.parameters()).device
     running_total = 0.0
     running_rul = 0.0
     running_fault = 0.0
     n_batches = 0
     for x, y_rul, y_fault in loader:
+        x = x.to(device, non_blocking=True)
+        y_rul = y_rul.to(device, non_blocking=True)
+        y_fault = y_fault.to(device, non_blocking=True)
         optimizer.zero_grad(set_to_none=True)
         pred = model(x)
         losses = loss_fn(pred, y_rul, y_fault)
@@ -150,15 +154,17 @@ def evaluate(
 ) -> tuple[RegressionMetrics, ClassificationMetrics, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """One pass over the test data. Returns (rul_metrics, fault_metrics, y_rul_true, y_rul_pred, y_fault_true, y_fault_score)."""
     model.eval()
+    device = next(model.parameters()).device
     rul_preds: list[np.ndarray] = []
     rul_trues: list[np.ndarray] = []
     fault_scores: list[np.ndarray] = []
     fault_trues: list[np.ndarray] = []
     for x, y_rul, y_fault in loader:
+        x = x.to(device, non_blocking=True)
         pred: RULPrediction = model(x)
-        rul_preds.append(pred.rul.numpy())
+        rul_preds.append(pred.rul.cpu().numpy())
         rul_trues.append(y_rul.numpy())
-        fault_scores.append(pred.fault_probs().numpy())
+        fault_scores.append(pred.fault_probs().cpu().numpy())
         fault_trues.append(y_fault.numpy())
     if not rul_preds:
         raise ValueError("Eval loader produced zero batches.")
@@ -186,6 +192,7 @@ def train_centralized(
     use_cosine_schedule: bool = True,
     log_every: int = 1,
     on_epoch_end: "callable | None" = None,
+    device: "str | torch.device | None" = None,
 ) -> TrainingHistory:
     """Centralized training loop with optional cosine LR annealing.
 
@@ -210,6 +217,10 @@ def train_centralized(
     if epochs < 1:
         raise ValueError(f"epochs must be >= 1, got {epochs}.")
 
+    # Move the model onto the training device (GPU when available). This is
+    # in-place for nn.Module parameters, so the caller's reference follows.
+    # On a CPU-only host resolve_device() returns cpu and this is a no-op.
+    model = model.to(resolve_device(device))
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = (
         torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
@@ -267,7 +278,7 @@ def train_centralized(
         if rul_metrics.nasa_score < best_nasa:
             best_nasa = rul_metrics.nasa_score
             best_epoch = epoch
-            best_state = copy.deepcopy(model.state_dict())
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             best_rul_metrics = rul_metrics
             best_fault_metrics = fault_metrics
         if epoch == epochs:

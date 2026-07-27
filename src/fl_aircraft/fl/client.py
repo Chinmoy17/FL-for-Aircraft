@@ -156,11 +156,15 @@ class FederatedClient:
         if mu > 0 and global_snapshot is None:
             raise ValueError("global_snapshot is required when mu > 0.")
         self.model.train()
+        device = next(self.model.parameters()).device
         running_total = 0.0
         running_rul = 0.0
         running_fault = 0.0
         n_batches = 0
         for x, y_rul, y_fault in self.train_loader:
+            x = x.to(device, non_blocking=True)
+            y_rul = y_rul.to(device, non_blocking=True)
+            y_fault = y_fault.to(device, non_blocking=True)
             optimizer.zero_grad(set_to_none=True)
             pred = self.model(x)
             losses = self.loss_fn(pred, y_rul, y_fault)
@@ -169,7 +173,9 @@ class FederatedClient:
                 # Proximal term: (mu/2) * sum_l ||W_l - W_l^{global}||^2.
                 # Each parameter participates; biases included by design
                 # (matches Li et al. 2020 — they regularise all params).
-                proximal = torch.zeros((), dtype=loss_for_backward.dtype)
+                proximal = torch.zeros(
+                    (), dtype=loss_for_backward.dtype, device=loss_for_backward.device
+                )
                 for p_local, p_global in zip(
                     self.model.parameters(), global_snapshot
                 ):
@@ -208,11 +214,13 @@ class FederatedClient:
                 f"Client {self.client_id!r} has no val_loader; cannot validate."
             )
         self.model.eval()
+        device = next(self.model.parameters()).device
         fault_scores: list[np.ndarray] = []
         fault_trues: list[np.ndarray] = []
         for x, _y_rul, y_fault in self.val_loader:
+            x = x.to(device, non_blocking=True)
             pred: RULPrediction = self.model(x)
-            fault_scores.append(pred.fault_probs().numpy())
+            fault_scores.append(pred.fault_probs().cpu().numpy())
             fault_trues.append(y_fault.numpy())
         if not fault_scores:
             raise RuntimeError(

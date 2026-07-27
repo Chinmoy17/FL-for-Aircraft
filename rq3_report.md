@@ -2,13 +2,28 @@
 
 **A technical report on how we turn one black-box RUL prediction into a
 maintenance brief, what the cross-model comparison surfaced that RMSE
-hid, and where the interpretability pipeline still over-promises.**
+hid, how the ontology-grounded narrative was formalised as Algorithm 5
+in the paper draft, and where the interpretability pipeline still
+over-promises.**
 
-> Branch context: this document was written on the `p7_demo` branch but
-> reports on the RQ3 experiment originally landed on the `rq3` branch.
-> The pipeline + ontology code is at git `bec0a78` onward, and is
-> reused unchanged by every downstream branch (rq2 follow-ups, RQ7,
-> p7_demo).
+> **Update history:**
+> * v1: the original per-engine explanation pipeline (Integrated
+>   Gradients + 17-entry ontology + 3 fault-mode rules + optional LLM
+>   rewrite) with 12 case-study explanations (3 engines × 4
+>   checkpoints) and the cross-model comparison finding.
+> * v2 (this file): adds cross-references to how RQ3's artefacts are
+>   consumed in [research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md):
+>   Algorithm 5 formalises the ontology-grounded narrative generator
+>   (paper § 4.6), the cross-model attribution finding motivates the
+>   Axis-2 backdoor trigger choice (paper § 5.2.3 uses $s_3$ = T30
+>   precisely because RQ3 shows temperature sensors dominate the
+>   honest model's decision), and the engineer-facing example lives
+>   in paper § 8.8. These are cross-links, not new science.
+
+> Branch context: v1 was written on the `p7_demo` branch reporting on
+> the `rq3` branch experiment. The pipeline + ontology code is at git
+> `bec0a78` onward, and is reused unchanged by every downstream branch
+> (rq2 follow-ups, RQ7, p7_demo, bridge).
 
 ---
 
@@ -666,7 +681,46 @@ This is exactly the kind of finding the cross-model comparison is
 designed to surface. RMSE alone would have hidden it under "P6 model
 slightly worse than P3 model".
 
-### 6.5 What an attribution sanity-check looks like
+### 6.5 Why this matters for RQ7's Axis-2 backdoor design (v2)
+
+On every checkpoint analysed — including the honest P3 centralized
+reference — the highest-attribution sensors for RUL prediction come
+from the **turbomachinery-temperature and coolant-flow family**:
+T24 ($s_2$), T30 ($s_3$), T50 ($s_4$), W31 ($s_{20}$), W32 ($s_{21}$).
+This is expected from a physics standpoint (thermodynamic efficiency
+degrades with worn hot-section components) but has an
+*adversarial-design consequence*:
+
+> An attacker who wants a **physically-plausible sensor-value
+> backdoor trigger** should target a sensor the honest model already
+> relies on — not a random channel. A strong excursion on such a
+> sensor reads as a *legitimate signal in an unusual regime*, not as
+> a foreign perturbation.
+
+RQ7 v2's AV3 backdoor uses exactly this choice: the trigger stamps
+`s_3` (T30, HPC-outlet temperature) at cycle offset $-1$ with value
+$-3.5\sigma$ (see `_BackdoorPoisonedDataset` in
+[src/fl_aircraft/fl/poisoning.py](src/fl_aircraft/fl/poisoning.py) and
+paper Algorithm 3). The design is grounded in RQ3's attribution
+ranking, not chosen arbitrarily. **The interpretability finding
+independently justifies the adversarial-design choice** — which is a
+first-of-its-kind cross-connection between RQ3 (interpretability) and
+RQ7 (security) that neither RQ, taken alone, could motivate.
+
+RQ3 also feeds into paper § 8.7 ("Interpretability under
+heterogeneity") as the mechanistic-explanation companion to the
+Axis-1 accuracy findings, and into paper § 8.8 ("Engineer-facing
+example: what a maintenance operator sees") which walks through a
+deterministic-narrative side-by-side for engine 50 across two
+checkpoints. In the paper, the deterministic narrative pipeline of
+§ 4.3 above is formalised as **Algorithm 5** ("Ontology-grounded
+engineer narrative from sensor attributions") so a reviewer can audit
+the rule-base by hand — an aviation-certification requirement that
+an LLM-generated free-form narrative could not meet.
+
+---
+
+### 6.6 What an attribution sanity-check looks like
 
 The IG completeness check is a unit test (`test_completeness`) but
 also a runtime guard: every `AttributionResult` carries its
@@ -965,6 +1019,46 @@ and prepares the ground for RQ7's security-side and a future RQ6's
 privacy-side: *"we know what the model is computing on, we know how
 robust that computation is to attack (RQ7), we'll know what it leaks
 about the data (RQ6)."* Three RQs, one interpretability backbone.
+
+### v2 addendum — how RQ3's artefacts are used in the paper draft
+
+The RQ3 pipeline ships two artefacts per test window (paper § 4.6):
+per-sensor Integrated-Gradient attribution scores and an
+ontology-grounded natural-language narrative. In
+[research_Paper/paper_draft_v3.md](research_Paper/paper_draft_v3.md)
+those two artefacts appear in three distinct roles:
+
+1. **Paper § 4.6 — Interpretability protocol.** Formalises the four-
+   checkpoint comparison of § 3.1 above as the *interpretability
+   protocol* used for the whole paper.
+2. **Paper Algorithm 5 — Ontology-grounded engineer narrative.**
+   Formalises the deterministic-narrative renderer of § 4.3 as a
+   step-by-step algorithm that a reviewer can audit by hand. The
+   rule-base is intentionally simple (17 sensor entries + 3 fault-
+   mode rules) rather than an LLM — an aviation-certification
+   requirement that RQ3 v1's LLM "polish only" design already
+   anticipated but did not name.
+3. **Paper § 5.2.3 + Algorithm 3 — Physically-plausible sensor-value
+   backdoor.** The AV3 trigger choice ($s_3$ = T30, cycle offset
+   $-1$, value $-3.5\sigma$) is *directly grounded in RQ3's
+   attribution ranking* — T30 is a top-attribution sensor across all
+   four honest checkpoints, so an adversarial excursion on T30 reads
+   as a legitimate signal. This is the RQ3 → RQ7 cross-connection
+   § 6.5 above documents.
+4. **Paper § 8.7 + § 8.8 — Axis-1 interpretability finding + engineer-
+   facing example.** § 8.7 states the case-study finding
+   ("FedAvg-non-IID attributes to *different* sensors than the
+   centralized reference") as the mechanistic companion to the
+   Axis-1 accuracy findings. § 8.8 walks through the deterministic-
+   narrative side-by-side for test engine 50 across two checkpoints,
+   showing that even when the two models converge on the same
+   *action* the underlying attribution disagreement remains — the
+   ontology hides the disagreement from a monitoring engineer who
+   reads only the recommended-action line.
+
+RQ3 remains scoped as a **case-study finding** (3 engines × 4
+checkpoints). Scaling to the 200-engine statistical version outlined
+in § 7.2 priority #2 is deferred to a follow-up paper.
 
 ---
 
