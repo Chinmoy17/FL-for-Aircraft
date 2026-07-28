@@ -1,0 +1,102 @@
+{
+  "phase_id": "rq_bridge_stacked",
+  "phase_name": "Stacked bridge --- FedRep + Krum under backdoor (Axis 1 x Axis 2)",
+  "config": {
+    "subsets": [
+      "FD002",
+      "FD004"
+    ],
+    "n_clients_per_subset": 2,
+    "n_rounds": 50,
+    "head_epochs": 1,
+    "encoder_epochs": 1,
+    "batch_size": 256,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "lambda_fault": 0.5,
+    "use_cosine_schedule": true,
+    "seed": 43,
+    "attacker_client_id": "client_3",
+    "aggregator": "krum_f1",
+    "krum_f": 1,
+    "backdoor_trigger": {
+      "feature_idx": 5,
+      "cycle_offset": -1,
+      "trigger_value": -3.5,
+      "poison_fraction": 0.3
+    }
+  },
+  "timing": {
+    "total_seconds": 1067.3,
+    "seconds_per_round": 21.35
+  },
+  "summary": {
+    "best_round": 3,
+    "best_macro_rmse": 29.11,
+    "best_macro_nasa_score": 11114.3669,
+    "attacker_id": "client_3",
+    "attacker_asr": 0.184,
+    "honest_mean_asr": 0.1622,
+    "honest_max_asr": 0.1712,
+    "n_honest_clients": 3
+  },
+  "per_client_backdoor_evaluation": {
+    "client_1": {
+      "clean_auprc": 0.728,
+      "clean_f1": 0.587,
+      "clean_fault_positive_rate": 0.501,
+      "triggered_auprc": 0.7776,
+      "triggered_f1": 0.6224,
+      "triggered_fault_positive_rate": 0.428,
+      "attack_success_rate": 0.1457
+    },
+    "client_2": {
+      "clean_auprc": 0.7461,
+      "clean_f1": 0.6131,
+      "clean_fault_positive_rate": 0.4379,
+      "triggered_auprc": 0.7782,
+      "triggered_f1": 0.6644,
+      "triggered_fault_positive_rate": 0.3629,
+      "attack_success_rate": 0.1712
+    },
+    "client_3": {
+      "clean_auprc": 0.7461,
+      "clean_f1": 0.6643,
+      "clean_fault_positive_rate": 0.3215,
+      "triggered_auprc": 0.7751,
+      "triggered_f1": 0.6964,
+      "triggered_fault_positive_rate": 0.2623,
+      "attack_success_rate": 0.184
+    },
+    "client_4": {
+      "clean_auprc": 0.7447,
+      "clean_f1": 0.5988,
+      "clean_fault_positive_rate": 0.4536,
+      "triggered_auprc": 0.7778,
+      "triggered_f1": 0.6557,
+      "triggered_fault_positive_rate": 0.3767,
+      "attack_success_rate": 0.1696
+    }
+  },
+  "per_client_clean_test_rmse_best_round": {
+    "client_1": 27.4344,
+    "client_2": 27.4152,
+    "client_3": 30.8721,
+    "client_4": 30.7182
+  },
+  "per_client_clean_test_rmse_final_round": {
+    "client_1": 20.906,
+    "client_2": 20.6389,
+    "client_3": 35.8185,
+    "client_4": 33.2088
+  },
+  "reference_baselines": {
+    "note": "5-seed aggregates from Table 11 (matrix) and Table 12 (bridge).",
+    "AV3_backdoor_vanilla_asr_mean": 0.949,
+    "AV3_backdoor_vanilla_asr_std": 0.079,
+    "D33_backdoor_krum_asr_mean": 0.064,
+    "D33_backdoor_krum_asr_std": 0.1,
+    "FedRep_alone_bridge_honest_asr_mean": 0.633,
+    "FedRep_alone_bridge_honest_asr_std": 0.32
+  }
+}
