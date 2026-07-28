@@ -1,0 +1,863 @@
+{
+  "phase_id": "rq7_poisoning",
+  "phase_name": "RQ7 \u2014 Model poisoning attacks + Byzantine-robust aggregation",
+  "interpretation": "RQ7 ran 25 attack \u00d7 aggregator cells on the FD001+FD003 Non-IID partition. Baseline (clean + vanilla FedAvg) was RMSE 16.2554. Under attack with no defense the global model degraded to RMSE 84.03 (worst). The best Byzantine-robust aggregator recovered RMSE to 17.13 (within ~1 cycle of the clean baseline). This extends the Yin/Blanchard/Landau family of robust aggregators to four attack types (label-flip, catastrophic gradient scaling, stealthy bounded-scale, backdoor) and to the coordinated Byzantine case (2 of 4 clients malicious), exposing the tolerance limits of each defence.",
+  "artifacts": {
+    "headline_comparison_png": "results/rq7_poisoning/headline_comparison_fd001_fd003.png",
+    "attack_diagnostic_png": "results/rq7_poisoning/attack_diagnostic_delta_norms_fd001_fd003.png",
+    "defense_recovery_png": "results/rq7_poisoning/defense_recovery_fd001_fd003.png",
+    "per_subset_breakdown_png": "results/rq7_poisoning/per_subset_breakdown_fd001_fd003.png"
+  },
+  "subset": "FD001_FD003",
+  "config": {
+    "subsets": [
+      "FD001",
+      "FD003"
+    ],
+    "n_clients_per_subset": 3,
+    "n_rounds": 50,
+    "local_epochs": 2,
+    "batch_size": 256,
+    "lr": 0.001,
+    "weight_decay": 0.0001,
+    "lambda_fault": 0.5,
+    "seed": 43,
+    "attacker_client_id": "client_4",
+    "attackers": [
+      "label_flip",
+      "grad_scale_x10",
+      "grad_scale_x2",
+      "backdoor",
+      "coordinated_grad_scale_x10"
+    ],
+    "defenses": [
+      "trimmed_mean(beta=0.25)",
+      "median",
+      "Krum(f=1)",
+      "Krum(f=2)"
+    ],
+    "backdoor_trigger": {
+      "feature_idx": 4,
+      "cycle_offset": -1,
+      "trigger_value": -3.5,
+      "poison_fraction": 0.3
+    },
+    "cells_run": [
+      "B0_clean_vanilla",
+      "B1_clean_trimmed",
+      "B2_clean_median",
+      "B3_clean_krum",
+      "AV1_labelflip_vanilla",
+      "D11_labelflip_trimmed",
+      "D12_labelflip_median",
+      "D13_labelflip_krum",
+      "AV2_gradscale_vanilla",
+      "D21_gradscale_trimmed",
+      "D22_gradscale_median",
+      "D23_gradscale_krum",
+      "AV4_gradscalex2_vanilla",
+      "D41_gradscalex2_trimmed",
+      "D42_gradscalex2_median",
+      "D43_gradscalex2_krum",
+      "AV3_backdoor_vanilla",
+      "D31_backdoor_trimmed",
+      "D32_backdoor_median",
+      "D33_backdoor_krum",
+      "AV5_coord_vanilla",
+      "D51_coord_trimmed",
+      "D52_coord_median",
+      "D53_coord_krum_f1",
+      "D54_coord_krum_f2"
+    ]
+  },
+  "timing": {
+    "total_seconds": 2673.7
+  },
+  "summary": {
+    "baseline_rmse_clean_vanilla": 16.2554,
+    "worst_undefended_attack_rmse": 84.0333,
+    "best_defended_rmse": 17.1258,
+    "centralized_rmse_p6": 13.7658,
+    "backdoor_evaluation": {
+      "AV3_backdoor_vanilla": {
+        "clean_auprc": 0.9679,
+        "clean_f1": 0.9247,
+        "clean_fault_positive_rate": 0.24,
+        "triggered_auprc": 0.9567,
+        "triggered_f1": 0.6364,
+        "triggered_fault_positive_rate": 0.105,
+        "attack_success_rate": 0.5625
+      },
+      "D31_backdoor_trimmed": {
+        "clean_auprc": 0.9538,
+        "clean_f1": 0.9011,
+        "clean_fault_positive_rate": 0.23,
+        "triggered_auprc": 0.9558,
+        "triggered_f1": 0.7949,
+        "triggered_fault_positive_rate": 0.165,
+        "attack_success_rate": 0.2826
+      },
+      "D32_backdoor_median": {
+        "clean_auprc": 0.9551,
+        "clean_f1": 0.9111,
+        "clean_fault_positive_rate": 0.225,
+        "triggered_auprc": 0.9565,
+        "triggered_f1": 0.907,
+        "triggered_fault_positive_rate": 0.205,
+        "attack_success_rate": 0.0889
+      },
+      "D33_backdoor_krum": {
+        "clean_auprc": 0.9308,
+        "clean_f1": 0.7952,
+        "clean_fault_positive_rate": 0.19,
+        "triggered_auprc": 0.9349,
+        "triggered_f1": 0.7654,
+        "triggered_fault_positive_rate": 0.18,
+        "attack_success_rate": 0.0526
+      }
+    }
+  },
+  "train": {},
+  "test": {},
+  "per_subset": {
+    "B0_clean_vanilla": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 15.5978,
+        "nasa_score": 510.8071,
+        "auprc": 0.9834,
+        "f1": 0.9434
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 16.8873,
+        "nasa_score": 613.7396,
+        "auprc": 0.9298,
+        "f1": 0.8718
+      }
+    },
+    "B1_clean_trimmed": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 15.9137,
+        "nasa_score": 533.5949,
+        "auprc": 0.982,
+        "f1": 0.9615
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 18.222,
+        "nasa_score": 889.4377,
+        "auprc": 0.9002,
+        "f1": 0.7568
+      }
+    },
+    "B2_clean_median": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 15.7783,
+        "nasa_score": 569.1448,
+        "auprc": 0.9779,
+        "f1": 0.9615
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 17.0322,
+        "nasa_score": 869.7724,
+        "auprc": 0.9653,
+        "f1": 0.8947
+      }
+    },
+    "B3_clean_krum": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 17.2066,
+        "nasa_score": 496.4654,
+        "auprc": 0.9599,
+        "f1": 0.8571
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 19.0395,
+        "nasa_score": 920.9259,
+        "auprc": 0.9555,
+        "f1": 0.9
+      }
+    },
+    "AV1_labelflip_vanilla": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 16.7045,
+        "nasa_score": 536.513,
+        "auprc": 0.9897,
+        "f1": 0.9388
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 25.4716,
+        "nasa_score": 3187.0999,
+        "auprc": 0.6254,
+        "f1": 0.5333
+      }
+    },
+    "D11_labelflip_trimmed": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 16.3237,
+        "nasa_score": 521.9219,
+        "auprc": 0.9438,
+        "f1": 0.8511
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 18.8925,
+        "nasa_score": 714.5035,
+        "auprc": 0.9356,
+        "f1": 0.8
+      }
+    },
+    "D12_labelflip_median": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 16.2993,
+        "nasa_score": 561.7914,
+        "auprc": 0.9411,
+        "f1": 0.875
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 18.5863,
+        "nasa_score": 792.0235,
+        "auprc": 0.9381,
+        "f1": 0.7647
+      }
+    },
+    "D13_labelflip_krum": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 17.2066,
+        "nasa_score": 496.4654,
+        "auprc": 0.9599,
+        "f1": 0.8571
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 19.0395,
+        "nasa_score": 920.9259,
+        "auprc": 0.9555,
+        "f1": 0.9
+      }
+    },
+    "AV2_gradscale_vanilla": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 84.5204,
+        "nasa_score": 339514.3264,
+        "auprc": 0.3761,
+        "f1": 0.0
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 83.4836,
+        "nasa_score": 368442.126,
+        "auprc": 0.1543,
+        "f1": 0.0
+      }
+    },
+    "D21_gradscale_trimmed": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 18.3305,
+        "nasa_score": 896.2769,
+        "auprc": 0.9269,
+        "f1": 0.8261
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 21.5638,
+        "nasa_score": 1271.9035,
+        "auprc": 0.9088,
+        "f1": 0.625
+      }
+    },
+    "D22_gradscale_median": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 18.248,
+        "nasa_score": 947.863,
+        "auprc": 0.9569,
+        "f1": 0.8511
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 20.1074,
+        "nasa_score": 1284.1122,
+        "auprc": 0.9686,
+        "f1": 0.8421
+      }
+    },
+    "D23_gradscale_krum": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 17.2066,
+        "nasa_score": 496.4654,
+        "auprc": 0.9599,
+        "f1": 0.8571
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 19.0395,
+        "nasa_score": 920.9259,
+        "auprc": 0.9555,
+        "f1": 0.9
+      }
+    },
+    "AV4_gradscalex2_vanilla": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 37.6422,
+        "nasa_score": 3339.0575,
+        "auprc": 0.8438,
+        "f1": 0.6341
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 39.8375,
+        "nasa_score": 5051.5286,
+        "auprc": 0.5146,
+        "f1": 0.1739
+      }
+    },
+    "D41_gradscalex2_trimmed": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 18.4278,
+        "nasa_score": 930.9422,
+        "auprc": 0.9269,
+        "f1": 0.8261
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 20.6224,
+        "nasa_score": 1195.1975,
+        "auprc": 0.9314,
+        "f1": 0.7778
+      }
+    },
+    "D42_gradscalex2_median": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 18.5459,
+        "nasa_score": 1003.7644,
+        "auprc": 0.9479,
+        "f1": 0.8261
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 20.266,
+        "nasa_score": 1375.4332,
+        "auprc": 0.9618,
+        "f1": 0.8421
+      }
+    },
+    "D43_gradscalex2_krum": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 17.2066,
+        "nasa_score": 496.4654,
+        "auprc": 0.9599,
+        "f1": 0.8571
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 19.0395,
+        "nasa_score": 920.9259,
+        "auprc": 0.9555,
+        "f1": 0.9
+      }
+    },
+    "AV3_backdoor_vanilla": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 16.4637,
+        "nasa_score": 574.2384,
+        "auprc": 0.9796,
+        "f1": 0.9434
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 16.5388,
+        "nasa_score": 718.7579,
+        "auprc": 0.9654,
+        "f1": 0.9
+      }
+    },
+    "D31_backdoor_trimmed": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 15.8237,
+        "nasa_score": 537.4633,
+        "auprc": 0.9811,
+        "f1": 0.9615
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 18.3357,
+        "nasa_score": 876.7839,
+        "auprc": 0.9166,
+        "f1": 0.8205
+      }
+    },
+    "D32_backdoor_median": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 16.2607,
+        "nasa_score": 605.478,
+        "auprc": 0.9734,
+        "f1": 0.9434
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 18.0897,
+        "nasa_score": 909.5704,
+        "auprc": 0.944,
+        "f1": 0.8649
+      }
+    },
+    "D33_backdoor_krum": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 17.8279,
+        "nasa_score": 571.0241,
+        "auprc": 0.9526,
+        "f1": 0.8261
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 19.7151,
+        "nasa_score": 863.7398,
+        "auprc": 0.8837,
+        "f1": 0.7568
+      }
+    },
+    "AV5_coord_vanilla": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 84.5498,
+        "nasa_score": 340401.1784,
+        "auprc": 0.6182,
+        "f1": 0.0
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 83.5136,
+        "nasa_score": 369436.3298,
+        "auprc": 0.2455,
+        "f1": 0.0
+      }
+    },
+    "D51_coord_trimmed": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 84.5463,
+        "nasa_score": 340297.9262,
+        "auprc": 0.1585,
+        "f1": 0.0
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 83.51,
+        "nasa_score": 369319.3231,
+        "auprc": 0.1178,
+        "f1": 0.0
+      }
+    },
+    "D52_coord_median": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 32.3398,
+        "nasa_score": 2092.3835,
+        "auprc": 0.8799,
+        "f1": 0.6667
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 37.1902,
+        "nasa_score": 5824.4854,
+        "auprc": 0.4357,
+        "f1": 0.2609
+      }
+    },
+    "D53_coord_krum_f1": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 17.4054,
+        "nasa_score": 493.3725,
+        "auprc": 0.9599,
+        "f1": 0.8333
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 18.8534,
+        "nasa_score": 846.9768,
+        "auprc": 0.9737,
+        "f1": 0.9268
+      }
+    },
+    "D54_coord_krum_f2": {
+      "FD001": {
+        "subset": "FD001",
+        "rmse": 18.3636,
+        "nasa_score": 699.1994,
+        "auprc": 0.9386,
+        "f1": 0.75
+      },
+      "FD003": {
+        "subset": "FD003",
+        "rmse": 19.942,
+        "nasa_score": 930.0396,
+        "auprc": 0.9125,
+        "f1": 0.8
+      }
+    }
+  },
+  "per_client": {
+    "B0_clean_vanilla": {
+      "label": "clean + vanilla FedAvg",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "fedavg",
+      "best_round": 15,
+      "best_rmse": 16.2554,
+      "best_nasa_score": 1124.5473,
+      "best_auprc": 0.9614,
+      "best_f1": 0.913,
+      "wall_seconds": 111.3
+    },
+    "B1_clean_trimmed": {
+      "label": "clean + trimmed mean",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "trimmed_mean",
+      "best_round": 17,
+      "best_rmse": 17.1068,
+      "best_nasa_score": 1423.0333,
+      "best_auprc": 0.951,
+      "best_f1": 0.8764,
+      "wall_seconds": 102.3
+    },
+    "B2_clean_median": {
+      "label": "clean + median",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "median",
+      "best_round": 17,
+      "best_rmse": 16.4172,
+      "best_nasa_score": 1438.9173,
+      "best_auprc": 0.969,
+      "best_f1": 0.9333,
+      "wall_seconds": 103.9
+    },
+    "B3_clean_krum": {
+      "label": "clean + Krum (f=1)",
+      "group": "baseline",
+      "attacker_kind": "none",
+      "aggregator": "krum_f1",
+      "best_round": 16,
+      "best_rmse": 18.1462,
+      "best_nasa_score": 1417.3925,
+      "best_auprc": 0.9548,
+      "best_f1": 0.8764,
+      "wall_seconds": 102.3
+    },
+    "AV1_labelflip_vanilla": {
+      "label": "label-flip + vanilla",
+      "group": "attack",
+      "attacker_kind": "label_flip",
+      "aggregator": "fedavg",
+      "best_round": 46,
+      "best_rmse": 21.5389,
+      "best_nasa_score": 3723.6113,
+      "best_auprc": 0.8665,
+      "best_f1": 0.7848,
+      "wall_seconds": 111.6
+    },
+    "D11_labelflip_trimmed": {
+      "label": "label-flip + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "label_flip",
+      "aggregator": "trimmed_mean",
+      "best_round": 6,
+      "best_rmse": 17.6549,
+      "best_nasa_score": 1236.4255,
+      "best_auprc": 0.9323,
+      "best_f1": 0.8293,
+      "wall_seconds": 112.3
+    },
+    "D12_labelflip_median": {
+      "label": "label-flip + median",
+      "group": "defense",
+      "attacker_kind": "label_flip",
+      "aggregator": "median",
+      "best_round": 6,
+      "best_rmse": 17.4803,
+      "best_nasa_score": 1353.8149,
+      "best_auprc": 0.9387,
+      "best_f1": 0.8293,
+      "wall_seconds": 112.3
+    },
+    "D13_labelflip_krum": {
+      "label": "label-flip + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "label_flip",
+      "aggregator": "krum_f1",
+      "best_round": 16,
+      "best_rmse": 18.1462,
+      "best_nasa_score": 1417.3925,
+      "best_auprc": 0.9548,
+      "best_f1": 0.8764,
+      "wall_seconds": 112.1
+    },
+    "AV2_gradscale_vanilla": {
+      "label": "grad \u00d7-10 + vanilla",
+      "group": "attack",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "fedavg",
+      "best_round": 1,
+      "best_rmse": 84.0036,
+      "best_nasa_score": 707956.4525,
+      "best_auprc": 0.2459,
+      "best_f1": 0.0,
+      "wall_seconds": 104.1
+    },
+    "D21_gradscale_trimmed": {
+      "label": "grad \u00d7-10 + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "trimmed_mean",
+      "best_round": 7,
+      "best_rmse": 20.0126,
+      "best_nasa_score": 2168.1812,
+      "best_auprc": 0.9141,
+      "best_f1": 0.7436,
+      "wall_seconds": 104.1
+    },
+    "D22_gradscale_median": {
+      "label": "grad \u00d7-10 + median",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "median",
+      "best_round": 7,
+      "best_rmse": 19.2002,
+      "best_nasa_score": 2231.9761,
+      "best_auprc": 0.9629,
+      "best_f1": 0.8471,
+      "wall_seconds": 103.7
+    },
+    "D23_gradscale_krum": {
+      "label": "grad \u00d7-10 + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "krum_f1",
+      "best_round": 16,
+      "best_rmse": 18.1462,
+      "best_nasa_score": 1417.3925,
+      "best_auprc": 0.9548,
+      "best_f1": 0.8764,
+      "wall_seconds": 104.6
+    },
+    "AV4_gradscalex2_vanilla": {
+      "label": "grad \u00d7-2 + vanilla",
+      "group": "attack",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "fedavg",
+      "best_round": 8,
+      "best_rmse": 38.7554,
+      "best_nasa_score": 8390.5856,
+      "best_auprc": 0.7088,
+      "best_f1": 0.4688,
+      "wall_seconds": 104.9
+    },
+    "D41_gradscalex2_trimmed": {
+      "label": "grad \u00d7-2 + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "trimmed_mean",
+      "best_round": 7,
+      "best_rmse": 19.5559,
+      "best_nasa_score": 2126.1396,
+      "best_auprc": 0.921,
+      "best_f1": 0.8049,
+      "wall_seconds": 104.2
+    },
+    "D42_gradscalex2_median": {
+      "label": "grad \u00d7-2 + median",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "median",
+      "best_round": 7,
+      "best_rmse": 19.425,
+      "best_nasa_score": 2379.199,
+      "best_auprc": 0.953,
+      "best_f1": 0.8333,
+      "wall_seconds": 104.8
+    },
+    "D43_gradscalex2_krum": {
+      "label": "grad \u00d7-2 + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x2",
+      "aggregator": "krum_f1",
+      "best_round": 16,
+      "best_rmse": 18.1462,
+      "best_nasa_score": 1417.3925,
+      "best_auprc": 0.9548,
+      "best_f1": 0.8764,
+      "wall_seconds": 104.6
+    },
+    "AV3_backdoor_vanilla": {
+      "label": "backdoor + vanilla",
+      "group": "attack",
+      "attacker_kind": "backdoor",
+      "aggregator": "fedavg",
+      "best_round": 23,
+      "best_rmse": 16.5013,
+      "best_nasa_score": 1292.9971,
+      "best_auprc": 0.9679,
+      "best_f1": 0.9247,
+      "wall_seconds": 110.0,
+      "backdoor_eval": {
+        "clean_auprc": 0.9679,
+        "clean_f1": 0.9247,
+        "clean_fault_positive_rate": 0.24,
+        "triggered_auprc": 0.9567,
+        "triggered_f1": 0.6364,
+        "triggered_fault_positive_rate": 0.105,
+        "attack_success_rate": 0.5625
+      }
+    },
+    "D31_backdoor_trimmed": {
+      "label": "backdoor + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "backdoor",
+      "aggregator": "trimmed_mean",
+      "best_round": 15,
+      "best_rmse": 17.1258,
+      "best_nasa_score": 1414.2475,
+      "best_auprc": 0.9538,
+      "best_f1": 0.9011,
+      "wall_seconds": 111.0,
+      "backdoor_eval": {
+        "clean_auprc": 0.9538,
+        "clean_f1": 0.9011,
+        "clean_fault_positive_rate": 0.23,
+        "triggered_auprc": 0.9558,
+        "triggered_f1": 0.7949,
+        "triggered_fault_positive_rate": 0.165,
+        "attack_success_rate": 0.2826
+      }
+    },
+    "D32_backdoor_median": {
+      "label": "backdoor + median",
+      "group": "defense",
+      "attacker_kind": "backdoor",
+      "aggregator": "median",
+      "best_round": 16,
+      "best_rmse": 17.1995,
+      "best_nasa_score": 1515.049,
+      "best_auprc": 0.9551,
+      "best_f1": 0.9111,
+      "wall_seconds": 109.5,
+      "backdoor_eval": {
+        "clean_auprc": 0.9551,
+        "clean_f1": 0.9111,
+        "clean_fault_positive_rate": 0.225,
+        "triggered_auprc": 0.9565,
+        "triggered_f1": 0.907,
+        "triggered_fault_positive_rate": 0.205,
+        "attack_success_rate": 0.0889
+      }
+    },
+    "D33_backdoor_krum": {
+      "label": "backdoor + Krum (f=1)",
+      "group": "defense",
+      "attacker_kind": "backdoor",
+      "aggregator": "krum_f1",
+      "best_round": 16,
+      "best_rmse": 18.7952,
+      "best_nasa_score": 1434.7638,
+      "best_auprc": 0.9308,
+      "best_f1": 0.7952,
+      "wall_seconds": 109.5,
+      "backdoor_eval": {
+        "clean_auprc": 0.9308,
+        "clean_f1": 0.7952,
+        "clean_fault_positive_rate": 0.19,
+        "triggered_auprc": 0.9349,
+        "triggered_f1": 0.7654,
+        "triggered_fault_positive_rate": 0.18,
+        "attack_success_rate": 0.0526
+      }
+    },
+    "AV5_coord_vanilla": {
+      "label": "coord \u00d7-10 (2 attackers) + vanilla",
+      "group": "attack",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "fedavg",
+      "best_round": 1,
+      "best_rmse": 84.0333,
+      "best_nasa_score": 709837.5082,
+      "best_auprc": 0.4254,
+      "best_f1": 0.0,
+      "wall_seconds": 104.3
+    },
+    "D51_coord_trimmed": {
+      "label": "coord \u00d7-10 + trimmed mean",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "trimmed_mean",
+      "best_round": 1,
+      "best_rmse": 84.0298,
+      "best_nasa_score": 709617.2495,
+      "best_auprc": 0.1386,
+      "best_f1": 0.0,
+      "wall_seconds": 103.9
+    },
+    "D52_coord_median": {
+      "label": "coord \u00d7-10 + median",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "median",
+      "best_round": 4,
+      "best_rmse": 34.8495,
+      "best_nasa_score": 7916.8702,
+      "best_auprc": 0.6968,
+      "best_f1": 0.5161,
+      "wall_seconds": 104.0
+    },
+    "D53_coord_krum_f1": {
+      "label": "coord \u00d7-10 + Krum (f=1, exceeded)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "krum_f1",
+      "best_round": 16,
+      "best_rmse": 18.1438,
+      "best_nasa_score": 1340.3495,
+      "best_auprc": 0.9639,
+      "best_f1": 0.8764,
+      "wall_seconds": 105.6
+    },
+    "D54_coord_krum_f2": {
+      "label": "coord \u00d7-10 + Krum (f=2, weakened)",
+      "group": "defense",
+      "attacker_kind": "grad_scale_x10",
+      "aggregator": "krum_f2",
+      "best_round": 7,
+      "best_rmse": 19.169,
+      "best_nasa_score": 1629.2394,
+      "best_auprc": 0.9069,
+      "best_f1": 0.775,
+      "wall_seconds": 106.1
+    }
+  },
+  "generated_at": "2026-07-27T12:37:54.086045+00:00"
+}
