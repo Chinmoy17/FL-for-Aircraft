@@ -2,7 +2,7 @@
 
 > **One-stop summary of every experiment**, from the centralized baseline through
 > the two research axes (RQ2 heterogeneity, RQ7 robustness), the cross-axis
-> bridge, and the reviewer-proofing runs (N=6 and FD002+FD004).
+> bridge, and the generalization runs (N=6 and FD002+FD004).
 > Dataset: **NASA C-MAPSS** · Model: multi-task 1-D CNN (30,018 params) ·
 > Metrics: **RMSE** (RUL error, ↓) and **ASR** (backdoor attack success rate, ↓).
 >
@@ -21,7 +21,7 @@ flowchart TD
     C --> C1["RQ7: 5 attacks × 4 aggregators"]
     B1 --> D["Bridge — FedRep + Krum stacked<br/>(personalization AND robustness)"]
     C1 --> D
-    D --> E["Reviewer-proofing<br/>N=6 clients · FD002+FD004 hard data"]
+    D --> E["Generalization checks<br/>N=6 clients · FD002+FD004 hard data"]
 ```
 
 ### The two analogies that explain everything
@@ -136,7 +136,7 @@ Krum), 5 seeds. RMSE = clean-test error; ASR = how often the hidden backdoor wor
 | Backdoor + trimmed / median | ~16.5 | **0.498** | partial |
 | **Backdoor + Krum (D33)** | 18.9 | **0.064** | **Krum crushes it** |
 
-### 4.3 Reviewer-proofing #1 — N=6, FD001+FD003 (5 seeds) · *new*
+### 4.3 Generalization to more clients — N=6, FD001+FD003 (5 seeds) · *new*
 
 Same data, **more clients**. Unlocks **Krum-f2** (valid only when n−f−2 ≥ 1).
 
@@ -154,7 +154,7 @@ Same data, **more clients**. Unlocks **Krum-f2** (valid only when n−f−2 ≥ 
 > **works** at N=6, holding the coordinated 2-attacker case to RMSE ~21 while
 > trimmed-mean collapses at 84.
 
-### 4.4 Reviewer-proofing #2 — FD002+FD004, N=4 (5 seeds) · *new*
+### 4.4 Generalization to harder data — FD002+FD004, N=4 (5 seeds) · *new*
 
 **Harder data** (6 operating conditions, ~2.5× the volume, 19 features).
 
@@ -220,7 +220,7 @@ Stack them: FedRep's per-client heads + Krum on the shared backbone, under a
    median collapse under 2-attacker collusion.
 3. **RMSE ≠ safety:** a stealthy backdoor keeps RMSE perfect while the attack
    succeeds (ASR up to 0.999). You *must* measure ASR.
-4. **Generalization (reviewer-proofing):** the robustness ranking **holds across
+4. **Generalization:** the robustness ranking **holds across
    client count (N=6) and dataset difficulty (FD002+FD004)**; N=6 adds the new
    Krum-f2-vs-coordinated result — with the honest caveat that all defenses
    weaken on harder data.
