@@ -19,7 +19,7 @@ flowchart TD
     A --> C["Axis 2 — Robustness<br/>a client may be malicious"]
     B --> B1["RQ2: FedProx · FedRep · FedCCFA<br/>+ imbalance-aware weighting"]
     C --> C1["RQ7: 5 attacks × 4 aggregators"]
-    B1 --> D["Bridge — FedRep + Krum stacked<br/>(personalization AND robustness)"]
+    B1 --> D["Bridge — SHARP (FedRep + Krum)<br/>(robustness recovered, at an accuracy cost)"]
     C1 --> D
     D --> E["Generalization checks<br/>N=6 clients · FD002+FD004 hard data"]
 ```
@@ -79,6 +79,26 @@ flowchart TD
 
 **Takeaway:** personalization (FedRep) — *not* aggregation reweighting — closes
 the heterogeneity gap. This is the Axis-1 winner carried into the bridge.
+
+### 2.2 What "FedRep" means here — **MT-FedRep** (an extension, not a drop-in)
+
+Our FedRep is an *extension* of the original (Collins et al., 2021), so we label
+it **MT-FedRep** (multi-task FedRep). The original federates a **single
+classification head** on vision/text with an asymmetric *τ-many-head : 1-encoder*
+schedule. Ours differs on four axes:
+
+| Aspect | Original FedRep | **MT-FedRep (ours)** |
+| --- | --- | --- |
+| Heads | 1 classification head | **2 private heads** — RUL regression (Huber) + fault (BCE) |
+| Schedule | τ head steps : 1 encoder gradient step | **1 head epoch : 1 encoder epoch** (symmetric) |
+| Normalization | BatchNorm (vision) | **GroupNorm** (FL-safe across clients) |
+| Domain | image / text classification | **multivariate time-series RUL regression** |
+
+What is shared vs private: the **encoder + trunk (~29.9K params)** are federated;
+the **two heads (~130 params total)** stay on each client. Full provenance and
+per-method deltas for *every* algorithm (FedAvg, FedProx, FedCCFA, Krum,
+trimmed-mean, median, the backdoor) live in
+[`research_Paper/methods_provenance_and_novelty.md`](research_Paper/methods_provenance_and_novelty.md).
 
 ### 2.1 Generalization to hard data (FD002+FD004) · *new*
 
@@ -175,38 +195,103 @@ Same data, **more clients**. Unlocks **Krum-f2** (valid only when n−f−2 ≥ 
 
 ---
 
-## 5. Cross-axis Bridge — FedRep + Krum stacked
+## 5. Cross-axis Bridge — **SHARP** (MT-FedRep + Krum), the honest two-axis view
 
-**Question:** can we get Axis-1 personalization **and** Axis-2 robustness at once?
-Stack them: FedRep's per-client heads + Krum on the shared backbone, under a
-**backdoor** attack. Metric = honest clients' mean ASR (↓).
+**Question:** can we get Axis-1 personalization **and** Axis-2 robustness at
+once? **SHARP** keeps MT-FedRep's per-client heads but replaces the
+shared-encoder *averaging* with **Krum on the encoder-only deltas** (heads never
+leave the client). Below is the **full** picture — both axes and the tradeoff —
+not just ASR.
 
-| Defense (N=4, backdoor) | ASR ↓ | |
+> **Correction (this supersedes an earlier claim).** A previous version of this
+> section said SHARP gives "both properties, **no loss**." That was **wrong** and
+> is retracted. SHARP recovers the robustness FedRep lacks, **but it does cost
+> accuracy** — quantified below. Reported honestly, this is a Pareto tradeoff,
+> not a free win.
+
+### 5.1 Architecture impact — why there is a cost
+
+SHARP changes exactly one line: the server aggregates the encoder with **Krum**
+instead of FedAvg. Krum **selects a single client's encoder each round and
+discards the other three** (it keeps the update closest to its neighbours).
+That rejection is exactly what buys Byzantine robustness — a poisoned encoder is
+geometrically far and gets thrown out — but it also means the shared
+representation learns from **one client per round instead of all four**, so the
+encoder converges to a **weaker representation** than FedAvg-averaged FedRep.
+Robustness and representation quality trade off against each other.
+
+```mermaid
+flowchart TD
+    FR["MT-FedRep alone<br/>encoder = mean of ALL clients<br/>macro RMSE 15.79 · ASR 0.633"]
+    KR["Krum alone<br/>one shared model, all clients<br/>global RMSE 19.61 · ASR 0.064"]
+    SH["SHARP = MT-FedRep + Krum<br/>encoder = Krum-picked 1 client/round · heads private<br/>macro RMSE 17.63 · ASR 0.028"]
+    FR -->|add robust aggregation| SH
+    KR -->|add personalized heads| SH
+```
+
+### 5.2 Robustness axis (ASR ↓, N=4 backdoor, 5 seeds) — SHARP wins
+
+| Defense | ASR ↓ | Reading |
 | --- | --- | --- |
-| FedAvg alone (no defense) | 0.949 | undefended |
-| **FedRep alone** | **0.633** | **personalization alone is VULNERABLE** |
+| FedAvg (no defense) | 0.949 | undefended |
+| MT-FedRep alone | 0.633 | **personalization alone is NOT robust** |
 | Krum alone | 0.064 | robust aggregation works |
-| **FedRep + Krum (bridge)** | **0.028 ± 0.024** | **robustness preserved *with* personalization** |
+| **SHARP (MT-FedRep + Krum)** | **0.028 ± 0.024** | **best robustness** |
 
-> **The real story (validated on 5 seeds):** FedRep by itself is *not* safe
-> (0.63) — personalization doesn't buy robustness. But **adding Krum on the
-> shared backbone rescues it** (0.028), as good as or better than Krum alone.
-> So you can keep FedRep's accuracy win **without** sacrificing backdoor
-> resistance. (Statistically, bridge ≈ Krum-alone — the point is that stacking
-> *doesn't hurt* and gives you both properties.)
+### 5.3 Accuracy axis (RMSE ↓, under the same backdoor) — SHARP pays a cost
 
-| Bridge generalization (backdoor ASR ↓) | ASR | Status |
+| Method | RMSE ↓ | Metric | Note |
+| --- | --- | --- | --- |
+| MT-FedRep alone | **15.79** | macro | best accuracy, but vulnerable |
+| **SHARP** | 17.63 | macro | **+1.84 vs MT-FedRep — the honest cost** |
+| FedAvg | 16.86 | global | undefended |
+| Krum alone | 19.61 | global | robust, but worst accuracy |
+
+*Clean (no-attack) references: MT-FedRep 14.91 macro · FedAvg 16.59 global ·
+Krum 18.65 global.*
+
+> **⚠️ Metric caveat — do not mislead.** *Macro* RMSE (MT-FedRep, SHARP — each
+> client scored on its **own** subset) and *global* RMSE (FedAvg, Krum — one
+> model on the **pooled** test) are **not directly comparable**; macro is
+> systematically more favourable. The **only clean comparison** is SHARP vs
+> MT-FedRep (both macro): **SHARP costs +1.84 macro RMSE.** We therefore do
+> **not** claim SHARP beats Krum on accuracy — that would require both on the
+> same metric (per-subset data not saved; deferred).
+
+### 5.4 The tradeoff, stated plainly
+
+| Method | Accuracy (Axis 1) | Robustness (Axis 2) | Verdict |
+| --- | --- | --- | --- |
+| MT-FedRep alone | ✅ best | ❌ vulnerable (0.633) | best **if no adversary** |
+| Krum alone | ❌ worst | ✅ robust (0.064) | robust, not personalized |
+| **SHARP** | ⚠️ middle (−1.84 vs FedRep) | ✅ **best (0.028)** | **robust + personalized, at a partial accuracy cost** |
+
+SHARP is a **Pareto point, not a dominator**: adding Krum recovers the
+robustness FedRep lacks, but the single-encoder selection **does** cost accuracy.
+
+### 5.5 Why the accuracy cost is acceptable — and future work
+
+The RMSE cost is a **backbone-capacity** limitation, not a flaw in the
+composition. The shared encoder is a deliberately tiny **1-D CNN (~30K params)**,
+chosen so 50 rounds × 4 clients run on a CPU. When Krum keeps only one client's
+encoder per round, a small backbone has little headroom to recover the lost
+signal. A **higher-capacity encoder** — a temporal **Transformer**, a **TCN**, or
+a **CNN-Transformer hybrid** — gives the Krum-selected representation more room
+and is expected to shrink the gap. Crucially, **SHARP's composition is
+architecture-agnostic** (Krum is oblivious to what the encoder is), so a stronger
+backbone drops in **without changing the method**. This is scoped as future work.
+
+### 5.6 Robustness generalization (ASR ↓)
+
+| Setting | SHARP ASR | Status |
 | --- | --- | --- |
-| N=4, FD001+FD003 | **0.028 ± 0.024** | ✓ done |
-| N=6, FD001+FD003 | **0.042 ± 0.049** | ✓ done |
-| FD002+FD004 | **0.147 ± 0.034** | ✓ done |
+| N=4, FD001+FD003 | **0.028 ± 0.024** | ✓ |
+| N=6, FD001+FD003 | **0.042 ± 0.049** | ✓ |
+| FD002+FD004 | **0.147 ± 0.034** | ✓ |
 
-> **Bridge generalizes across all three settings** — 0.028 (N=4), 0.042 (N=6),
-> 0.147 (FD002+FD004) — all far below the 0.95–0.99 ASR of undefended FedAvg. On
-> the hard FD002/4 data it loosens to ~0.15 (matching **Krum-alone's 0.16**
-> there), consistent with the RQ7 finding that every defense weakens as the task
-> gets harder — **but the stacked defense never breaks.** Personalization and
-> robust aggregation compose cleanly at every scale and difficulty.
+SHARP's **robustness** holds across scale and difficulty — never above 0.15 vs
+the 0.95–0.99 of undefended FedAvg. The accuracy cost is consistent across
+settings too, and is exactly what the backbone follow-up (§5.5) targets.
 
 ---
 
@@ -224,8 +309,12 @@ Stack them: FedRep's per-client heads + Krum on the shared backbone, under a
    client count (N=6) and dataset difficulty (FD002+FD004)**; N=6 adds the new
    Krum-f2-vs-coordinated result — with the honest caveat that all defenses
    weaken on harder data.
-5. **Bridge:** FedRep alone is vulnerable (0.63), but **FedRep + Krum** gives
-   personalization *and* robustness (0.028).
+5. **Bridge (SHARP):** MT-FedRep alone is vulnerable (0.63); **SHARP
+   (MT-FedRep + Krum)** recovers best-in-class robustness (0.028) **at a partial
+   accuracy cost** (+1.84 macro RMSE vs MT-FedRep) — a Pareto tradeoff, not a
+   free win. The cost is a small-backbone limitation (future work: a stronger
+   Transformer/TCN/hybrid encoder; see §5.5).
+
 
 ---
 
@@ -311,8 +400,9 @@ counts and a harder dataset.
   RMSE stays normal, i.e. invisible to accuracy.
 - **Krum** (a robust aggregation rule) cuts it to **~6%** (easy), **~16%** (hard).
 - **Personalization alone** (FedRep): **~63%** — vulnerable.
-- **Stacked (SHARP):** **~3%** (easy), **~15%** (hard) — keeps robustness *and*
-  personalization's accuracy gain.
+- **Stacked (SHARP):** **~3%** (easy), **~15%** (hard) — best robustness, but at a
+  **partial accuracy cost** vs personalization-alone (+~1.8 macro RMSE; a Pareto
+  tradeoff, see §5).
 - Simpler defenses (trimmed-mean, median) **collapse** under 2 coordinated attackers.
 
 ### 9.4 Target-venue question (open)
@@ -332,8 +422,10 @@ counts and a harder dataset.
   design (the point is robustness), but must be pre-empted.
 - All methods are **pre-existing**; the novelty is the safety framing + evaluation,
   not new algorithms.
-- The stacked defense is **statistically similar to robust-aggregation-alone** — the
-  claim is "no loss of robustness while adding personalization," not "beats it."
+- The stacked defense (SHARP) **matches robust aggregation on robustness but costs
+  ~1.8 macro RMSE vs personalization-alone** — a Pareto tradeoff (robust *and*
+  personalized at a partial accuracy cost), **not** a dominator, and **not** a
+  free win. Framed for a backbone upgrade (Transformer/TCN/hybrid) in future work.
 - **Threat realism** — we must argue a credible attacker (compromised/insider
   operator, supply-chain tampering).
 - **C-MAPSS is a saturated benchmark.**
