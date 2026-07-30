@@ -1,0 +1,172 @@
+%% ============================================================
+%% Graphical_Abstract.tex
+%%
+%% Replacement graphical abstract for the EAAI submission.
+%%
+%% Built to the EAAI spec:
+%%   * canvas is exactly 130 x 52 mm = 13.0 x 5.2 cm, a 2.5:1
+%%     landscape ratio, matching the required 1328 x 531 px (w x h);
+%%   * pure vector output, so the "min. 500-1000 dpi" rule for line
+%%     drawings is satisfied by construction;
+%%   * real text, not pixels, so it stays crisp and is selectable.
+%%
+%% Every number and label is taken from the manuscript:
+%%   topology .......... Figure 1 / Section 3.2
+%%   Axis-1 gap closed . Table 11  (3-seed mean, seeds 42-44)
+%%   Axis-2 ASR ........ Table 12  (5-seed mean, seeds 42-46)
+%%   stacked defence ... Table 15 / Section 9.5
+%%   attack families ... Section 5.2 (AV1-AV5)
+%%   aggregators ....... Section 5.3
+%%
+%% Acronyms are avoided or spelled out. FD001/FD003 are dataset
+%% subset names, given in full in Section 3.1.
+%%
+%% Build:  pdflatex Graphical_Abstract
+%% Submit: Graphical_Abstract.pdf as a separate item
+%%
+%% Layout is on a fixed 130 x 52 mm grid; panels occupy y = 7.5..40.5.
+%% If you edit text, keep it inside those bounds -- there is no
+%% automatic reflow.
+%% ============================================================
+
+\documentclass[10pt,border=0pt]{standalone}
+
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+
+%% ----- palette (blue / teal / purple / red: colour-blind safe) -----
+\definecolor{axOne}{HTML}{1B5FA8}
+\definecolor{axTwo}{HTML}{1B7F5E}
+\definecolor{bridge}{HTML}{6A3D9A}
+\definecolor{bad}{HTML}{C0392B}
+\definecolor{ink}{HTML}{1A1A1A}
+\definecolor{mute}{HTML}{5E5E5E}
+\definecolor{panelbg}{HTML}{F4F6F9}
+
+\begin{document}
+\begin{tikzpicture}[
+    x=1mm, y=1mm,
+    font=\sffamily\color{ink},
+    hdr/.style  = {font=\sffamily\bfseries\scriptsize, anchor=north west},
+    sub/.style  = {font=\sffamily\tiny\color{mute}, anchor=north west, align=left},
+    lbl/.style  = {font=\sffamily\tiny, anchor=east},
+    val/.style  = {font=\sffamily\bfseries\tiny, anchor=west},
+    pane/.style = {rounded corners=0.7mm, draw=black!18, fill=panelbg,
+                   anchor=north west, minimum height=33mm},
+    chip/.style = {rounded corners=0.5mm, draw=black!30, fill=white,
+                   minimum width=6mm, minimum height=5mm, inner sep=0pt,
+                   font=\sffamily\tiny, align=center},
+    srv/.style  = {rounded corners=0.7mm, draw=axOne, fill=axOne!10,
+                   minimum width=25mm, minimum height=5mm, inner sep=0pt,
+                   font=\sffamily\tiny\bfseries, align=center, thick},
+    step/.style = {-{Stealth[length=2mm,width=1.6mm]}, draw=bridge,
+                   line width=0.45mm}
+]
+
+%% fixed canvas -- stops standalone shrink-wrapping to the ink
+\useasboundingbox (0,0) rectangle (130,52);
+\fill[white] (0,0) rectangle (130,52);
+
+%% ================= title =================
+\node[anchor=west, font=\sffamily\bfseries\footnotesize] at (1.5,48.7)
+     {Two axes of client heterogeneity in federated turbofan prognostics};
+\node[sub] at (1.5,45.6)
+     {Honest clients differ; some clients attack. The two need different remedies -- and the remedies compose.};
+\draw[black!15, line width=0.2mm] (1.5,42.4) -- (128.5,42.4);
+
+%% ================= PANEL 1: federation =================
+\node[pane, minimum width=29mm] at (1.5,40.5) {};
+\node[hdr, color=axOne] at (3.0,39.6) {Federation};
+\node[sub]              at (3.0,36.4) {4 clients $\cdot$ 50 engines each};
+
+\node[srv] at (16.0,31.0) {Central aggregator};
+\draw[-{Stealth[length=1.4mm,width=1.1mm]}, draw=black!40, line width=0.3mm]
+      (16.0,28.5) -- (16.0,25.6);
+\node[font=\sffamily\tiny\color{mute}, anchor=west] at (17.0,27.0) {weights only};
+
+\node[chip, fill=axOne!12, draw=axOne!50] at (6.2,22.5) {1};
+\node[chip, fill=axOne!12, draw=axOne!50] at (12.8,22.5) {2};
+\node[chip, fill=bad!12,   draw=bad, thick] at (19.4,22.5) {\textcolor{bad}{\textbf{3}}};
+\node[chip, fill=axTwo!12, draw=axTwo!50] at (26.0,22.5) {4};
+
+\node[sub] at (3.0,17.6)
+     {\textcolor{axOne}{$\blacksquare$}~clients 1--2: FD001, one fault mode\\
+      \textcolor{axTwo}{$\blacksquare$}~clients 3--4: FD003, two fault modes\\
+      \textcolor{bad}{$\blacksquare$}~client 3 is the attacker};
+
+%% ================= PANEL 2: Axis 1 =================
+\node[pane, minimum width=30mm] at (33.0,40.5) {};
+\node[hdr, color=axOne] at (34.5,39.6) {Axis 1 $\cdot$ benign};
+\node[sub]              at (34.5,36.4) {\% of local-to-centralized\\gap closed};
+
+%% bars: 80\% maps to 11 mm, baseline x = 47.5
+\draw[black!25, line width=0.15mm] (47.5,13.4) -- (47.5,31.0);
+\node[lbl] at (46.8,29.0) {FedRep};
+\fill[axOne]    (47.5,27.7) rectangle ++(9.61,2.6);
+\node[val, color=axOne] at (57.7,29.0) {70\%};
+\node[lbl] at (46.8,24.5) {FedCCFA};
+\fill[axOne]    (47.5,23.2) rectangle ++(9.20,2.6);
+\node[val, color=axOne] at (57.3,24.5) {67\%};
+\node[lbl] at (46.8,20.0) {FedProx};
+\fill[axOne!40] (47.5,18.7) rectangle ++(2.89,2.6);
+\node[val, color=mute] at (51.0,20.0) {21\%};
+\node[lbl] at (46.8,15.5) {Reweighting};
+\fill[axOne!40] (47.5,14.2) rectangle ++(1.43,2.6);
+\node[val, color=mute] at (49.5,15.5) {10\%};
+
+\node[sub] at (34.5,12.2)
+     {Personalization closes $\sim3\times$ more\\of the gap than proximal terms.};
+
+%% ================= PANEL 3: Axis 2 =================
+\node[pane, minimum width=30mm] at (65.0,40.5) {};
+\node[hdr, color=axTwo] at (66.5,39.6) {Axis 2 $\cdot$ adversarial};
+\node[sub]              at (66.5,36.4) {Backdoor attack success\\rate};
+
+%% bars: 100\% maps to 11 mm, baseline x = 79.5
+\draw[black!25, line width=0.15mm] (79.5,13.4) -- (79.5,31.0);
+\node[lbl] at (78.8,29.0) {FedAvg};
+\fill[bad]     (79.5,27.7) rectangle ++(10.44,2.6);
+\node[val, color=bad] at (90.5,29.0) {95\%};
+\node[lbl] at (78.8,24.5) {Trimmed mean};
+\fill[bad!40]  (79.5,23.2) rectangle ++(5.48,2.6);
+\node[val, color=mute] at (85.6,24.5) {50\%};
+\node[lbl] at (78.8,20.0) {Coord.\ median};
+\fill[bad!40]  (79.5,18.7) rectangle ++(5.48,2.6);
+\node[val, color=mute] at (85.6,20.0) {50\%};
+\node[lbl] at (78.8,15.5) {Krum ($f{=}1$)};
+\fill[axTwo]   (79.5,14.2) rectangle ++(0.70,2.6);
+\node[val, color=axTwo] at (80.8,15.5) {6\%};
+
+\node[sub] at (66.5,12.2)
+     {Only Krum survives the\\coordinated 2-of-4 attack.};
+
+%% ================= PANEL 4: composition =================
+\node[pane, minimum width=29mm, draw=bridge!45, fill=bridge!6] at (97.5,40.5) {};
+\node[hdr, color=bridge] at (99.0,39.6) {Compose them};
+\node[sub]               at (99.0,36.4) {Stacked FedRep $+$ Krum};
+
+\node[anchor=north, font=\sffamily\bfseries\large, color=bridge] at (112.0,32.6) {2.8\%};
+\node[anchor=north, font=\sffamily\tiny\color{mute}] at (112.0,26.4)
+     {$\pm\,2.4\%$ attack success};
+\node[anchor=north, font=\sffamily\tiny\color{mute}] at (112.0,23.4)
+     {on honest clients};
+
+\draw[black!20, line width=0.15mm] (100.0,20.6) -- (124.0,20.6);
+\node[sub, color=ink] at (99.0,19.4) {$4\times$ tighter than Krum alone};
+\node[sub, color=axOne] at (99.0,15.9) {Keeps 70\% of the gap closed};
+\node[sub, color=bad]  at (99.0,12.4) {Personalization alone fails:\\63\% attack success};
+
+%% ================= connectors =================
+\draw[step] (63.3,26.0) -- (64.8,26.0);
+\draw[step] (95.3,26.0) -- (97.3,26.0);
+
+%% ================= footer =================
+\draw[black!15, line width=0.2mm] (1.5,6.4) -- (128.5,6.4);
+\node[sub] at (1.5,5.4)
+     {Evaluated as a 5 $\times$ 4 matrix: label flip, gradient scaling ($\times{-}10$ and $\times{-}2$), sensor-value backdoor and coordinated 2-of-4 attacks,\\against averaging, trimmed mean, coordinate median and Krum. Turbofan degradation benchmark, 5 random seeds.};
+
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,722 @@
+%% ============================================================
+%% references.bib -- Bibliography for the EAAI submission
+%%
+%% Format: BibTeX, author-year style via cas-model2-names.bst.
+%% Journal titles are abbreviated per the List of Title Word
+%% Abbreviations (LTWA), as the EAAI guide requires. Single-word
+%% titles (Electronics, Nature) are not abbreviated.
+%%
+%% Naming convention: FirstAuthorYearShortkey (e.g. McMahan2017FedAvg).
+%%
+%% ------------------------------------------------------------
+%% STATUS -- verification pass of 2026-07-29
+%%
+%% (A) ONE ENTRY REMAINS UNVERIFIED: Tallat2026BioMutFedPlus.
+%%     It still carries `and others`, which renders as "et al." in
+%%     the reference list -- the EAAI guide requires full author
+%%     names there ("et al." is for in-text citations only).
+%%     Repeated searches (title, author, IEEE Xplore document
+%%     11581414) returned nothing, so the record could not be
+%%     confirmed and no names were invented. Please supply the
+%%     author list, or confirm the paper exists as cited.
+%%
+%% (B) CORRECTIONS MADE DURING VERIFICATION -- these changed
+%%     published years, and therefore in-text citation years:
+%%       Lyu2025CoBA                 was 2024 -> 2025
+%%       Li2023ByzantineFLIIoT       was 2021 -> 2023
+%%       Hou2022FederatedFiltersIIoT was 2021 -> 2022
+%%     Citation keys were renamed to match and main.tex updated.
+%%
+%%     Wrong author names found and fixed:
+%%       Zhang2024SARS   all five given names were wrong
+%%                       (Wei/Yao/Lin/Bin/Xin ->
+%%                        Weibin/Youpeng/Lingling/Bo/Xuyu)
+%%       Lyu2025CoBA     "Lyu, Xilie" -> "Lyu, Xiaoting"; authors
+%%                       5-7 were wrong entirely
+%%       Hou2022...      "Bo/Juan/Xingzhong" -> "Boyu/Jiqiang/Xiaojie"
+%%       Burbano2026     "Song, Rui" -> "Song, Ruoyu"
+%%
+%%     Wrong venue found and fixed:
+%%       Vermelin2024CollabFLRUL was recorded as a PHM Society
+%%       European Conference paper. It is a JOURNAL article in the
+%%       International Journal of Prognostics and Health Management
+%%       15(2), article 3821. Entry type changed to an article.
+%%
+%% NOTE TO EDITORS OF THIS FILE: never write an "at" sign in these
+%% comments. BibTeX scans the whole file for it and starts parsing an
+%% entry wherever it appears -- "%" does not comment it out.
+%%
+%% (C) Kairouz2021Advances: the 58-name list here should be checked
+%%     against the published monograph -- Semantic Scholar records
+%%     56 authors. The first five match. Volume/pages/DOI verified.
+%%
+%% (D) The authors' own code release is deliberately NOT cited here.
+%%     It is described in the Data availability statement and linked
+%%     from the title page. Only third-party libraries are cited as
+%%     software references.
+%% ------------------------------------------------------------
+%% ============================================================
+
+% ------------------------------------------------------------------
+% Foundational FL algorithms
+% ------------------------------------------------------------------
+
+@inproceedings{McMahan2017FedAvg,
+    author       = {McMahan, H. Brendan and Moore, Eider and Ramage, Daniel
+                    and Hampson, Seth and Ag{\"u}era y Arcas, Blaise},
+    title        = {Communication-Efficient Learning of Deep Networks
+                    from Decentralized Data},
+    booktitle    = {Proceedings of the 20th International Conference on
+                    Artificial Intelligence and Statistics ({AISTATS})},
+    year         = {2017},
+    pages        = {1273--1282}
+}
+
+% ------------------------------------------------------------------
+% NASA C-MAPSS turbofan benchmark
+% ------------------------------------------------------------------
+
+@inproceedings{Saxena2008CMAPSS,
+    author       = {Saxena, Abhinav and Goebel, Kai and Simon, Don
+                    and Eklund, Neil},
+    title        = {Damage Propagation Modeling for Aircraft Engine
+                    Run-to-Failure Simulation},
+    booktitle    = {Proceedings of the 1st International Conference on
+                    Prognostics and Health Management (PHM 2008)},
+    year         = {2008},
+    pages        = {1--9},
+    organization = {IEEE},
+    doi          = {10.1109/PHM.2008.4711414}
+}
+%% ^ VERIFY the DOI above.
+
+%% Data reference. EAAI applies research-data Option C, which requires
+%% the underlying dataset to be cited and linked, not just the paper
+%% that describes it. The [dataset] tag is stripped in production.
+%% VERIFY: NASA reorganised the PCoE repository URLs; confirm the live
+%% link and the accessed date before submitting.
+@misc{Saxena2008CMAPSSData,
+    author       = {Saxena, Abhinav and Goebel, Kai},
+    title        = {[dataset] Turbofan Engine Degradation Simulation
+                    Data Set},
+    year         = {2008},
+    howpublished = {NASA Prognostics Data Repository, NASA Ames
+                    Research Center, Moffett Field, CA},
+    note         = {Version 1. Accessed 29 July 2026},
+    url          = {https://www.nasa.gov/intelligent-systems-division/discovery-and-systems-health/pcoe/pcoe-data-set-repository/}
+}
+
+% ------------------------------------------------------------------
+% Byzantine-robust aggregation
+% ------------------------------------------------------------------
+
+@inproceedings{Blanchard2017Krum,
+    author       = {Blanchard, Peva and El Mhamdi, El Mahdi and Guerraoui, Rachid
+                    and Stainer, Julien},
+    title        = {Machine Learning with Adversaries: {Byzantine} Tolerant
+                    Gradient Descent},
+    booktitle    = {Advances in Neural Information Processing Systems ({NeurIPS})},
+    year         = {2017},
+    volume       = {30},
+    pages        = {119--129}
+}
+%% ^ VERIFY the page range above (added to clear BibTeX's
+%%   "empty pages" warning).
+
+% ------------------------------------------------------------------
+% Prior FL-on-C-MAPSS / prior FL-for-prognostics baselines
+% ------------------------------------------------------------------
+
+%% Author list verified against the arXiv abstract page (2025-07-29).
+@misc{Barbosa2025FLJetEngines,
+    author       = {Barbosa, Asaph Matheus and Ngo, Thao Vy Nhat
+                    and Jafarigol, Elaheh and Trafalis, Theodore B.
+                    and Ojoboh, Emuobosa P.},
+    title        = {Using Federated Machine Learning in Predictive
+                    Maintenance of Jet Engines},
+    year         = {2025},
+    howpublished = {arXiv preprint arXiv:2502.05321},
+    doi          = {10.48550/arXiv.2502.05321},
+    url          = {https://arxiv.org/abs/2502.05321}
+}
+
+%% CORRECTED VENUE: this was recorded as a PHM Society European
+%% Conference paper. It is in fact a JOURNAL article -- International
+%% Journal of Prognostics and Health Management 15(2), article 3821
+%% (verified against papers.phmsociety.org, 2026-07-29). Entry type
+%% changed from a conference entry to a journal entry, and the full
+%% author list added.
+@article{Vermelin2024CollabFLRUL,
+    author       = {S{\"o}derkvist Vermelin, Wilhelm and Mishra, Madhav
+                    and Eng, Mattias P. and Andersson, Dag
+                    and Kyprianidis, Konstantinos},
+    title        = {Collaborative Training of Data-Driven Remaining
+                    Useful Life Prediction Models Using Federated
+                    Learning},
+    journal      = {Int. J. Progn. Health Manag.},
+    year         = {2024},
+    volume       = {15},
+    number       = {2},
+    pages        = {3821},
+    doi          = {10.36001/ijphm.2024.v15i2.3821}
+}
+
+%% Verified against papers.phmsociety.org (2026-07-29): vol 13, issue 1,
+%% article 2989.
+@inproceedings{Pandhare2021FederatedBaseline,
+    author       = {Pandhare, Vibhor and Jia, Xiaodong and Lee, Jay},
+    title        = {Collaborative Prognostics for Machine Fleets Using
+                    a Novel Federated Baseline Learner},
+    booktitle    = {Annual Conference of the {PHM} Society},
+    year         = {2021},
+    volume       = {13},
+    number       = {1},
+    pages        = {2989},
+    doi          = {10.36001/phmconf.2021.v13i1.2989},
+    url          = {http://papers.phmsociety.org/index.php/phmconf/article/view/2989}
+}
+
+% ------------------------------------------------------------------
+% Closest 2026 attack-aware FL-on-C-MAPSS competitors
+% ------------------------------------------------------------------
+
+%% !! UNVERIFIED -- THE ONLY UNRESOLVED ENTRY IN THIS FILE !!
+%% Searched on 2026-07-29 by title, by "BioMutFed"/"BioMutFed+", by
+%% author, and by IEEE Xplore document number 11581414. Nothing was
+%% found in any index. Either the record is too new to be indexed or
+%% the citation details are wrong. Confirm the paper exists as cited
+%% and supply the full author list; `and others` renders as "et al."
+%% in the reference list, which the EAAI guide does not permit.
+%% If it cannot be confirmed, consider removing the citation -- it is
+%% used in Section 2 and Section 10.4 as a competitor baseline.
+@article{Tallat2026BioMutFedPlus,
+    author       = {Tallat, R. and others},
+    title        = {{BioMutFed+}: Mutation-Driven Federated Learning
+                    for {IIoT}},
+    journal      = {IEEE Trans. Ind. Inform.},
+    year         = {2026},
+    note         = {Early access; IEEE Xplore document 11581414}
+}
+
+%% VERIFY: confirm the journal's LTWA abbreviation and add
+%% volume/number/pages if the article has been paginated.
+@article{Li2026TrustworthyFLIIoT,
+    author       = {Li, H.},
+    title        = {Trustworthy Federated Learning for Industrial {IoT}:
+                    Balancing Robustness and Fairness via
+                    Blockchain-Based Reputation},
+    journal      = {IET Artif. Intell. Eng.},
+    year         = {2026},
+    doi          = {10.1049/aie2.70012}
+}
+
+% ------------------------------------------------------------------
+% Additional prior FL-for-prognostics baselines
+% ------------------------------------------------------------------
+
+@misc{Milasheuski2026GenerativeFL,
+    author       = {Milasheuski, U. and Baraldi, P. and Zio, E. and Savazzi, S.},
+    title        = {On the Tradeoffs of On-Device Generative Models in
+                    Federated Predictive Maintenance Systems},
+    year         = {2026},
+    howpublished = {arXiv preprint arXiv:2605.07860},
+    doi          = {10.48550/arXiv.2605.07860},
+    url          = {https://arxiv.org/abs/2605.07860}
+}
+
+%% Verified against Semantic Scholar (2026-07-29): TII 17, 8485--8494,
+%% 2021, five authors as listed.
+@article{Rehman2021TrustFed,
+    author       = {Rehman, Muhammad Habib Ur and Dirir, Ahmed Mukhtar
+                    and Salah, Khaled and Damiani, Ernesto
+                    and Svetinovic, Davor},
+    title        = {{TrustFed}: A Framework for Fair and Trustworthy Cross-Device
+                    Federated Learning in Industrial {IoT}},
+    journal      = {IEEE Trans. Ind. Inform.},
+    year         = {2021},
+    volume       = {17},
+    number       = {12},
+    pages        = {8485--8494},
+    doi          = {10.1109/TII.2021.3075706}
+}
+
+% ------------------------------------------------------------------
+% Extended related-work: FL for RUL / PHM (domain neighbours)
+% Metadata verified 2026-07-29 (arXiv / Crossref / DBLP).
+% ------------------------------------------------------------------
+
+@misc{Landau2025CollabRUL,
+    author       = {Landau, Diogo and de Pater, Ingeborg and Mitici, Mihaela
+                    and Saurabh, Nishant},
+    title        = {Federated Learning Framework for Collaborative Remaining
+                    Useful Life Prognostics: An Aircraft Engine Case Study},
+    year         = {2025},
+    howpublished = {arXiv preprint arXiv:2506.00499},
+    doi          = {10.48550/arXiv.2506.00499}
+}
+
+@misc{Jeong2025FedJoint,
+    author       = {Jeong, Cheoljoon and Yue, Xubo and Chung, Seokhyun},
+    title        = {{Fed-Joint}: Joint Modeling of Nonlinear Degradation
+                    Signals and Failure Events for Remaining Useful Life
+                    Prediction using Federated Learning},
+    year         = {2025},
+    howpublished = {arXiv preprint arXiv:2503.13404},
+    doi          = {10.48550/arXiv.2503.13404}
+}
+
+@article{Arunan2023MatchedFeatureFL,
+    author       = {Arunan, Anushiya and Qin, Yan and Li, Xiaoli and Yuen, Chau},
+    title        = {A Federated Learning-Based Industrial Health Prognostics
+                    for Heterogeneous Edge Devices Using Matched Feature
+                    Extraction},
+    journal      = {IEEE Trans. Autom. Sci. Eng.},
+    year         = {2024},
+    volume       = {21},
+    number       = {3},
+    pages        = {3065--3079},
+    doi          = {10.1109/TASE.2023.3274648}
+}
+
+% ------------------------------------------------------------------
+% Personalization, clustering, and proximal FL algorithms
+% ------------------------------------------------------------------
+
+@inproceedings{Li2020FedProx,
+    author       = {Li, Tian and Sahu, Anit Kumar and Zaheer, Manzil
+                    and Sanjabi, Maziar and Talwalkar, Ameet
+                    and Smith, Virginia},
+    title        = {Federated Optimization in Heterogeneous Networks},
+    booktitle    = {Proceedings of Machine Learning and Systems ({MLSys})},
+    year         = {2020},
+    volume       = {2},
+    pages        = {429--450}
+}
+
+@inproceedings{Collins2021FedRep,
+    author       = {Collins, Liam and Hassani, Hamed and Mokhtari, Aryan
+                    and Shakkottai, Sanjay},
+    title        = {Exploiting Shared Representations for Personalized
+                    Federated Learning},
+    booktitle    = {Proceedings of the 38th International Conference on
+                    Machine Learning ({ICML})},
+    year         = {2021},
+    pages        = {2089--2099}
+}
+
+@article{Sattler2020CFL,
+    author       = {Sattler, Felix and Wiedemann, Simon
+                    and M{\"u}ller, Klaus-Robert and Samek, Wojciech},
+    title        = {Clustered Federated Learning: Model-Agnostic Distributed
+                    Multi-Task Optimization Under Privacy Constraints},
+    journal      = {IEEE Trans. Neural Netw. Learn. Syst.},
+    year         = {2020},
+    volume       = {32},
+    number       = {8},
+    pages        = {3710--3722}
+}
+
+%% Volume, pages and DOI verified (2026-07-29). The 58-name list below
+%% was reconstructed and the first five match the record, but Semantic
+%% Scholar counts 56 authors -- check the roster against the published
+%% Foundations and Trends monograph before submitting.
+@article{Kairouz2021Advances,
+    author       = {Kairouz, Peter and McMahan, H. Brendan and Avent, Brendan
+                    and Bellet, Aur{\'e}lien and Bennis, Mehdi
+                    and Bhagoji, Arjun Nitin and Bonawitz, Kallista
+                    and Charles, Zachary and Cormode, Graham
+                    and Cummings, Rachel and D'Oliveira, Rafael G. L.
+                    and Eichner, Hubert and El Rouayheb, Salim
+                    and Evans, David and Gardner, Josh and Garrett, Zachary
+                    and Gasc{\'o}n, Adri{\`a} and Ghazi, Badih
+                    and Gibbons, Phillip B. and Gruteser, Marco
+                    and Harchaoui, Zaid and He, Chaoyang and He, Lie
+                    and Huo, Zhouyuan and Hutchinson, Ben and Hsu, Justin
+                    and Jaggi, Martin and Javidi, Tara and Joshi, Gauri
+                    and Khodak, Mikhail and Kone{\v{c}}n{\'y}, Jakub
+                    and Korolova, Aleksandra and Koushanfar, Farinaz
+                    and Koyejo, Sanmi and Lepoint, Tancr{\`e}de and Liu, Yang
+                    and Mittal, Prateek and Mohri, Mehryar and Nock, Richard
+                    and {\"O}zg{\"u}r, Ayfer and Pagh, Rasmus and Qi, Hang
+                    and Ramage, Daniel and Raskar, Ramesh and Raykova, Mariana
+                    and Song, Dawn and Song, Weikang and Stich, Sebastian U.
+                    and Sun, Ziteng and Suresh, Ananda Theertha
+                    and Tram{\`e}r, Florian and Vepakomma, Praneeth
+                    and Wang, Jianyu and Xiong, Li and Xu, Zheng
+                    and Yang, Qiang and Yu, Felix X. and Yu, Han and Zhao, Sen},
+    title        = {Advances and Open Problems in Federated Learning},
+    journal      = {Found. Trends Mach. Learn.},
+    year         = {2021},
+    volume       = {14},
+    number       = {1--2},
+    pages        = {1--210},
+    doi          = {10.1561/2200000083}
+}
+
+% ------------------------------------------------------------------
+% Additional Byzantine-robust aggregators
+% ------------------------------------------------------------------
+
+@inproceedings{Yin2018RobustDistributed,
+    author       = {Yin, Dong and Chen, Yudong and Ramchandran, Kannan
+                    and Bartlett, Peter},
+    title        = {{Byzantine}-Robust Distributed Learning: Towards Optimal
+                    Statistical Rates},
+    booktitle    = {Proceedings of the 35th International Conference on
+                    Machine Learning ({ICML})},
+    year         = {2018},
+    pages        = {5650--5659}
+}
+
+@article{Pillutla2022RFA,
+    author       = {Pillutla, Krishna and Kakade, Sham M. and Harchaoui, Zaid},
+    title        = {Robust Aggregation for Federated Learning},
+    journal      = {IEEE Trans. Signal Process.},
+    year         = {2022},
+    volume       = {70},
+    pages        = {1142--1154}
+}
+
+@misc{Sun2019CanYouBackdoor,
+    author       = {Sun, Ziteng and Kairouz, Peter and Suresh, Ananda Theertha
+                    and McMahan, H. Brendan},
+    title        = {Can You Really Backdoor Federated Learning?},
+    year         = {2019},
+    howpublished = {arXiv preprint arXiv:1911.07963},
+    doi          = {10.48550/arXiv.1911.07963},
+    url          = {https://arxiv.org/abs/1911.07963}
+}
+
+% ------------------------------------------------------------------
+% Attacks on FL (poisoning, backdoors)
+% ------------------------------------------------------------------
+
+@article{Nguyen2024BackdoorSurvey,
+    author       = {Nguyen, Thuy Dung and Nguyen, Tuan and Nguyen, Phi Le
+                    and Pham, Hieu H. and Doan, Khoa D. and Wong, Kok-Seng},
+    title        = {Backdoor Attacks and Defenses in Federated Learning:
+                    {Survey}, Challenges and Future Research Directions},
+    journal      = {Engineering Applications of Artificial Intelligence},
+    year         = {2024},
+    volume       = {127},
+    pages        = {107166},
+    doi          = {10.1016/j.engappai.2023.107166}
+}
+
+@inproceedings{Farhadkhani2022Equivalence,
+    author       = {Farhadkhani, Sadegh and Guerraoui, Rachid
+                    and Hoang, L{\^e}-Nguy{\^e}n and Villemaud, Oscar},
+    title        = {An Equivalence Between Data Poisoning and {Byzantine}
+                    Gradient Attacks},
+    booktitle    = {Proceedings of the 39th International Conference on
+                    Machine Learning ({ICML})},
+    series       = {Proceedings of Machine Learning Research},
+    year         = {2022},
+    volume       = {162},
+    pages        = {6284--6323}
+}
+
+@inproceedings{Foroughi2026LSA,
+    author       = {Foroughi, Mohammad Hadi and Rastegar, Seyed Hamed
+                    and Sabokrou, Mohammad and Khonsari, Ahmad},
+    title        = {Exploiting Layer-Specific Vulnerabilities to Backdoor
+                    Attack in Federated Learning},
+    booktitle    = {Proceedings of the IEEE International Conference on
+                    Communications ({ICC})},
+    year         = {2026},
+    note         = {arXiv preprint arXiv:2602.15161},
+    doi          = {10.48550/arXiv.2602.15161}
+}
+
+@inproceedings{Bagdasaryan2020BackdoorFL,
+    author       = {Bagdasaryan, Eugene and Veit, Andreas and Hua, Yiqing
+                    and Estrin, Deborah and Shmatikov, Vitaly},
+    title        = {How to Backdoor Federated Learning},
+    booktitle    = {Proceedings of the 23rd International Conference on
+                    Artificial Intelligence and Statistics ({AISTATS})},
+    year         = {2020},
+    pages        = {2938--2948}
+}
+
+@inproceedings{Bhagoji2019AdversarialLens,
+    author       = {Bhagoji, Arjun Nitin and Chakraborty, Supriyo
+                    and Mittal, Prateek and Calo, Seraphin},
+    title        = {Analyzing Federated Learning Through an Adversarial Lens},
+    booktitle    = {Proceedings of the 36th International Conference on
+                    Machine Learning ({ICML})},
+    year         = {2019},
+    pages        = {634--643}
+}
+
+@inproceedings{Fang2020LocalPoisoning,
+    author       = {Fang, Minghong and Cao, Xiaoyu and Jia, Jinyuan and Gong, Neil~Zhenqiang},
+    title        = {Local Model Poisoning Attacks to {Byzantine}-Robust
+                    Federated Learning},
+    booktitle    = {Proceedings of the 29th {USENIX} Security Symposium
+                    ({USENIX} Security 20)},
+    year         = {2020},
+    pages        = {1605--1622}
+}
+
+%% BibTeX reports "empty pages" for this entry. That is expected and
+%% correct: ICLR publishes on OpenReview without page numbers, so
+%% pagination is not applicable. Leave as is.
+@inproceedings{Xie2020DBA,
+    author       = {Xie, Chulin and Huang, Keli and Chen, Pin-Yu and Li, Bo},
+    title        = {{DBA}: Distributed Backdoor Attacks against Federated
+                    Learning},
+    booktitle    = {International Conference on Learning Representations
+                    ({ICLR})},
+    year         = {2020}
+}
+
+% ------------------------------------------------------------------
+% Time-series and physical-world backdoor triggers
+% ------------------------------------------------------------------
+
+@article{Yang2023BoundaryTrigger,
+    author       = {Yang, Dongyi and Luo, Senjie and Zhou, Jielun and Pan, Lijing
+                    and Yang, Xiaoxia and Xing, Jian},
+    title        = {Efficient and Persistent Backdoor Attack by Boundary
+                    Trigger Set Constructing Against Federated Learning},
+    journal      = {Inf. Sci.},
+    year         = {2023},
+    volume       = {651},
+    pages        = {119743}
+}
+
+%% Verified against Semantic Scholar / DBLP journals/tdsc/LyuHWLWCLLZ25
+%% (2026-07-29). Two corrections: the first author was recorded as
+%% "Lyu, Xilie" (should be Xiaoting), and the published YEAR is 2025,
+%% not 2024 -- the in-text citation is now (Lyu et al., 2025).
+@article{Lyu2025CoBA,
+    author       = {Lyu, Xiaoting and Han, Yufei and Wang, Wei
+                    and Liu, Jingkai and Wang, Bin and Chen, Kai
+                    and Li, Yidong and Liu, Jiqiang and Zhang, Xiangliang},
+    title        = {{CoBA}: Collusive Backdoor Attacks with Optimized
+                    Trigger to Federated Learning},
+    journal      = {IEEE Trans. Dependable Secure Comput.},
+    year         = {2025},
+    volume       = {22},
+    number       = {2},
+    pages        = {1506--1518},
+    doi          = {10.1109/TDSC.2024.3445637}
+}
+
+%% Author list verified against the USENIX Security '26 accepted-papers
+%% list (2026-07-29). Note the third author is Ruoyu Song, not "Rui
+%% Song" as previously recorded. Pages will appear in the proceedings.
+@inproceedings{Burbano2026BADControl,
+    author       = {Burbano, Luis and Sasahara, Hampei and Song, Ruoyu
+                    and Celik, Z. Berkay and Cardenas, Alvaro A.},
+    title        = {{BADControl}: Backdoor Attacks Against Control Systems},
+    booktitle    = {Proceedings of the 35th {USENIX} Security Symposium
+                    ({USENIX} Security 26)},
+    year         = {2026}
+}
+
+% ------------------------------------------------------------------
+% Personalized FL under adversarial pressure
+% ------------------------------------------------------------------
+
+%% Verified against Semantic Scholar / DBLP journals/imwut/ZhangLAWW24
+%% and dl.acm.org/doi/10.1145/3678571 (2026-07-29). All five given
+%% names were previously wrong: Wei->Weibin, Yao->Youpeng, Lin->Lingling,
+%% Bin->Bo, Xin->Xuyu.
+@article{Zhang2024SARS,
+    author       = {Zhang, Weibin and Li, Youpeng and An, Lingling
+                    and Wan, Bo and Wang, Xuyu},
+    title        = {{SARS}: A Personalized Federated Learning Framework
+                    Towards Fairness and Robustness Against Backdoor Attacks},
+    journal      = {Proc. ACM Interact. Mob. Wearable Ubiquitous Technol.},
+    year         = {2024},
+    volume       = {8},
+    number       = {4},
+    pages        = {1--24},
+    articleno    = {140},
+    doi          = {10.1145/3678571}
+}
+
+@misc{Fan2026RobustPFL,
+    author       = {Fan, Meng and Chen, Chao},
+    title        = {Towards Robust Personalized Federated Learning:
+                    Vulnerability Assessment and Defense Co-Design},
+    year         = {2026},
+    howpublished = {arXiv preprint arXiv:2606.22782},
+    doi          = {10.48550/arXiv.2606.22782},
+    url          = {https://arxiv.org/abs/2606.22782}
+}
+
+% ------------------------------------------------------------------
+% FL for IIoT + Byzantine defenses (adjacent domain grounding)
+% ------------------------------------------------------------------
+
+%% Verified against Semantic Scholar (2026-07-29). The year was
+%% recorded as 2021 but volume 19(2) is the FEBRUARY 2023 issue;
+%% corrected to 2023, so the in-text citation is now (Li et al., 2023).
+@article{Li2023ByzantineFLIIoT,
+    author       = {Li, Shenghui and Ngai, Edith C. H. and Voigt, Thiemo},
+    title        = {{Byzantine}-Robust Aggregation in Federated Learning
+                    Empowered Industrial {IoT}},
+    journal      = {IEEE Trans. Ind. Inform.},
+    year         = {2023},
+    volume       = {19},
+    number       = {2},
+    pages        = {1165--1175},
+    doi          = {10.1109/TII.2021.3128164}
+}
+
+%% Verified against Semantic Scholar (2026-07-29). Two corrections:
+%% the names recorded here were wrong ("Hou, Bo"/"Gao, Juan"/
+%% "Guo, Xingzhong" -> Boyu/Jiqiang/Xiaojie), and the published YEAR
+%% is 2022, not 2021 -- the in-text citation is now (Hou et al., 2022).
+@article{Hou2022FederatedFiltersIIoT,
+    author       = {Hou, Boyu and Gao, Jiqiang and Guo, Xiaojie
+                    and Baker, Thar and Zhang, Ying and Wen, Yanlong
+                    and Liu, Zheli},
+    title        = {Mitigating the Backdoor Attack by Federated Filters
+                    for Industrial {IoT} Applications},
+    journal      = {IEEE Trans. Ind. Inform.},
+    year         = {2022},
+    volume       = {18},
+    number       = {5},
+    pages        = {3562--3571},
+    doi          = {10.1109/TII.2021.3112100}
+}
+
+% ------------------------------------------------------------------
+% Surveys
+% ------------------------------------------------------------------
+
+@article{Berghout2022FLCondMon,
+    author       = {Berghout, Tarek and Benbouzid, Mohamed and Bentrcia, Toufik
+                    and Lim, Wei Hong and Amirat, Yassine},
+    title        = {Federated Learning for Condition Monitoring of
+                    Industrial Processes: A Review on Fault Diagnosis
+                    Methods, Challenges, and Prospects},
+    journal      = {Electronics},
+    year         = {2023},
+    volume       = {12},
+    number       = {1},
+    pages        = {158}
+}
+
+@article{Djemaa2026HeterogeneityPoisoning,
+    author       = {Djemaa, Abdelaziz and Djenouri, Djamel and Legg, Phil},
+    title        = {Heterogeneity-Aware Poisoning Attacks and Mitigation
+                    in Federated Learning: A Comprehensive Survey and
+                    Taxonomy},
+    journal      = {Electronics},
+    year         = {2026},
+    volume       = {15},
+    number       = {13},
+    pages        = {2876}
+}
+
+% ------------------------------------------------------------------
+% Interpretability / attribution
+% ------------------------------------------------------------------
+
+@inproceedings{Sundararajan2017IntegratedGradients,
+    author       = {Sundararajan, Mukund and Taly, Ankur and Yan, Qiqi},
+    title        = {Axiomatic Attribution for Deep Networks},
+    booktitle    = {Proceedings of the 34th International Conference on
+                    Machine Learning ({ICML})},
+    year         = {2017},
+    volume       = {70},
+    pages        = {3319--3328}
+}
+
+% ------------------------------------------------------------------
+% Software references
+%
+% The EAAI guide requires computational code, scripts, models and
+% libraries to be cited like any other source, with creator, title,
+% publication venue, date, identifier and version. Each entry below
+% carries the canonical citation the project itself asks for.
+%
+% The authors' own released code is NOT listed here. It is the
+% subject of this paper rather than a third-party source, so it is
+% described in the Data availability statement and linked from the
+% title page instead of being self-cited.
+% ------------------------------------------------------------------
+
+@inproceedings{Paszke2019PyTorch,
+    author       = {Paszke, Adam and Gross, Sam and Massa, Francisco
+                    and Lerer, Adam and Bradbury, James and Chanan, Gregory
+                    and Killeen, Trevor and Lin, Zeming
+                    and Gimelshein, Natalia and Antiga, Luca
+                    and Desmaison, Alban and K{\"o}pf, Andreas
+                    and Yang, Edward and DeVito, Zachary and Raison, Martin
+                    and Tejani, Alykhan and Chilamkurthy, Sasank
+                    and Steiner, Benoit and Fang, Lu and Bai, Junjie
+                    and Chintala, Soumith},
+    title        = {{PyTorch}: An Imperative Style, High-Performance Deep
+                    Learning Library [software]},
+    booktitle    = {Advances in Neural Information Processing Systems
+                    ({NeurIPS})},
+    year         = {2019},
+    volume       = {32},
+    pages        = {8024--8035},
+    url          = {https://pytorch.org}
+}
+
+@article{Pedregosa2011Scikit,
+    author       = {Pedregosa, Fabian and Varoquaux, Ga{\"e}l
+                    and Gramfort, Alexandre and Michel, Vincent
+                    and Thirion, Bertrand and Grisel, Olivier
+                    and Blondel, Mathieu and Prettenhofer, Peter
+                    and Weiss, Ron and Dubourg, Vincent
+                    and Vanderplas, Jake and Passos, Alexandre
+                    and Cournapeau, David and Brucher, Matthieu
+                    and Perrot, Matthieu and Duchesnay, {\'E}douard},
+    title        = {Scikit-learn: Machine Learning in {Python} [software]},
+    journal      = {J. Mach. Learn. Res.},
+    year         = {2011},
+    volume       = {12},
+    pages        = {2825--2830},
+    url          = {https://scikit-learn.org}
+}
+
+@article{Harris2020NumPy,
+    author       = {Harris, Charles R. and Millman, K. Jarrod
+                    and van der Walt, St{\'e}fan J. and Gommers, Ralf
+                    and Virtanen, Pauli and Cournapeau, David
+                    and Wieser, Eric and Taylor, Julian and Berg, Sebastian
+                    and Smith, Nathaniel J. and Kern, Robert and Picus, Matti
+                    and Hoyer, Stephan and van Kerkwijk, Marten H.
+                    and Brett, Matthew and Haldane, Allan
+                    and del R{\'i}o, Jaime Fern{\'a}ndez and Wiebe, Mark
+                    and Peterson, Pearu and G{\'e}rard-Marchant, Pierre
+                    and Sheppard, Kevin and Reddy, Tyler
+                    and Weckesser, Warren and Abbasi, Hameer
+                    and Gohlke, Christoph and Oliphant, Travis E.},
+    title        = {Array Programming with {NumPy} [software]},
+    journal      = {Nature},
+    year         = {2020},
+    volume       = {585},
+    pages        = {357--362},
+    doi          = {10.1038/s41586-020-2649-2}
+}
+
+@inproceedings{McKinney2010Pandas,
+    author       = {McKinney, Wes},
+    title        = {Data Structures for Statistical Computing in {Python}
+                    [software]},
+    booktitle    = {Proceedings of the 9th {Python} in Science Conference
+                    ({SciPy})},
+    year         = {2010},
+    pages        = {56--61},
+    doi          = {10.25080/Majora-92bf1922-00a}
+}
+
+@article{Hunter2007Matplotlib,
+    author       = {Hunter, John D.},
+    title        = {{Matplotlib}: A {2D} Graphics Environment [software]},
+    journal      = {Comput. Sci. Eng.},
+    year         = {2007},
+    volume       = {9},
+    number       = {3},
+    pages        = {90--95},
+    doi          = {10.1109/MCSE.2007.55}
+}

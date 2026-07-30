@@ -1,0 +1,186 @@
+%% ============================================================
+%% title_page.tex --- Engineering Applications of Artificial
+%%                    Intelligence (EAAI) submission
+%%
+%% EAAI operates DOUBLE-ANONYMIZED peer review. The title page
+%% (this file, with all author-identifying material) and the
+%% anonymized manuscript (main.tex) must be uploaded as SEPARATE
+%% files in the submission system.
+%%
+%% Per the EAAI guide for authors, the title page must carry:
+%%   - article title
+%%   - author names and affiliations
+%%   - the corresponding author, with FULL postal address and e-mail
+%%   - acknowledgements
+%%   - the declaration of competing interests
+%% The CRediT authorship contribution statement is included here
+%% too, because it names the author.
+%%
+%% The abstract and keywords are reproduced here only because the
+%% CAS \maketitle always typesets the ABSTRACT panel; keeping them
+%% in sync with main.tex avoids an empty box on the front page.
+%% ============================================================
+
+\documentclass[a4paper,fleqn]{cas-sc}
+
+\usepackage[authoryear]{natbib}
+
+\hypersetup{
+    linkcolor=blue!60!black,
+    citecolor=blue!60!black,
+    urlcolor=blue!70!black,
+    breaklinks=true
+}
+
+\begin{document}
+\let\WriteBookmarks\relax
+\def\floatpagepagefraction{1}
+\def\textpagefraction{.001}
+
+\shorttitle{Robust, personalized federated learning for turbofan prognostics}
+\shortauthors{C. Mitra}
+
+%% ----- Title -------------------------------------------------------
+\title[mode = title]{Robust and Personalized Federated Learning for
+Aircraft-Engine Prognostics: Heterogeneity and Failure-Masking
+Poisoning on a Turbofan Benchmark}
+
+%% ----- Author ------------------------------------------------------
+%% If a co-author is added later, duplicate the \author / \affiliation
+%% blocks and give the new block index [2].
+\author[1]{Chinmoy Mitra}[orcid=0009-0006-3661-5834]
+
+\cormark[1]
+
+\ead{rudrochinmoy@gmail.com}
+\ead[url]{https://chinmoy17.github.io/}
+
+\credit{Conceptualization, Methodology, Software, Validation,
+Formal analysis, Investigation, Data curation, Writing --- original
+draft, Writing --- review \& editing, Visualization, Project
+administration}
+
+\affiliation[1]{organization={Department of Computer Science and
+                Engineering, Rajshahi University of Engineering \&
+                Technology},
+            addressline={Kazla},
+            city={Rajshahi},
+            postcode={6204},
+            country={Bangladesh}}
+
+\cortext[1]{Corresponding author.}
+
+%% ----- Abstract (mirror of main.tex; keep the two in sync) ---------
+\begin{abstract}
+Federated learning (FL) lets aircraft fleet operators jointly train
+remaining-useful-life (RUL) models on engine sensor telemetry without
+sharing raw data, yet a deployable turbofan-prognostics system must
+withstand two kinds of client heterogeneity: benign --- honest
+operators observe different operating conditions and fault modes ---
+and adversarial --- a compromised operator submits poisoned updates.
+We present a controlled, safety-oriented study of how federated
+training and aggregation algorithms behave under both, using a
+multi-task one-dimensional convolutional neural network on a
+structurally non-independent-and-identically-distributed (non-IID)
+partition of the Commercial Modular Aero-Propulsion System Simulation
+(C-MAPSS) benchmark, and evaluate four benign-heterogeneity remedies
+together with a five-attack by four-aggregator matrix that includes a
+physically motivated, failure-masking sensor-value backdoor.
+Shared-representation personalization closes about 70\% of the
+local-to-centralized root-mean-square-error gap, versus about 21\%
+for proximal regularization and 10\% for server-side reweighting.
+Crucially, the backdoor reaches 94.9\% attack success against standard
+averaging while clean accuracy stays statistically unchanged ---
+accuracy alone cannot certify a safe model, and attack success must be
+measured explicitly. Robust aggregation with Krum cuts attack success
+by an order of magnitude and uniquely survives coordinated attackers,
+whereas personalization alone offers no protection. Stacking the two
+yields a practical end-to-end defense that restores robustness (attack
+success 2.8\%) at only a small accuracy cost, reflecting an inherent
+tension between robust update selection and collaborative
+representation learning. Findings hold across client counts and a
+harder six-condition dataset, and all code and data partitions are
+released for reproducibility.
+\end{abstract}
+
+\begin{keywords}
+Federated learning \sep
+Prognostics \sep
+Remaining useful life \sep
+Non-IID heterogeneity \sep
+Byzantine-robust aggregation \sep
+Backdoor attacks
+\end{keywords}
+
+\maketitle
+
+%% ============================================================
+%% Inspec classification codes
+%% !! VERIFY against the official Inspec Classification scheme !!
+%% (see the matching note in main.tex)
+%% ============================================================
+\section*{Inspec classification codes}
+C1230D (Neural nets); C5290 (Neural computing techniques);
+C6130S (Data security); C7420 (Control engineering computing);
+C3355 (Condition monitoring); C1180 (Optimisation techniques).
+
+%% ============================================================
+%% Corresponding author --- full contact details
+%% ============================================================
+\section*{Corresponding author}
+\noindent
+Chinmoy Mitra\\
+Department of Computer Science and Engineering\\
+Rajshahi University of Engineering \& Technology\\
+Kazla, Rajshahi 6204\\
+Bangladesh\\[4pt]
+E-mail: \href{mailto:rudrochinmoy@gmail.com}{rudrochinmoy@gmail.com}
+(primary),
+\href{mailto:1803079@student.ruet.ac.bd}{1803079@student.ruet.ac.bd}
+(institutional)\\
+Homepage: \url{https://chinmoy17.github.io/}\\
+ORCID: \url{https://orcid.org/0009-0006-3661-5834}
+
+%% ============================================================
+%% CRediT authorship contribution statement
+%% ============================================================
+\section*{CRediT authorship contribution statement}
+\textbf{Chinmoy Mitra:} Conceptualization, Methodology, Software,
+Validation, Formal analysis, Investigation, Data curation,
+Writing --- original draft, Writing --- review \& editing,
+Visualization, Project administration.
+
+%% ============================================================
+%% Declarations
+%% ============================================================
+\section*{Declaration of competing interest}
+The author declares that he has no known competing financial
+interests or personal relationships that could have appeared to
+influence the work reported in this paper.
+
+\section*{Funding}
+This research received no specific grant from any funding agency in
+the public, commercial, or not-for-profit sectors.
+
+\section*{Data availability}
+The Commercial Modular Aero-Propulsion System Simulation (C-MAPSS)
+turbofan degradation dataset analysed in this study is publicly
+available from NASA's Prognostics Center of Excellence data
+repository (Saxena and Goebel, 2008, [dataset], NASA Ames Research
+Center). No new experimental data were collected.
+
+All source code and per-seed result files required to reproduce the
+experiments reported in the manuscript are released under an
+open-source licence at
+\url{https://github.com/Chinmoy17/FL-for-Aircraft}.
+%% TODO (optional): EAAI applies research-data Option C, which asks
+%% for a repository with a persistent identifier. Archiving this
+%% repository on Zenodo (or Software Heritage) would mint a DOI to
+%% quote here in place of the bare GitHub URL.
+
+\section*{Acknowledgements}
+The author thanks the faculty of the Department of Computer Science
+and Engineering, Rajshahi University of Engineering \& Technology,
+for institutional support during this work.
+
+\end{document}

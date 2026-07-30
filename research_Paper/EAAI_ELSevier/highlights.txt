@@ -1,0 +1,14 @@
+Highlights
+Robust and Personalized Federated Learning for Aircraft-Engine
+Prognostics: Heterogeneity and Failure-Masking Poisoning on a
+Turbofan Benchmark
+
+- Two axes of client heterogeneity studied for federated turbofan RUL prognostics.
+- Personalization closes ~70% of the non-IID gap; proximal ~21%, reweighting ~10%.
+- A failure-masking backdoor reaches 94.9% success with clean accuracy unchanged.
+- Krum cuts backdoor success tenfold and survives coordinated 2-of-4 attacks.
+- Stacking personalization and Krum restores robustness at a small accuracy cost.
+
+(Each bullet is <= 85 characters including spaces, per the EAAI guide
+for authors. Bullets are mirrored in the \begin{highlights} block of
+main.tex; keep the two in sync.)
